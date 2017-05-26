@@ -70,7 +70,7 @@ async def post_resource(request: web.Request):
     if schema is None:
         raise HTTPNotFound()
 
-    registry = request.app[JSONAPI]
+    registry = request.app[JSONAPI]['registry']
 
     data = await get_data_from_request(request)
     if not isinstance(data, collections.Mapping):

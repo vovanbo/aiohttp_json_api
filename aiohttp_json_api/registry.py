@@ -10,7 +10,6 @@ ResourceID = collections.namedtuple('ResourceID', ['type', 'id'])
 
 @attr.s
 class Registry:
-    base = attr.ib(default=attr.Factory(dict))
     schema_by_type = attr.ib(default=attr.Factory(dict))
     schema_by_resource = attr.ib(default=attr.Factory(dict))
 

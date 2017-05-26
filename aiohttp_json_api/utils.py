@@ -69,7 +69,7 @@ async def get_compound_documents(connection, resources, context):
         which maps each resource (primary and included) to a set with the
         names of the included relationships.
     """
-    registry = context.request.app[JSONAPI]
+    registry = context.request.app[JSONAPI]['registry']
     relationships = defaultdict(set)
     compound_documents = OrderedDict()
 
@@ -123,7 +123,7 @@ async def get_compound_documents(connection, resources, context):
 
 
 async def encode_resource(resource, context):
-    registry = context.request.app[JSONAPI]
+    registry = context.request.app[JSONAPI]['registry']
     schema = registry.get_schema(resource)
     return await schema.encode_resource(
         resource, is_data=True, context=context,
@@ -157,7 +157,7 @@ async def render_document(resources, compound_documents, context, *,
         document.links.update(pagination.links())
         document.meta.update(pagination.meta())
 
-    document.jsonapi.update(context.request.app[JSONAPI].base)
+    document.jsonapi.update(context.request.app[JSONAPI]['jsonapi'])
 
     return document.as_dict_without_empty_fields()
 
@@ -195,7 +195,7 @@ def error_to_response(request: web.Request,
         document.errors = error.json
         status = max(e.status for e in error.errors)
 
-    document.jsonapi.update(request.app[JSONAPI].base)
+    document.jsonapi.update(request.app[JSONAPI]['jsonapi'])
 
     return jsonapi_response(
         document.as_dict_without_empty_fields(),

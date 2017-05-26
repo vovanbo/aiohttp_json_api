@@ -1,5 +1,6 @@
 from boltons.typeutils import issubclass
 
+from .context import RequestContext
 from .const import JSONAPI
 from .handlers import *
 from .log import logger
@@ -9,13 +10,10 @@ from .schema.schema import Schema
 
 
 def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
-                  api_version=None, meta=None):
-    default_meta = {
-        'api-version': api_version
-    }
-    base = {
+                  api_version=None, meta=None, context_class=None):
+    top_level_jsonapi = {
         'version': version,
-        'meta': meta or default_meta
+        'meta': meta or {'api-version': api_version}
     }
     schema_by_type = {}
     schema_by_resource = {}
@@ -34,9 +32,14 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
         else:
             schema_by_resource[schema.resource_class] = schema
 
-    app[JSONAPI] = Registry(base=base,
-                            schema_by_type=schema_by_type,
-                            schema_by_resource=schema_by_resource)
+    if context_class is not None:
+        assert issubclass(context_class, RequestContext), \
+            f'Subclass of RequestContext is required. Got: {context_class}'
+
+    app[JSONAPI]['context_class'] = context_class or RequestContext
+    app[JSONAPI]['jsonapi'] = top_level_jsonapi
+    app[JSONAPI]['registry'] = Registry(schema_by_type=schema_by_type,
+                                        schema_by_resource=schema_by_resource)
 
     collection_resource = app.router.add_resource(
         f'{base_path}/{{type}}',

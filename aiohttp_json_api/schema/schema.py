@@ -259,7 +259,7 @@ class Schema(metaclass=SchemaMeta):
 
     @property
     def registry(self):
-        return self.app[JSONAPI]
+        return self.app[JSONAPI]['registry']
 
     # ID
     # --

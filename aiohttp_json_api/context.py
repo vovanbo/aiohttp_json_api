@@ -38,7 +38,7 @@ class RequestContext(object):
 
     @property
     def schema(self):
-        registry = self.request.app[JSONAPI]
+        registry = self.request.app[JSONAPI]['registry']
         try:
             return registry.get_schema(self.request.match_info.get('type'))
         except KeyError:
