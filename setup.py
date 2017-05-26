@@ -16,6 +16,7 @@ requirements = [
     'inflection',
     'jsonpointer',
     'python-dateutil',
+    'trafaret',
 ]
 
 test_requirements = [

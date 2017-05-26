@@ -14,4 +14,5 @@ jsonpointer==1.10
 multidict==2.1.5          # via aiohttp, yarl
 python-dateutil==2.6.0
 six==1.10.0               # via python-dateutil
+trafaret==0.10.0
 yarl==0.10.2              # via aiohttp
