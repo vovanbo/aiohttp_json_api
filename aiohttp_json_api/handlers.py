@@ -43,7 +43,10 @@ async def get_collection(request: web.Request):
         raise HTTPNotFound()
 
     async with request.app['db'].acquire() as conn:
-        resources = await schema.query_collection(conn, context)
+        resources = await schema.query_collection(
+            connection=conn,
+            context=context
+        )
 
         compound_documents = None
         if context.include and resources:
@@ -80,7 +83,7 @@ async def post_resource(request: web.Request):
     async with request.app['db'].acquire() as conn:
         async with conn.begin():
             resource = await schema.create_resource(
-                conn,
+                connection=conn,
                 data=data.get('data', {}),
                 sp=JSONPointer('/data'),
                 context=context
@@ -116,7 +119,9 @@ async def get_resource(request: web.Request):
 
     async with request.app['db'].acquire() as conn:
         resource = await schema.query_resource(
-            conn, resource_id, context
+            connection=conn,
+            id_=resource_id,
+            context=context
         )
 
         compound_documents = None
@@ -152,9 +157,11 @@ async def patch_resource(request: web.Request):
     async with request.app['db'].acquire() as conn:
         async with conn.begin():
             resource = await schema.update_resource(
+                connection=conn,
                 resource=resource_id,
                 data=data.get('data', {}),
-                sp=JSONPointer('/data')
+                sp=JSONPointer('/data'),
+                context=context,
             )
 
             result = await render_document(resource, None, context)
@@ -179,7 +186,11 @@ async def delete_resource(request: web.Request):
 
     async with request.app['db'].acquire() as conn:
         async with conn.begin():
-            await schema.delete_resource(conn, resource_id, context)
+            await schema.delete_resource(
+                connection=conn,
+                resource=resource_id,
+                context=context
+            )
 
     return web.HTTPNoContent()
 
@@ -203,7 +214,9 @@ async def get_relationship(request: web.Request):
             pagination = pagination_type.from_request(request)
 
     async with request.app['db'].acquire() as conn:
-        resource = await schema.query_resource(conn, resource_id, context)
+        resource = await schema.query_resource(
+            connection=conn, id_=resource_id, context=context
+        )
         relation = await relation_field.query(schema, conn, resource, context)
         result = relation_field.encode(schema, relation)
 
@@ -239,7 +252,7 @@ async def post_relationship(request: web.Request):
     async with request.app['db'].acquire() as conn:
         async with conn.begin():
             resource = await schema.add_relationship(
-                conn,
+                connection=conn,
                 relation_name=relation_name,
                 resource=resource_id,
                 data=data,
@@ -278,7 +291,7 @@ async def patch_relationship(request: web.Request):
     async with request.app['db'].acquire() as conn:
         async with conn.begin():
             resource = await schema.update_relationship(
-                conn,
+                connection=conn,
                 relation_name=relation_name,
                 resource=resource_id,
                 data=data,
@@ -311,11 +324,12 @@ async def delete_relationship(request: web.Request):
     async with request.app['db'].acquire() as conn:
         async with conn.begin():
             await schema.remove_relationship(
-                conn,
+                connection=conn,
                 relation_name=relation_name,
                 resource=resource_id,
                 data=data,
-                sp=JSONPointer('')
+                sp=JSONPointer(''),
+                context=context
             )
 
     return web.HTTPNoContent()
@@ -348,14 +362,14 @@ async def get_related(request: web.Request):
                 pagination = pagination_type.from_request(request)
 
             relatives = await schema.query_relatives(
-                conn,
+                connection=conn,
                 relation_name=relation_name,
                 resource=resource_id,
                 context=context
             )
         else:
             relatives = await schema.query_relative(
-                conn,
+                connection=conn,
                 relation_name=relation_name,
                 resource=resource_id,
                 context=context
