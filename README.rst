@@ -1,6 +1,6 @@
-===============================
-aiohttp JSON API
-===============================
+======================================
+`JSON API`_ implementation for aiohttp
+======================================
 
 
 .. image:: https://img.shields.io/pypi/v/aiohttp_json_api.svg
@@ -18,7 +18,7 @@ aiohttp JSON API
      :alt: Updates
 
 
-JSON API driven by aiohttp
+`JSON API`_ implementation based on aiohttp web server
 
 
 * Free software: MIT license
@@ -31,10 +31,10 @@ Features
 * TODO
 
 Credits
----------
+-------
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
-
+.. _JSON API: http://jsonapi.org
