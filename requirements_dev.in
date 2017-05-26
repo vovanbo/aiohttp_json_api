@@ -1,0 +1,9 @@
+-r requirements.txt
+coverage
+cryptography
+pip-tools
+punch.py
+PyYAML
+pytest
+Sphinx
+tox
