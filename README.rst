@@ -1,6 +1,6 @@
-======================================
-`JSON API`_ implementation for aiohttp
-======================================
+=======================================
+`JSON API`_ implementation for aiohttp_
+=======================================
 
 
 .. image:: https://img.shields.io/pypi/v/aiohttp_json_api.svg
@@ -18,7 +18,15 @@
      :alt: Updates
 
 
-`JSON API`_ implementation based on aiohttp web server
+`JSON API`_ implementation based on aiohttp_ web server.
+
+This project heavily inspired by py-jsonapi_ (author is `Benedikt Schmitt`_).
+Some parts of this project is improved and refactored dev-schema_ branch of **py-jsonapi**.
+At beginning of my project dev-schema_ branch was a great, but not working attempt to
+implement JSON API via schema controllers.
+
+Some of base entities of **py-jsonapi** was replaced with **aiohttp** server's objects,
+some of it was devided into new separate entities (e.g. ``RequestContext``, ``Document`` etc).
 
 
 * Free software: MIT license
@@ -38,3 +46,6 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
 .. _JSON API: http://jsonapi.org
+.. _aiohttp: http://aiohttp.readthedocs.io/en/stable/
+.. _dev-schema: https://github.com/benediktschmitt/py-jsonapi/tree/dev-schema
+.. _`Benedikt Schmitt`: https://github.com/benediktschmitt
