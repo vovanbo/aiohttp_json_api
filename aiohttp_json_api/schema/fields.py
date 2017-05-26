@@ -46,7 +46,7 @@ import trafaret as t
 from trafaret.contrib import rfc_3339
 from yarl import URL
 
-from core.trafaret.decimal import DecimalTrafaret
+from .trafarets import DecimalTrafaret
 from .base_fields import Attribute
 from ..errors import InvalidType, InvalidValue
 
