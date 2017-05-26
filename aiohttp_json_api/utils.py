@@ -48,7 +48,7 @@ def jsonapi_response(data=SENTINEL, *, text=None, body=None,
     )
 
 
-async def get_compound_documents(connection, resources, context):
+async def get_compound_documents(resources, context, **kwargs):
     """
     .. seealso::
 
@@ -56,8 +56,6 @@ async def get_compound_documents(connection, resources, context):
 
     Fetches the relationship paths *paths*.
 
-    :param SAConnection connection:
-        DB connection instance
     :param typing.Sequence[Model] resources:
         A list with the primary data (resources) of the compound
         response document.
@@ -89,9 +87,9 @@ async def get_compound_documents(connection, resources, context):
         if relation_name in relationships[schema.type]:
             return
 
-        relatives = await schema.fetch_include(connection, relation_name,
+        relatives = await schema.fetch_include(relation_name,
                                                collection, context,
-                                               rest_path=rest_path)
+                                               rest_path=rest_path, **kwargs)
 
         if any(relatives):
             for relative in relatives:
@@ -105,19 +103,6 @@ async def get_compound_documents(connection, resources, context):
     collection = resources if is_collection(resources) else (resources,)
     for path in context.include:
         await fetch_recursively(collection, path)
-
-    # Populate non-populated resources
-    # for resource_type, resources_ids in groupby(compound_documents,
-    #                                             key=lambda rid: rid.type):
-    #     schema = registry.get_schema(resource_type)
-    #     resources_ids = tuple(
-    #         r.id for r in resources_ids
-    #         if not compound_documents[r].is_populated
-    #     )
-    #     if resources_ids:
-    #         populated_resources = await schema.populate(connection,
-    #                                                     resources_ids)
-    #         compound_documents.update(populated_resources)
 
     return compound_documents, relationships
 

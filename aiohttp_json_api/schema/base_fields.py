@@ -503,8 +503,7 @@ class Relationship(BaseField, LinksObjectMixin):
         self.finclude = f
         return f
 
-    async def default_include(self, schema, connection, resources,
-                              context, **kwargs):
+    async def default_include(self, schema, resources, context, **kwargs):
         """Used if no *includer* has been defined. Can be overridden."""
         if self.mapped_key:
             compound_documents = []
@@ -515,7 +514,7 @@ class Relationship(BaseField, LinksObjectMixin):
             return compound_documents
         raise RuntimeError('No includer and mapped_key have been defined.')
 
-    async def include(self, schema, connection, resources, context, **kwargs):
+    async def include(self, schema, resources, context, **kwargs):
         """
         Returns the related resources.
 
@@ -525,7 +524,7 @@ class Relationship(BaseField, LinksObjectMixin):
         # NOTE: Don't change this method without checking if the *asyncio*
         #       library still works.
         f = self.finclude or self.default_include
-        return await f(schema, connection, resources, context, **kwargs)
+        return await f(schema, resources, context, **kwargs)
 
     def query_(self, f):
         """
@@ -536,19 +535,18 @@ class Relationship(BaseField, LinksObjectMixin):
         self.fquery = f
         return self
 
-    async def default_query(self, schema, connection, resource,
-                            context, **kwargs):
+    async def default_query(self, schema, resource, context, **kwargs):
         """Used of no *query* function has been defined. Can be overridden."""
         if self.mapped_key:
             return getattr(resource, self.mapped_key)
         raise RuntimeError('No query method and mapped_key have been defined.')
 
-    async def query(self, schema, connection, resource, context, **kwargs):
+    async def query(self, schema, resource, context, **kwargs):
         """
         Queries the related resources.
         """
         f = self.fquery or self.default_query
-        return await f(schema, connection, resource, context, **kwargs)
+        return await f(schema, resource, context, **kwargs)
 
     def validate_resource_identifier(self, schema, data, sp):
         """

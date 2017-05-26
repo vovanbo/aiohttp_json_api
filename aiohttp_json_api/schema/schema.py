@@ -603,7 +603,7 @@ class Schema(metaclass=SchemaMeta):
     # CRUD (resource)
     # ---------------
 
-    async def create_resource(self, connection, data, sp, context, **kwargs):
+    async def create_resource(self, data, sp, context, **kwargs):
         """
         .. seealso::
 
@@ -639,8 +639,7 @@ class Schema(metaclass=SchemaMeta):
         # resource = self.resource_class(**initial_data)
         return initial_data
 
-    async def update_resource(self, connection, resource, data, sp, context,
-                              **kwargs):
+    async def update_resource(self, resource, data, sp, context, **kwargs):
         """
         .. seealso::
 
@@ -672,14 +671,14 @@ class Schema(metaclass=SchemaMeta):
         self.validate_resource_post_decode(memo, context)
 
         if not isinstance(resource, self.resource_class):
-            resource = await self.query_resource(connection, resource, context)
+            resource = await self.query_resource(resource, context, **kwargs)
 
         for key, (data, sp) in memo.items():
             field = self._fields_by_key[key]
             await field.set(self, resource, data, sp, **kwargs)
         return None
 
-    async def delete_resource(self, connection, resource, context, **kwargs):
+    async def delete_resource(self, resource, context, **kwargs):
         """
         .. seealso::
 
@@ -695,7 +694,7 @@ class Schema(metaclass=SchemaMeta):
     # CRUD (relationships)
     # --------------------
 
-    async def update_relationship(self, connection, relation_name, resource,
+    async def update_relationship(self, relation_name, resource,
                                   data, sp, context, **kwargs):
         """
         .. seealso::
@@ -720,12 +719,12 @@ class Schema(metaclass=SchemaMeta):
         # self._validate_field_post_decode(field, data, sp, context)
 
         if not isinstance(resource, self.resource_class):
-            resource = await self.query_resource(connection, resource, context)
+            resource = await self.query_resource(resource, context, **kwargs)
 
         await field.set(self, resource, decoded, sp, **kwargs)
         return resource
 
-    async def add_relationship(self, connection, relation_name, resource,
+    async def add_relationship(self, relation_name, resource,
                                data, sp, context, **kwargs):
         """
         .. seealso::
@@ -752,12 +751,12 @@ class Schema(metaclass=SchemaMeta):
         # self._validate_field_post_decode(field, data, sp, context)
 
         if not isinstance(resource, self.resource_class):
-            resource = await self.query_resource(connection, resource, context)
+            resource = await self.query_resource(resource, context, **kwargs)
 
-        await field.add(self, resource, decoded, sp)
+        await field.add(self, resource, decoded, sp, **kwargs)
         return resource
 
-    async def remove_relationship(self, connection, relation_name, resource,
+    async def remove_relationship(self, relation_name, resource,
                                   data, sp, context, **kwargs):
         """
         .. seealso::
@@ -784,14 +783,14 @@ class Schema(metaclass=SchemaMeta):
         # self._validate_field_post_decode(field, data, sp, context)
 
         if not isinstance(resource, self.resource_class):
-            resource = await self.query_resource(connection, resource, context)
+            resource = await self.query_resource(resource, context, **kwargs)
 
-        await field.remove(self, resource, decoded, sp)
+        await field.remove(self, resource, decoded, sp, **kwargs)
 
     # Querying
     # --------
 
-    async def query_collection(self, connection, context, cte=None, **kwargs):
+    async def query_collection(self, context, **kwargs):
         """
         .. seealso::
 
@@ -805,7 +804,7 @@ class Schema(metaclass=SchemaMeta):
         """
         raise NotImplementedError()
 
-    async def query_resource(self, connection, id_, context, **kwargs):
+    async def query_resource(self, id_, context, **kwargs):
         """
         .. seealso::
 
@@ -823,8 +822,7 @@ class Schema(metaclass=SchemaMeta):
         """
         raise NotImplementedError()
 
-    async def query_relative(self, connection, relation_name, resource,
-                             context, **kwargs):
+    async def query_relative(self, relation_name, resource, context, **kwargs):
         """
         Controller for the *related* endpoint of the to-one relationship with
         then name *relname*.
@@ -842,12 +840,10 @@ class Schema(metaclass=SchemaMeta):
         field = self._relationships[relation_name]
         assert field.to_one
 
-        relative = await field.query(self, connection, resource,
-                                     context, **kwargs)
+        relative = await field.query(self, resource, context, **kwargs)
         return relative
 
-    async def query_relatives(self, connection, relation_name,
-                              resource, context, **kwargs):
+    async def query_relatives(self, relation_name, resource, context, **kwargs):
         """
         Controller for the *related* endpoint of the to-many relationship with
         then name *relname*.
@@ -865,12 +861,10 @@ class Schema(metaclass=SchemaMeta):
         field = self._relationships[relation_name]
         assert field.to_many
 
-        relatives = await field.query(self, connection, resource,
-                                      context, **kwargs)
+        relatives = await field.query(self, resource, context, **kwargs)
         return relatives
 
-    async def fetch_include(self, connection, relation_name,
-                            resources, context, *,
+    async def fetch_include(self, relation_name, resources, context, *,
                             rest_path=None, **kwargs):
         """
         .. seealso::
@@ -901,5 +895,5 @@ class Schema(metaclass=SchemaMeta):
                 detail=f"Wrong relation name '{relation_name}'.",
                 source_parameter='include'
             )
-        return await field.include(self, connection, resources, context,
+        return await field.include(self, resources, context,
                                    rest_path=rest_path, **kwargs)

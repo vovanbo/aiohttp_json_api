@@ -42,20 +42,16 @@ async def get_collection(request: web.Request):
     if schema is None:
         raise HTTPNotFound()
 
-    async with request.app['db'].acquire() as conn:
-        resources = await schema.query_collection(
-            connection=conn,
-            context=context
-        )
+    resources = await schema.query_collection(context=context)
 
-        compound_documents = None
-        if context.include and resources:
-            compound_documents, relationships = \
-                await get_compound_documents(conn, resources.values(), context)
+    compound_documents = None
+    if context.include and resources:
+        compound_documents, relationships = \
+            await get_compound_documents(resources.values(), context)
 
-        result = await render_document(resources.values(),
-                                       compound_documents,
-                                       context)
+    result = await render_document(resources.values(),
+                                   compound_documents,
+                                   context)
 
     return jsonapi_response(result)
 
@@ -80,21 +76,18 @@ async def post_resource(request: web.Request):
         detail = 'Must be an object.'
         raise InvalidType(detail=detail, source_pointer='')
 
-    async with request.app['db'].acquire() as conn:
-        async with conn.begin():
-            resource = await schema.create_resource(
-                connection=conn,
-                data=data.get('data', {}),
-                sp=JSONPointer('/data'),
-                context=context
-            )
+    resource = await schema.create_resource(
+        data=data.get('data', {}),
+        sp=JSONPointer('/data'),
+        context=context
+    )
 
-            result = await render_document(resource, None, context)
-            location = request.url.join(
-                request.app.router['jsonapi.resource'].url_for(
-                    **registry.ensure_identifier(resource, asdict=True)
-                )
-            )
+    result = await render_document(resource, None, context)
+    location = request.url.join(
+        request.app.router['jsonapi.resource'].url_for(
+            **registry.ensure_identifier(resource, asdict=True)
+        )
+    )
 
     return jsonapi_response(result,
                             status=HTTPStatus.CREATED.value,
@@ -117,19 +110,14 @@ async def get_resource(request: web.Request):
     resource_id = request.match_info.get('id')
     await validate_uri_resource_id(schema, resource_id, context)
 
-    async with request.app['db'].acquire() as conn:
-        resource = await schema.query_resource(
-            connection=conn,
-            id_=resource_id,
-            context=context
-        )
+    resource = await schema.query_resource(id_=resource_id, context=context)
 
-        compound_documents = None
-        if context.include and resource:
-            compound_documents, relationships = \
-                await get_compound_documents(conn, resource, context)
+    compound_documents = None
+    if context.include and resource:
+        compound_documents, relationships = \
+            await get_compound_documents(resource, context)
 
-        result = await render_document(resource, compound_documents, context)
+    result = await render_document(resource, compound_documents, context)
 
     return jsonapi_response(result)
 
@@ -154,18 +142,14 @@ async def patch_resource(request: web.Request):
         detail = 'Must be an object.'
         raise InvalidType(detail=detail, source_pointer='')
 
-    async with request.app['db'].acquire() as conn:
-        async with conn.begin():
-            resource = await schema.update_resource(
-                connection=conn,
-                resource=resource_id,
-                data=data.get('data', {}),
-                sp=JSONPointer('/data'),
-                context=context,
-            )
+    resource = await schema.update_resource(
+        resource=resource_id,
+        data=data.get('data', {}),
+        sp=JSONPointer('/data'),
+        context=context,
+    )
 
-            result = await render_document(resource, None, context)
-
+    result = await render_document(resource, None, context)
     return jsonapi_response(result)
 
 
@@ -184,14 +168,7 @@ async def delete_resource(request: web.Request):
     resource_id = request.match_info.get('id')
     await validate_uri_resource_id(schema, resource_id, context)
 
-    async with request.app['db'].acquire() as conn:
-        async with conn.begin():
-            await schema.delete_resource(
-                connection=conn,
-                resource=resource_id,
-                context=context
-            )
-
+    await schema.delete_resource(resource=resource_id, context=context)
     return web.HTTPNoContent()
 
 
@@ -213,13 +190,9 @@ async def get_relationship(request: web.Request):
         if pagination_type:
             pagination = pagination_type.from_request(request)
 
-    async with request.app['db'].acquire() as conn:
-        resource = await schema.query_resource(
-            connection=conn, id_=resource_id, context=context
-        )
-        relation = await relation_field.query(schema, conn, resource, context)
-        result = relation_field.encode(schema, relation)
-
+    resource = await schema.query_resource(id_=resource_id, context=context)
+    relation = await relation_field.query(schema, resource, context)
+    result = relation_field.encode(schema, relation)
     return jsonapi_response(result)
 
 
@@ -249,17 +222,13 @@ async def post_relationship(request: web.Request):
 
     data = await get_data_from_request(request)
 
-    async with request.app['db'].acquire() as conn:
-        async with conn.begin():
-            resource = await schema.add_relationship(
-                connection=conn,
-                relation_name=relation_name,
-                resource=resource_id,
-                data=data,
-                sp=JSONPointer('')
-            )
-            result = relation_field.encode(schema, resource)
-
+    resource = await schema.add_relationship(
+        relation_name=relation_name,
+        resource=resource_id,
+        data=data,
+        sp=JSONPointer('')
+    )
+    result = relation_field.encode(schema, resource)
     return jsonapi_response(result)
 
 
@@ -288,18 +257,14 @@ async def patch_relationship(request: web.Request):
             pagination = pagination_type.from_request(request)
 
     data = await get_data_from_request(request)
-    async with request.app['db'].acquire() as conn:
-        async with conn.begin():
-            resource = await schema.update_relationship(
-                connection=conn,
-                relation_name=relation_name,
-                resource=resource_id,
-                data=data,
-                sp=JSONPointer('')
-            )
+    resource = await schema.update_relationship(
+        relation_name=relation_name,
+        resource=resource_id,
+        data=data,
+        sp=JSONPointer('')
+    )
 
-        result = relation_field.encode(schema, resource)
-
+    result = relation_field.encode(schema, resource)
     return jsonapi_response(result)
 
 
@@ -321,17 +286,13 @@ async def delete_relationship(request: web.Request):
     await validate_uri_resource_id(schema, resource_id, context)
 
     data = await get_data_from_request(request)
-    async with request.app['db'].acquire() as conn:
-        async with conn.begin():
-            await schema.remove_relationship(
-                connection=conn,
-                relation_name=relation_name,
-                resource=resource_id,
-                data=data,
-                sp=JSONPointer(''),
-                context=context
-            )
-
+    await schema.remove_relationship(
+        relation_name=relation_name,
+        resource=resource_id,
+        data=data,
+        sp=JSONPointer(''),
+        context=context
+    )
     return web.HTTPNoContent()
 
 
@@ -355,31 +316,28 @@ async def get_related(request: web.Request):
     resource_id = request.match_info.get('id')
     await validate_uri_resource_id(schema, resource_id, context)
 
-    async with request.app['db'].acquire() as conn:
-        if relation_field.to_many:
-            pagination_type = relation_field.pagination
-            if pagination_type:
-                pagination = pagination_type.from_request(request)
+    if relation_field.to_many:
+        pagination_type = relation_field.pagination
+        if pagination_type:
+            pagination = pagination_type.from_request(request)
 
-            relatives = await schema.query_relatives(
-                connection=conn,
-                relation_name=relation_name,
-                resource=resource_id,
-                context=context
-            )
-        else:
-            relatives = await schema.query_relative(
-                connection=conn,
-                relation_name=relation_name,
-                resource=resource_id,
-                context=context
-            )
+        relatives = await schema.query_relatives(
+            relation_name=relation_name,
+            resource=resource_id,
+            context=context
+        )
+    else:
+        relatives = await schema.query_relative(
+            relation_name=relation_name,
+            resource=resource_id,
+            context=context
+        )
 
-        if context.include and relatives:
-            compound_documents, relationships = \
-                await get_compound_documents(conn, relatives, context)
+    if context.include and relatives:
+        compound_documents, relationships = \
+            await get_compound_documents(relatives, context)
 
-        result = await render_document(relatives, compound_documents, context,
-                                       pagination=pagination)
+    result = await render_document(relatives, compound_documents, context,
+                                   pagination=pagination)
 
     return jsonapi_response(result)
