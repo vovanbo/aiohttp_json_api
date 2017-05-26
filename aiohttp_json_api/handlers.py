@@ -44,14 +44,11 @@ async def get_collection(request: web.Request):
 
     async with request.app['db'].acquire() as conn:
         resources = await schema.query_collection(conn, context)
-        context.store.resources = resources
 
         compound_documents = None
         if context.include and resources:
             compound_documents, relationships = \
                 await get_compound_documents(conn, resources.values(), context)
-            context.store.compound_documents = compound_documents
-            context.store.relationships = relationships
 
         result = await render_document(resources.values(),
                                        compound_documents,
@@ -126,8 +123,6 @@ async def get_resource(request: web.Request):
         if context.include and resource:
             compound_documents, relationships = \
                 await get_compound_documents(conn, resource, context)
-            context.store.compound_documents = compound_documents
-            context.store.relationships = relationships
 
         result = await render_document(resource, compound_documents, context)
 
@@ -369,8 +364,6 @@ async def get_related(request: web.Request):
         if context.include and relatives:
             compound_documents, relationships = \
                 await get_compound_documents(conn, relatives, context)
-            context.store.compound_documents = compound_documents
-            context.store.relationships = relationships
 
         result = await render_document(relatives, compound_documents, context,
                                        pagination=pagination)

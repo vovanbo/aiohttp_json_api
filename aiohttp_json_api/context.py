@@ -1,4 +1,3 @@
-import logging
 import json
 import re
 
@@ -7,10 +6,8 @@ from boltons.cacheutils import cachedproperty
 
 from .const import JSONAPI
 from .errors import HTTPBadRequest
+from .log import logger
 from .schema.common import Event
-from .store import Store
-
-logger = logging.getLogger(__name__)
 
 
 class RequestContext(object):
@@ -21,7 +18,6 @@ class RequestContext(object):
     def __init__(self, request: web.Request):
         self._pagination = None
         self.request = request
-        self.store = Store()
 
     @property
     def event(self):
