@@ -1,8 +1,11 @@
+import inspect
+
+import collections
 from boltons.typeutils import issubclass
 
 from .context import RequestContext
 from .const import JSONAPI
-from .handlers import *
+from . import handlers as default_handlers
 from .log import logger
 from .middleware import jsonapi_middleware
 from .registry import Registry
@@ -10,11 +13,7 @@ from .schema.schema import Schema
 
 
 def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
-                  api_version=None, meta=None, context_class=None):
-    top_level_jsonapi = {
-        'version': version,
-        'meta': meta or {'api-version': api_version}
-    }
+                  meta=None, context_class=None, custom_handlers=None):
     schema_by_type = {}
     schema_by_resource = {}
 
@@ -36,10 +35,15 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
         assert issubclass(context_class, RequestContext), \
             f'Subclass of RequestContext is required. Got: {context_class}'
 
-    app[JSONAPI]['context_class'] = context_class or RequestContext
-    app[JSONAPI]['jsonapi'] = top_level_jsonapi
-    app[JSONAPI]['registry'] = Registry(schema_by_type=schema_by_type,
-                                        schema_by_resource=schema_by_resource)
+    app[JSONAPI] = {
+        'context_class': context_class or RequestContext,
+        'jsonapi': {
+            'version': version,
+            'meta': meta
+        },
+        'registry': Registry(schema_by_type=schema_by_type,
+                             schema_by_resource=schema_by_resource)
+    }
 
     collection_resource = app.router.add_resource(
         f'{base_path}/{{type}}',
@@ -58,16 +62,30 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
         name='jsonapi.related'
     )
 
-    collection_resource.add_route('GET', get_collection)
-    collection_resource.add_route('POST', post_resource)
-    resource_resource.add_route('GET', get_resource)
-    resource_resource.add_route('PATCH', patch_resource)
-    resource_resource.add_route('DELETE', delete_resource)
-    relationships_resource.add_route('GET', get_relationship)
-    relationships_resource.add_route('POST', post_relationship)
-    relationships_resource.add_route('PATCH', patch_relationship)
-    relationships_resource.add_route('DELETE', delete_relationship)
-    related_resource.add_route('GET', get_related)
+    handlers = {
+        i[0]: i[1]
+        for i in inspect.getmembers(default_handlers,
+                                    inspect.iscoroutinefunction)
+        if i[0] in default_handlers.__all__
+    }
+    if custom_handlers is not None:
+        if isinstance(custom_handlers, collections.MutableMapping):
+            handlers.update(custom_handlers)
+        elif isinstance(custom_handlers, collections.Sequence):
+            for custom_handler in custom_handlers:
+                if inspect.iscoroutinefunction(custom_handler):
+                    handlers[custom_handler.__name__] = custom_handler
+
+    collection_resource.add_route('GET', handlers['get_collection'])
+    collection_resource.add_route('POST', handlers['post_resource'])
+    resource_resource.add_route('GET', handlers['get_resource'])
+    resource_resource.add_route('PATCH', handlers['patch_resource'])
+    resource_resource.add_route('DELETE', handlers['delete_resource'])
+    relationships_resource.add_route('GET', handlers['get_relationship'])
+    relationships_resource.add_route('POST', handlers['post_relationship'])
+    relationships_resource.add_route('PATCH', handlers['patch_relationship'])
+    relationships_resource.add_route('DELETE', handlers['delete_relationship'])
+    related_resource.add_route('GET', handlers['get_related'])
 
     app.middlewares.append(jsonapi_middleware)
 
