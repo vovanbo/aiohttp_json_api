@@ -800,7 +800,7 @@ class Schema(metaclass=SchemaMeta):
         Fetches a subset of the collection represented by this schema.
         **Must be overridden.**
 
-        :arg ~core.jsonapi.context.RequestContext context:
+        :arg ~aiohttp_json_api.context.RequestContext context:
             Request context object.
         """
         raise NotImplementedError()

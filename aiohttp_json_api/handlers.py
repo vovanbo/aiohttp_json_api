@@ -31,7 +31,7 @@ __all__ = (
 
 async def get_collection(request: web.Request):
     """
-    Uses the :meth:`~core.jsonapi.schema.schema.Schema.query_collection`
+    Uses the :meth:`~aiohttp_json_api.schema.schema.Schema.query_collection`
     method of the schema to query the resources in the collection.
 
     :seealso: http://jsonapi.org/format/#fetching
