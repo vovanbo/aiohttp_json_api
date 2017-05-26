@@ -18,7 +18,8 @@
      :alt: Updates
 
 
-`JSON API`_ implementation based on aiohttp_ web server.
+Introduction
+------------
 
 This project heavily inspired by py-jsonapi_ (author is `Benedikt Schmitt`_).
 Some parts of this project is improved and refactored dev-schema_ branch of **py-jsonapi**.
