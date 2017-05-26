@@ -4,42 +4,42 @@ from http import HTTPStatus
 import inflection
 
 __all__ = (
-    "Error",
-    "ErrorList",
+    'Error',
+    'ErrorList',
     # 4xx errors
-    "HTTPBadRequest",
-    "HTTPUnauthorized",
-    "HTTPForbidden",
-    "HTTPNotFound",
-    "HTTPMethodNotAllowed",
-    "HTTPNotAcceptable",
-    "HTTPConflict",
-    "HTTPGone",
-    "HTTPPreConditionFailed",
-    "HTTPUnsupportedMediaType",
-    "HTTPUnprocessableEntity",
-    "HTTPLocked",
-    "HTTPFailedDependency",
-    "HTTPTooManyRequests",
+    'HTTPBadRequest',
+    'HTTPUnauthorized',
+    'HTTPForbidden',
+    'HTTPNotFound',
+    'HTTPMethodNotAllowed',
+    'HTTPNotAcceptable',
+    'HTTPConflict',
+    'HTTPGone',
+    'HTTPPreConditionFailed',
+    'HTTPUnsupportedMediaType',
+    'HTTPUnprocessableEntity',
+    'HTTPLocked',
+    'HTTPFailedDependency',
+    'HTTPTooManyRequests',
 
     # 5xx errors
-    "HTTPInternalServerError",
-    "HTTPNotImplemented",
-    "HTTPBadGateway",
-    "HTTPServiceUnavailable",
-    "HTTPGatewayTimeout",
-    "HTTPVariantAlsoNegotiates",
-    "HTTPInsufficientStorage",
-    "HTTPNotExtended",
+    'HTTPInternalServerError',
+    'HTTPNotImplemented',
+    'HTTPBadGateway',
+    'HTTPServiceUnavailable',
+    'HTTPGatewayTimeout',
+    'HTTPVariantAlsoNegotiates',
+    'HTTPInsufficientStorage',
+    'HTTPNotExtended',
 
     # JSONAPI errors
-    "ValidationError",
-    "InvalidType",
-    "InvalidValue",
-    "UnresolvableIncludePath",
-    "UnsortableField",
-    "UnsortableField",
-    "ResourceNotFound",
+    'ValidationError',
+    'InvalidType',
+    'InvalidValue',
+    'UnresolvableIncludePath',
+    'UnsortableField',
+    'UnsortableField',
+    'ResourceNotFound',
 )
 
 
@@ -77,8 +77,8 @@ class Error(Exception):
     """
     status = HTTPStatus.INTERNAL_SERVER_ERROR
 
-    def __init__(self, *, id_=None, about="",
-                 code=None, title=None, detail="", source_parameter=None,
+    def __init__(self, *, id_=None, about='',
+                 code=None, title=None, detail='', source_parameter=None,
                  source_pointer=None, meta=None):
         self.id = id_
         self.about = about
@@ -102,25 +102,25 @@ class Error(Exception):
         """
         d = dict()
         if self.id is not None:
-            d["id"] = str(self.id)
-        d["status"] = self.status.value
-        d["title"] = self.title
+            d['id'] = str(self.id)
+        d['status'] = self.status.value
+        d['title'] = self.title
         if self.about:
-            d["links"] = dict()
-            d["links"]["about"] = self.about
+            d['links'] = dict()
+            d['links']['about'] = self.about
         if self.code:
-            d["code"] = self.code
+            d['code'] = self.code
         if self.detail:
-            d["detail"] = self.detail
+            d['detail'] = self.detail
         if self.source_pointer or self.source_parameter:
-            d["source"] = dict()
+            d['source'] = dict()
             if self.source_pointer:
-                d["source"]["pointer"] = \
+                d['source']['pointer'] = \
                     inflection.dasherize(self.source_pointer.path)
             if self.source_parameter:
-                d["source"]["parameter"] = self.source_parameter
+                d['source']['parameter'] = self.source_parameter
         if self.meta:
-            d["meta"] = self.meta
+            d['meta'] = self.meta
         return d
 
 
@@ -168,7 +168,7 @@ class ErrorList(Exception):
         :arg Error error:
         """
         if not isinstance(error, Error):
-            raise TypeError("*error* must be of type Error")
+            raise TypeError('*error* must be of type Error')
         self.errors.append(error)
 
     def extend(self, errors):
@@ -184,7 +184,7 @@ class ErrorList(Exception):
             self.errors.extend(errors)
         else:
             raise TypeError(
-                "*errors* must be of type ErrorList or a sequence of Error."
+                '*errors* must be of type ErrorList or a sequence of Error.'
             )
 
     @property
@@ -339,7 +339,8 @@ class MissingField(ValidationError):
 
     def __init__(self, type, field, **kwargs):
         kwargs.setdefault(
-            "detail", "The field '{}.{}' is required.".format(type, field)
+            'detail',
+            f"The field '{type}.{field}' is required."
         )
         super(MissingField, self).__init__(**kwargs)
 
@@ -358,9 +359,10 @@ class UnresolvableIncludePath(HTTPBadRequest):
             path = ".".join(path)
 
         kwargs.setdefault(
-            "detail", "The include path '{}' does not exist.".format(path)
+            'detail',
+            f"The include path '{path}' does not exist."
         )
-        kwargs.setdefault("source_parameter", "include")
+        kwargs.setdefault('source_parameter', 'include')
         super(UnresolvableIncludePath, self).__init__(**kwargs)
 
 
@@ -373,10 +375,10 @@ class UnsortableField(HTTPBadRequest):
 
     def __init__(self, type, field, **kwargs):
         kwargs.setdefault(
-            "detail",
-            "The field '{}.{}' can not be used for sorting.".format(type, field)
+            'detail',
+            f"The field '{type}.{field}' can not be used for sorting."
         )
-        kwargs.setdefault("source_parameter", "sort")
+        kwargs.setdefault('source_parameter', 'sort')
         super(UnsortableField, self).__init__(**kwargs)
 
 
@@ -394,7 +396,7 @@ class UnfilterableField(HTTPBadRequest):
             f"The field '{type}.{field}' does not support "
             f"the '{filtername}' filter."
         )
-        kwargs.setdefault("source_parameter", f"filter[{field}]")
+        kwargs.setdefault('source_parameter', f'filter[{field}]')
         super(UnfilterableField, self).__init__(**kwargs)
 
 
