@@ -36,7 +36,6 @@ import collections
 import datetime
 import decimal
 import fractions
-import logging
 import typing
 import uuid
 from enum import Enum
@@ -70,8 +69,6 @@ __all__ = [
     "Str",
     "Bool"
 ]
-
-logger = logging.getLogger(__file__)
 
 
 class String(Attribute):

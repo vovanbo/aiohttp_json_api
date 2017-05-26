@@ -1,14 +1,11 @@
-import logging
-
 from boltons.typeutils import issubclass
 
 from .const import JSONAPI
 from .handlers import *
+from .log import logger
 from .middleware import jsonapi_middleware
 from .registry import Registry
 from .schema.schema import Schema
-
-logger = logging.getLogger(__name__)
 
 
 def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',

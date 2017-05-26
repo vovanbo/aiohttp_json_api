@@ -39,7 +39,6 @@ All helpers have a similar interface. Here is an example for the
     }
 """
 
-import logging
 import re
 import typing
 
@@ -48,6 +47,7 @@ import yarl
 from aiohttp import web
 
 from .errors import HTTPBadRequest
+from .log import logger
 from .utils import Symbol
 
 __all__ = (
@@ -57,8 +57,6 @@ __all__ = (
     'NumberSize',
     'Cursor'
 )
-
-logger = logging.getLogger(__file__)
 
 #: The default number of resources on a page.
 DEFAULT_LIMIT = 25

@@ -1,16 +1,14 @@
 import collections
-import logging
 
 from .base_fields import Relationship
 from ..errors import InvalidType
+from ..log import logger
 from ..utils import Document
 
 __all__ = (
     'ToOne',
     'ToMany',
 )
-
-logger = logging.getLogger(__file__)
 
 
 class ToOne(Relationship):

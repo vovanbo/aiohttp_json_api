@@ -46,11 +46,7 @@ __all__ = [
     "queries"
 ]
 
-import logging
-
 from .common import Step, Event
-
-logger = logging.getLogger(__file__)
 
 
 def gets(field):

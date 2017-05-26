@@ -57,7 +57,6 @@ You should only work with the following fields directly:
 """
 
 import collections
-import logging
 import typing
 
 from .common import Event, Step
@@ -68,8 +67,6 @@ __all__ = (
     'Attribute',
     'Relationship',
 )
-
-logger = logging.getLogger(__file__)
 
 
 class BaseField(object):

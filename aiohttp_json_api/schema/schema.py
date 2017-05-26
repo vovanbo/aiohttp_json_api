@@ -10,7 +10,6 @@ validation and update operations based on
 """
 import copy
 import collections
-import logging
 import typing
 from functools import partial
 
@@ -32,7 +31,6 @@ __all__ = (
     'SchemaMeta',
     'Schema'
 )
-logger = logging.getLogger(__file__)
 
 
 class SchemaMeta(type):
