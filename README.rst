@@ -29,9 +29,19 @@ implement JSON API via schema controllers.
 Some of base entities of **py-jsonapi** was replaced with **aiohttp** server's objects,
 some of it was devided into new separate entities (e.g. ``RequestContext``, ``Document`` etc).
 
-
 * Free software: MIT license
 * Documentation: https://aiohttp-json-api.readthedocs.io.
+
+Requirements
+------------
+
+* aiohttp_
+* attrs_
+* boltons_
+* inflection_
+* jsonpointer_
+* dateutil_
+* trafaret_
 
 
 Features
@@ -51,3 +61,9 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _py-jsonapi: https://github.com/benediktschmitt/py-jsonapi
 .. _dev-schema: https://github.com/benediktschmitt/py-jsonapi/tree/dev-schema
 .. _`Benedikt Schmitt`: https://github.com/benediktschmitt
+.. _attrs: http://www.attrs.org/en/stable/
+.. _boltons: https://boltons.readthedocs.io/en/latest/
+.. _inflection: https://inflection.readthedocs.io/en/latest/
+.. _jsonpointer: https://python-json-pointer.readthedocs.io/en/latest/index.html
+.. _dateutil: https://dateutil.readthedocs.io/en/stable/
+.. _trafaret: http://trafaret.readthedocs.io/en/latest/
