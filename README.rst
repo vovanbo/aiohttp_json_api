@@ -47,5 +47,6 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
 .. _JSON API: http://jsonapi.org
 .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/
+.. _py-jsonapi: https://github.com/benediktschmitt/py-jsonapi
 .. _dev-schema: https://github.com/benediktschmitt/py-jsonapi/tree/dev-schema
 .. _`Benedikt Schmitt`: https://github.com/benediktschmitt
