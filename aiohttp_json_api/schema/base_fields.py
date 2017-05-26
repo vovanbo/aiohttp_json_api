@@ -332,11 +332,8 @@ class Link(BaseField):
     A link is only readable and *not* mapped to a property on the resource
     object (You can however define a *getter*).
 
-    :arg str href:
-        A formatter string for the link. You can access *s* for the schema,
-        *r* for the resource object and *a* for the current api in the string:
-        ``href = "http://images.example.org/{s.typename}/{r.id}"``.
-        If you need more control, you can define a *getter* as usual.
+    :arg str route:
+        A route name for the link
     :arg str link_of:
         If given, the link is part of the links object of the field with the
         key *link_of* and appears otherwise in the resource object's links
