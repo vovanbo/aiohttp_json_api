@@ -4,15 +4,15 @@
 #
 #    pip-compile --output-file requirements.txt setup.py
 #
-aiohttp==2.0.7
+aiohttp==2.1.0
 async-timeout==1.2.1      # via aiohttp
 attrs==17.2.0
 boltons==17.1.0
-chardet==3.0.3            # via aiohttp
+chardet==3.0.4            # via aiohttp
 inflection==0.3.1
 jsonpointer==1.10
-multidict==2.1.5          # via aiohttp, yarl
+multidict==2.1.6          # via aiohttp, yarl
 python-dateutil==2.6.0
 six==1.10.0               # via python-dateutil
-trafaret==0.10.0
+trafaret==0.10.2
 yarl==0.10.2              # via aiohttp
