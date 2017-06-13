@@ -67,14 +67,14 @@ class ToMany(Relationship):
     support adding and removing relatives.
 
     :arg callable fadd:
-        A method on a :class:`~jsonapi.schema.schema.Schema` which adds
+        A method on a :class:`~aiohttp_json_api.schema.Schema` which adds
         new resources to the relationship:
         ``fadd(self, resource, data, sp, **kwargs)``.
     :arg callable fremove:
-        A method on a :class:`~jsonapi.schema.schema.Schema` which removes
-        some resources from the relationship:
+        A method on a :class:`~aiohttp_json_api.schema.Schema`
+        which removes some resources from the relationship:
         ``fremove(self, resource, data, sp, **kwargs)``.
-    :arg :class:`~jsonapi.pagination.BasePagination` pagination:
+    :arg :class:`~aiohttp_json_api.pagination.BasePagination` pagination:
         The pagination helper *class* used to paginate the *to-many*
         relationship.
     """
@@ -91,7 +91,7 @@ class ToMany(Relationship):
         """
         Descriptor to change the adder.
 
-        :seealso: :func:`~jsonapi.schema.decorators.adds`
+        :seealso: :func:`~aiohttp_json_api.schema.decorators.adds`
         """
         self.fadd = f
         return self
@@ -100,7 +100,7 @@ class ToMany(Relationship):
         """
         Descriptor to change the remover.
 
-        :seealso: :func:`~jsonapi.schema.decorators.removes`
+        :seealso: :func:`~aiohttp_json_api.schema.decorators.removes`
         """
         self.fremove = f
         return self
@@ -148,7 +148,7 @@ class ToMany(Relationship):
     def encode(self, schema, data, **kwargs):
         """Composes the final JSON API relationships object.
 
-        :arg ~jsonapi.pagination.BasePagination pagination:
+        :arg ~aiohttp_json_api.pagination.BasePagination pagination:
             If not *None*, the links and meta members of the pagination
             helper are added to the final JSON API relationship object.
         """

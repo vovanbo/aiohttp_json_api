@@ -7,7 +7,7 @@ jsonapi.schema.fields
 .. note::
 
     Always remember that you can model the JSON API completly with the fields in
-    :mod:`~jsonapi.schema.base_fields`.
+    :mod:`~aiohttp_json_api.schema.base_fields`.
 
 .. sidebar:: Index
 
@@ -464,7 +464,8 @@ class Dict(Attribute):
 
         If you deal with dictionaries with values of different types, you can
         still use the more general
-        :class:`~jsonapi.schema.base_fields.Attribute` field to model this data.
+        :class:`~aiohttp_json_api.schema.base_fields.Attribute`
+        field to model this data.
 
         *You are not forced to use a* :class:`Dict` *field*! It is only a
         helper.
@@ -500,8 +501,8 @@ class List(Attribute):
     .. note::
 
         If your list has items of different types, you can still use the more
-        general :class:`~jsonapi.schema.base_fields.Attribute` field to model
-        this data.
+        general :class:`~aiohttp_json_api.schema.base_fields.Attribute`
+        field to model this data.
 
         *You are not forced to use a* :class:`List` *field*! It is only a
         helper.
@@ -521,7 +522,9 @@ class List(Attribute):
         ]
 
     def encode(self, schema, data, **kwargs):
-        return [self.field.encode(schema, item) for item in data] if data else []
+        return [self.field.encode(schema, item) for item in data] \
+            if data \
+            else []
 
 
 # Some aliases.

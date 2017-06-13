@@ -15,8 +15,9 @@ class Registry:
 
     def get_schema(self, obj, default=ARG_DEFAULT):
         """
-        Returns the :class:`~jsonapi.schema.schema.Schema` associated with *o*.
-        *o* must be either a typename, a resource class or resource object.
+        Returns the :class:`~aiohttp_json_api.schema.Schema`
+        associated with *obj*. *obj* must be either a typename,
+        a resource class or resource object.
 
         :param obj:
             A typename, resource object or a resource class

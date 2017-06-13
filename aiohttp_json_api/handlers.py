@@ -31,7 +31,7 @@ __all__ = (
 
 async def get_collection(request: web.Request):
     """
-    Uses the :meth:`~aiohttp_json_api.schema.schema.Schema.query_collection`
+    Uses the :meth:`~aiohttp_json_api.schema.Schema.query_collection`
     method of the schema to query the resources in the collection.
 
     :seealso: http://jsonapi.org/format/#fetching
@@ -59,7 +59,7 @@ async def get_collection(request: web.Request):
 @jsonapi_content
 async def post_resource(request: web.Request):
     """
-    Uses the :meth:`~jsonapi.schema.schema.Schema.create_resource`
+    Uses the :meth:`~aiohttp_json_api.schema.Schema.create_resource`
     method of the schema to create a new resource.
 
     :seealso: http://jsonapi.org/format/#crud-creating
@@ -96,8 +96,8 @@ async def post_resource(request: web.Request):
 
 async def get_resource(request: web.Request):
     """
-    Uses the :meth:`~jsonapi.schema.schema.Schema.query_resource` method
-    of the schema to query the requested resource.
+    Uses the :meth:`~aiohttp_json_api.schema.Schema.query_resource`
+    method of the schema to query the requested resource.
 
     :seealso: http://jsonapi.org/format/#fetching-resources
     """
@@ -124,8 +124,8 @@ async def get_resource(request: web.Request):
 
 async def patch_resource(request: web.Request):
     """
-    Uses the :meth:`~jsonapi.schema.schema.Schema.update_resource` method
-    of the schema to update a resource.
+    Uses the :meth:`~aiohttp_json_api.schema.Schema.update_resource`
+    method of the schema to update a resource.
 
     :seealso: http://jsonapi.org/format/#crud-updating
     """
@@ -155,8 +155,8 @@ async def patch_resource(request: web.Request):
 
 async def delete_resource(request: web.Request):
     """
-    Uses the :meth:`~jsonapi.schema.schema.Schema.delete_resource` method
-    of the schema to delete a resource.
+    Uses the :meth:`~aiohttp_json_api.schema.Schema.delete_resource`
+    method of the schema to delete a resource.
 
     :seealso: http://jsonapi.org/format/#crud-deleting
     """
@@ -198,7 +198,7 @@ async def get_relationship(request: web.Request):
 
 async def post_relationship(request: web.Request):
     """
-    Uses the :meth:`~jsonapi.schema.schema.Schema.add_relationship`
+    Uses the :meth:`~aiohttp_json_api.schema.Schema.add_relationship`
     method of the schemato add new relationships.
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
@@ -234,7 +234,7 @@ async def post_relationship(request: web.Request):
 
 async def patch_relationship(request: web.Request):
     """
-    Uses the :meth:`~jsonapi.schema.schema.Schema.update_relationship`
+    Uses the :meth:`~aiohttp_json_api.schema.Schema.update_relationship`
     method of the schema to update the relationship.
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
@@ -270,7 +270,7 @@ async def patch_relationship(request: web.Request):
 
 async def delete_relationship(request: web.Request):
     """
-    Uses the :meth:`~jsonapi.schema.schema.Schema.update_relationship`
+    Uses the :meth:`~aiohttp_json_api.schema.Schema.update_relationship`
     method of the schema to update the relationship.
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
@@ -298,8 +298,8 @@ async def delete_relationship(request: web.Request):
 
 async def get_related(request: web.Request):
     """
-    Uses the :meth:`~jsonapi.schema.schema.Schema.query_relative` method
-    of the schema to query the related resource.
+    Uses the :meth:`~aiohttp_json_api.schema.Schema.query_relative`
+    method of the schema to query the related resource.
 
     :seealso: http://jsonapi.org/format/#fetching
     """

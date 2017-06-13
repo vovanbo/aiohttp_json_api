@@ -178,7 +178,7 @@ class LimitOffset(BasePagination):
         Extracts the current pagination values (*limit* and *offset*) from the
         request's query parameters.
 
-        :arg ~jsonapi.request.Request request:
+        :arg ~aiohttp.web.Request request:
         :arg int total_resources:
             The total number of resources in the collection.
         :arg int default_limit:
@@ -296,7 +296,7 @@ class NumberSize(BasePagination):
         Extracts the current pagination values (*size* and *number*) from the
         request's query parameters.
 
-        :arg ~jsonapi.request.Request request:
+        :arg ~aiohttp.web.Request request:
         :arg int total_resources:
             The total number of resources in the collection.
         :arg int default_size:

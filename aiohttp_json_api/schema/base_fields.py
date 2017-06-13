@@ -65,6 +65,8 @@ from ..errors import InvalidType, InvalidValue
 __all__ = (
     'BaseField',
     'Attribute',
+    'Link',
+    'LinksObjectMixin',
     'Relationship',
 )
 
@@ -97,12 +99,12 @@ class BaseField(object):
         Can be either *never*, *always*, *creation* or *update* and
         describes in which CRUD context the field is required as input.
     :arg callable fget:
-        A method on a :class:`~jsonapi.schema.schema.Schema` which returns the
-        current value of the resource's attribute:
+        A method on a :class:`~aiohttp_json_api.schema.Schema`
+        which returns the current value of the resource's attribute:
         ``fget(self, resource, **kwargs)``.
     :arg fset:
-        A method on a :class:`~jsonapi.schema.schema.Schema` which updates the
-        current value of the resource's attribute:
+        A method on a :class:`~aiohttp_json_api.schema.Schema`
+        which updates the current value of the resource's attribute:
         ``fget(self, resource, data, sp, **kwargs)``.
     """
 
@@ -110,7 +112,8 @@ class BaseField(object):
                  writable: Event = Event.ALWAYS,
                  required: Event = Event.NEVER,
                  fget=None, fset=None):
-        #: The name of this field on the :class:`~jsonapi.schema.schema.Schema`
+        #: The name of this field on the
+        # :class:`~aiohttp_json_api.schema.Schema`
         #: it has been defined on.Please note, that not each field has a *key*
         #: (like some links or meta attributes).
         self.key = None
@@ -193,7 +196,7 @@ class BaseField(object):
         """
         Returns the value of the field on the resource.
 
-        :arg ~jsonapi.schema.schema.Schema schema:
+        :arg ~aiohttp_json_api.schema.Schema schema:
             The schema this field has been defined on.
         """
         # NOTE: Don't change this method without checking if the *asyncio*
@@ -205,7 +208,7 @@ class BaseField(object):
         """
         Changes the value of the field on the resource.
 
-        :arg ~jsonapi.schema.schema.Schema schema:
+        :arg ~aiohttp_json_api.schema.Schema schema:
             The schema this field has been defined on.
         :arg data:
             The (decoded and validated) new value of the field
@@ -234,7 +237,7 @@ class BaseField(object):
         """Validates the raw JSON API input for this field. This method is
         called before :meth:`decode`.
 
-        :arg ~jsonapi.schema.schema.Schema schema:
+        :arg ~aiohttp_json_api.schema.Schema schema:
             The schema this field has been defined on.
         :arg data:
             The raw input data
@@ -254,7 +257,7 @@ class BaseField(object):
         """Validates the decoded input *data* for this field. This method is
         called after :meth:`decode`.
 
-        :arg ~jsonapi.schema.schema.Schema schema:
+        :arg ~aiohttp_json_api.schema.Schema schema:
             The schema this field has been defined on.
         :arg data:
             The decoded input data
@@ -452,11 +455,13 @@ class Relationship(BaseField, LinksObjectMixin):
         A set with all foreign types. If given, this list is used to validate
         the input data. Leave it empty to allow all types.
     :arg callable finclude:
-        A method on a :class:`~jsonapi.schema.schema.Schema` which returns the
-        related resources: ``finclude(self, resource, **kwargs)``.
+        A method on a :class:`~aiohttp_json_api.schema.Schema`
+        which returns the related resources:
+        ``finclude(self, resource, **kwargs)``.
     :arg callable fquery:
-        A method on a :class:`~jsonapi.schema.schema.Schema` which returns the
-        queries the related resources: ``fquery(self, resource, **kwargs)``.
+        A method on a :class:`~aiohttp_json_api.schema.Schema`
+        which returns the queries the related resources:
+        ``fquery(self, resource, **kwargs)``.
     """
 
     #: True, if this is to-one relationship::
@@ -498,7 +503,7 @@ class Relationship(BaseField, LinksObjectMixin):
         """
         Descriptor to change the includer.
 
-        :seealso: :func:`~jsonapi.schema.decorators.includes`
+        :seealso: :func:`~aiohttp_json_api.schema.decorators.includes`
         """
         self.finclude = f
         return f
@@ -518,7 +523,7 @@ class Relationship(BaseField, LinksObjectMixin):
         """
         Returns the related resources.
 
-        :arg ~jsonapi.schema.schema.Schema schema:
+        :arg ~aiohttp_json_api.schema.Schema schema:
             The schema this field has been defined on.
         """
         # NOTE: Don't change this method without checking if the *asyncio*
@@ -530,7 +535,7 @@ class Relationship(BaseField, LinksObjectMixin):
         """
         Descriptor to change the query function.
 
-        :seealso: :func:`~jsonapi.schema.decorators.queries`
+        :seealso: :func:`~aiohttp_json_api.schema.decorators.queries`
         """
         self.fquery = f
         return self

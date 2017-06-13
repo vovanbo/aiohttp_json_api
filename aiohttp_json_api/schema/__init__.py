@@ -1,4 +1,4 @@
 from . import base_fields
-from . import decorators
-from . import fields
-from . import schema
+from . import fields, relationships
+from .decorators import *
+from .schema import *

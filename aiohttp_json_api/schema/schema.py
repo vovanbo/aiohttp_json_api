@@ -273,7 +273,7 @@ class Schema(metaclass=SchemaMeta):
 
         :arg resource:
             A resource object
-        :arg ~jsonapi.request.Request request:
+        :arg ~aiohttp.web.Request request:
             The request context
         :rtype: str
         :returns:
@@ -393,7 +393,7 @@ class Schema(metaclass=SchemaMeta):
             The name of the relationship
         :arg resource:
             A resource object
-        :arg ~jsonapi.pagination.BasePagination pagination:
+        :arg ~aiohttp_json_api.pagination.BasePagination pagination:
             Describes the pagination in case of a *to-many* relationship.
 
         :rtype: dict
@@ -448,7 +448,7 @@ class Schema(metaclass=SchemaMeta):
 
         :arg data:
             The received JSON API resource object
-        :arg ~JSONPointer.JSONPointer sp:
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
         """
         if not isinstance(data, collections.Mapping):
@@ -524,11 +524,11 @@ class Schema(metaclass=SchemaMeta):
         fields, the nested fields are decoded first and passed to the
         decode method of the field.
 
-        :arg ~jsonapi.schema.BaseField field:
+        :arg ~aiohttp_json_api.schema.base_fields.BaseField field:
             The field whichs input data is decoded.
         :arg data:
             The input data for the field
-        :arg ~JSONPointer.JSONPointer:
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer:
             The JSON pointer to the source of *data*
         :arg dict memo:
             The decoded data will be stored additionaly in this dictionary
@@ -620,7 +620,7 @@ class Schema(metaclass=SchemaMeta):
 
         :arg dict data:
             The JSON API resource object with the initial data.
-        :arg ~JSONPointer.JSONPointer sp:
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
         """
         self.validate_resource_pre_decode(data, sp, context)
@@ -649,14 +649,14 @@ class Schema(metaclass=SchemaMeta):
         order to save the changes in the database.
 
         The default implementation uses the
-        :class:`~jsonapi.schema.base_fields.BaseField` descriptors to update the
-        resource.
+        :class:`~aiohttp_json_api.schema.base_fields.BaseField`
+        descriptors to update the resource.
 
         :arg resource:
             The id of the resource or the resource instance
         :arg dict data:
             The JSON API resource object with the update information
-        :arg ~JSONPointer.JSONPointer sp:
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
         """
         if isinstance(resource, self.resource_class):
@@ -709,7 +709,7 @@ class Schema(metaclass=SchemaMeta):
             The id of the resource or the resource instance.
         :arg str data:
             The JSON API relationship object with the update information.
-        :arg ~JSONPointer.JSONPointer sp:
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
         """
         field = self._relationships[relation_name]
@@ -740,7 +740,7 @@ class Schema(metaclass=SchemaMeta):
             The id of the resource or the resource instance.
         :arg str data:
             The JSON API relationship object with the update information.
-        :arg ~JSONPointer.JSONPointer sp:
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
         """
         field = self._relationships[relation_name]
@@ -772,7 +772,7 @@ class Schema(metaclass=SchemaMeta):
             The id of the resource or the resource instance.
         :arg str data:
             The JSON API relationship object with the update information.
-        :arg ~JSONPointer.JSONPointer sp:
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
         """
         field = self._relationships[relation_name]
@@ -817,7 +817,7 @@ class Schema(metaclass=SchemaMeta):
         :arg list include:
             The list of relationships which will be included into the
             response. See also: :attr:`jsonapi.request.Request.japi_include`.
-        :raises ~jsonapi.errors.ResourceNotFound:
+        :raises ~aiohttp_json_api.errors.ResourceNotFound:
             If there is no resource with the given *id_*.
         """
         raise NotImplementedError()
@@ -872,8 +872,8 @@ class Schema(metaclass=SchemaMeta):
             http://jsonapi.org/format/#fetching-includes
 
         Fetches the related resources. The default method uses the
-        :meth:`~jsonapi.schema.base_fields.Relationship.include` method of
-        the *Relationship* fields. **Can be overridden.**
+        :meth:`~aiohttp_json_api.schema.base_fields.Relationship.include`
+        method of the *Relationship* fields. **Can be overridden.**
 
         :arg resources:
             A list of resources.
