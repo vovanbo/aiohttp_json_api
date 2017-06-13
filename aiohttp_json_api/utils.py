@@ -162,7 +162,7 @@ def error_to_response(request: web.Request,
     """
     Converts an :class:`Error` to a :class:`~web.Response`.
 
-    :arg web.Request request:
+    :arg ~aiohttp.web.Request request:
         The web request instance.
     :arg typing.Union[Error, ErrorList] error:
         The error, which is converted into a response.

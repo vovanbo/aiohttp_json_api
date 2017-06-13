@@ -265,7 +265,7 @@ class NumberSize(BasePagination):
 
         /api/Article/?sort=date_added&page[size]=5&page[number]=10
 
-    :arg web.Request request:
+    :arg ~aiohttp.web.Request request:
     :arg int number:
         The number of the current page.
     :arg int size:
@@ -403,7 +403,7 @@ class Cursor(BasePagination):
 
         /api/Article/?sort=date_added&page[limit]=5&page[cursor]=19395939020
 
-    :arg web.Request request:
+    :arg ~aiohttp.web.Request request:
     :arg int limit:
         The number of resources on a page
     :arg cursor:
@@ -437,7 +437,7 @@ class Cursor(BasePagination):
         Extracts the current pagination values (*limit* and *cursor*) from the
         request's query parameters.
 
-        :arg ~web.Request request:
+        :arg ~aiohttp.web.Request request:
         :arg int default_limit:
              If the request’s query string does not contain a limit,
              we will use this one as fallback value.
