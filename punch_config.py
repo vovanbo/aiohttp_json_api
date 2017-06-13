@@ -6,6 +6,10 @@ GLOBALS = {
 
 FILES = [
     {
+        'path': 'setup.cfg',
+        'serializer': "current_version = {{ GLOBALS.serializer }}"
+    },
+    {
         'path': 'setup.py',
         'serializer': "version='{{ GLOBALS.serializer }}',"
     },
