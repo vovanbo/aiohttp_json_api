@@ -160,14 +160,14 @@ async def get_data_from_request(request: web.Request):
 def error_to_response(request: web.Request,
                       error: typing.Union[Error, ErrorList]):
     """
-    Converts an :class:`Error` to a :class:`~web.Response`.
+    Converts an :class:`Error` to a :class:`~aiohttp.web.Response`.
 
     :arg ~aiohttp.web.Request request:
         The web request instance.
     :arg typing.Union[Error, ErrorList] error:
         The error, which is converted into a response.
 
-    :rtype: web.Response
+    :rtype: ~aiohttp.web.Response
     """
     assert isinstance(error, (Error, ErrorList))
 
