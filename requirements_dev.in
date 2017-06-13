@@ -7,3 +7,4 @@ PyYAML
 pytest
 Sphinx
 tox
+wheel

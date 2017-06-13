@@ -45,4 +45,5 @@ tox==2.7.0
 trafaret==0.10.2
 urllib3==1.21.1           # via requests
 virtualenv==15.1.0        # via tox
+wheel==0.29.0
 yarl==0.10.2
