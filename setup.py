@@ -10,13 +10,12 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'aiohttp',
-    'attrs',
-    'boltons',
-    'inflection',
-    'jsonpointer',
-    'python-dateutil',
-    'trafaret',
+    'aiohttp>=2.0.0',
+    'boltons>=17.1.0',
+    'inflection>=0.3.1',
+    'jsonpointer>=1.10',
+    'python-dateutil>=2.6.0',
+    'trafaret>=0.10.2',
 ]
 
 test_requirements = [
