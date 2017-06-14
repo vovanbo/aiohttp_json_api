@@ -63,6 +63,7 @@ class ToMany(Relationship):
         *   http://jsonapi.org/format/#document-resource-object-relationships
         *   http://jsonapi.org/format/#document-resource-object-linkage
 
+
     Describes how to serialize, deserialize and update a *to-many* relationship.
     Additionaly to *to-one* relationships, *to-many* relationships must also
     support adding and removing relatives.

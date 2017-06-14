@@ -1,6 +1,6 @@
 """
-jsonapi.pagination
-==================
+aiohttp_json_api.pagination
+===========================
 
 This module contains helper for the pagination feature:
 http://jsonapi.org/format/#fetching-pagination

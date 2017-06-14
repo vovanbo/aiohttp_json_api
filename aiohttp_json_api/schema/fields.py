@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 """
-jsonapi.schema.fields
-=====================
+aiohttp_json_api.schema.fields
+==============================
 
 .. note::
 

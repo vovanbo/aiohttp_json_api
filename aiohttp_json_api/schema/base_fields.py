@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 """
-jsonapi.schema.base_fields
-==========================
+aiohttp_json_api.schema.base_fields
+===================================
 
 This module contains the definition for all basic fields. A field describes
 how data should be encoded to JSON and decoded again and allows to define
@@ -146,7 +146,7 @@ class BaseField(object):
         """
         Descriptor to change the getter.
 
-        :seealso: :func:`jsonapi.schema.decorators.gets`
+        :seealso: :func:`aiohttp_json_api.schema.decorators.gets`
         """
         self.fget = f
         self.name = self.name or f.__name__
@@ -156,7 +156,7 @@ class BaseField(object):
         """
         Descriptor to change the setter.
 
-        :seealso: :func:`jsonapi.schema.decorators.sets`
+        :seealso: :func:`aiohttp_json_api.schema.decorators.sets`
         """
         self.fset = f
         return self
@@ -167,7 +167,7 @@ class BaseField(object):
         """
         Descriptor to add a validator.
 
-        :seealso: :func:`jsonapi.schema.decorators.validates`
+        :seealso: :func:`aiohttp_json_api.schema.decorators.validates`
 
         :arg str step:
             Must be either *pre-decode* or *post-decode*.

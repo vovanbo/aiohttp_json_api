@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 """
-jsonapi.schema.schema
-=====================
+aiohttp_json_api.schema.schema
+==============================
 
 This module contains the base schema which implements the encoding, decoding,
 validation and update operations based on
-:class:`fields <jsonapi.schema.base_fields.BaseField>`.
+:class:`fields <aiohttp_json_api.schema.base_fields.BaseField>`.
 """
 import copy
 import collections
