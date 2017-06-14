@@ -33,6 +33,7 @@ server's objects, some of it was devided into new separate entities
 * Free software: MIT license
 * Documentation: https://aiohttp-json-api.readthedocs.io.
 
+
 Requirements
 ------------
 
