@@ -44,6 +44,14 @@ Requirements
 * trafaret_
 
 
+Todo
+----
+
+* Documentation
+* Tests
+* Example application
+
+
 Features
 --------
 
