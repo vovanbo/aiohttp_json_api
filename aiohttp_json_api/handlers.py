@@ -5,7 +5,6 @@ from aiohttp import web, hdrs
 
 from .jsonpointer import JSONPointer
 from .const import JSONAPI
-from .context import RequestContext
 from .decorators import jsonapi_content
 from .errors import InvalidType, HTTPNotFound
 from .utils import (
@@ -36,7 +35,7 @@ async def get_collection(request: web.Request):
 
     :seealso: http://jsonapi.org/format/#fetching
     """
-    context: RequestContext = request[JSONAPI]
+    context = request[JSONAPI]
     schema = context.schema
 
     if schema is None:

@@ -1,9 +1,10 @@
 import collections
+import typing
 
 from .base_fields import Relationship
 from ..errors import InvalidType
 from ..log import logger
-from ..utils import Document
+from ..utils import filter_empty_fields
 
 __all__ = (
     'ToOne',
@@ -33,26 +34,26 @@ class ToOne(Relationship):
             self.validate_resource_identifier(schema, data, sp / 'data')
         return None
 
-    def encode(self, schema, data, **kwargs):
+    def encode(self, schema, data, **kwargs) -> typing.MutableMapping:
         """Composes the final relationships object."""
         # None
-        document = Document()
+        document = {'links': {}}
 
         if data is None:
-            document.data = data
+            document['data'] = data
         # JSON API resource linkage or JSON API relationships object
         elif isinstance(data, collections.Mapping):
             if 'type' in data and 'id' in data:
-                document.data = data
+                document['data'] = data
         # the related resource instance
         else:
-            document.data = schema.registry.ensure_identifier(data, asdict=True)
+            document['data'] = schema.registry.ensure_identifier(data, asdict=True)
 
         links = kwargs.get('links', {})
         if links:
-            document.links.update(links)
+            document['links'].update(links)
 
-        return document.as_dict_without_empty_fields()
+        return filter_empty_fields(document)
 
 
 class ToMany(Relationship):
@@ -145,31 +146,31 @@ class ToMany(Relationship):
         f = self.fremove or self.default_remove
         return await f(schema, resource, data, sp, **kwargs)
 
-    def encode(self, schema, data, **kwargs):
+    def encode(self, schema, data, **kwargs) -> typing.MutableMapping:
         """Composes the final JSON API relationships object.
 
         :arg ~aiohttp_json_api.pagination.BasePagination pagination:
             If not *None*, the links and meta members of the pagination
             helper are added to the final JSON API relationship object.
         """
-        document = Document()
+        document = {'links': {}, 'meta': {}}
 
         if isinstance(data, collections.Iterable):
-            document.data = [
+            document['data'] = [
                 schema.registry.ensure_identifier(item, asdict=True)
                 for item in data
             ]
 
         links = kwargs.get('links', {})
         if links:
-            document.links.update(links)
+            document['links'].update(links)
 
         pagination = kwargs.get('pagination')
         if pagination:
-            document.links.update(pagination.links())
-            document.meta.update(pagination.meta())
+            document['links'].update(pagination.links())
+            document['meta'].update(pagination.meta())
 
-        return document.as_dict_without_empty_fields()
+        return filter_empty_fields(document)
 
     def validate_relationship_object(self, schema, data, sp):
         """Checks additionaly to :meth:`Relationship.validate_relationship_object`

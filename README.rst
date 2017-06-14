@@ -22,12 +22,13 @@ Introduction
 ------------
 
 This project heavily inspired by py-jsonapi_ (author is `Benedikt Schmitt`_).
-Some parts of this project is improved and refactored dev-schema_ branch of **py-jsonapi**.
-At beginning of my project dev-schema_ branch was a great, but not working attempt to
-implement JSON API via schema controllers.
+Some parts of this project is improved and refactored dev-schema_ branch
+of **py-jsonapi**. At beginning of my project dev-schema_ branch was a great,
+but not working attempt to implement JSON API via schema controllers.
 
-Some of base entities of **py-jsonapi** was replaced with **aiohttp** server's objects,
-some of it was devided into new separate entities (e.g. ``RequestContext``, ``Document`` etc).
+Some of base entities of **py-jsonapi** was replaced with **aiohttp**
+server's objects, some of it was devided into new separate entities
+(e.g. ``RequestContext``).
 
 * Free software: MIT license
 * Documentation: https://aiohttp-json-api.readthedocs.io.
@@ -36,7 +37,6 @@ Requirements
 ------------
 
 * aiohttp_
-* attrs_
 * boltons_
 * inflection_
 * jsonpointer_
@@ -52,16 +52,16 @@ Features
 Credits
 -------
 
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+This package was created with Cookiecutter_ and the
+`cookiecutter-pypackage`_ project template.
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+.. _cookiecutter-pypackage: https://github.com/audreyr/cookiecutter-pypackage
 .. _JSON API: http://jsonapi.org
 .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/
 .. _py-jsonapi: https://github.com/benediktschmitt/py-jsonapi
 .. _dev-schema: https://github.com/benediktschmitt/py-jsonapi/tree/dev-schema
 .. _`Benedikt Schmitt`: https://github.com/benediktschmitt
-.. _attrs: http://www.attrs.org/en/stable/
 .. _boltons: https://boltons.readthedocs.io/en/latest/
 .. _inflection: https://inflection.readthedocs.io/en/latest/
 .. _jsonpointer: https://python-json-pointer.readthedocs.io/en/latest/index.html

@@ -1,17 +1,15 @@
 import collections
+import typing
 
-import attr
+from boltons.typeutils import make_sentinel
 
-from .utils import Symbol
-
-ARG_DEFAULT = Symbol('ARG_DEFAULT')
+ARG_DEFAULT = make_sentinel(var_name='ARG_DEFAULT')
 ResourceID = collections.namedtuple('ResourceID', ['type', 'id'])
 
 
-@attr.s
-class Registry:
-    schema_by_type = attr.ib(default=attr.Factory(dict))
-    schema_by_resource = attr.ib(default=attr.Factory(dict))
+class Registry(typing.NamedTuple):
+    schema_by_type: typing.MutableMapping
+    schema_by_resource: typing.MutableMapping
 
     def get_schema(self, obj, default=ARG_DEFAULT):
         """

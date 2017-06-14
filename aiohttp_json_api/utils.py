@@ -3,38 +3,25 @@ import typing
 from collections import OrderedDict, defaultdict
 from http import HTTPStatus
 
-import attr
 import inflection
 from aiohttp import web
 from boltons.iterutils import remap, first
+from boltons.typeutils import make_sentinel
 
 from .helpers import is_collection
 from .const import JSONAPI, JSONAPI_CONTENT_TYPE
 from .errors import Error, ErrorList, ValidationError
 
-SENTINEL = object()
+SENTINEL = make_sentinel()
 
 
-@attr.s(hash=True, frozen=True, cmp=False)
-class Symbol:
-    name = attr.ib(convert=str, default='', hash=True)
-
-
-@attr.s
-class Document:
-    jsonapi = attr.ib(default=attr.Factory(dict))
-    meta = attr.ib(default=attr.Factory(dict))
-    data = attr.ib(default=None)
-    included = attr.ib(default=attr.Factory(list))
-    links = attr.ib(default=attr.Factory(dict))
-    errors = attr.ib(default=attr.Factory(dict))
-
-    def as_dict_without_empty_fields(self):
-        required = ('errors',) if self.errors else ('data',)
-        return attr.asdict(
-            self,
-            filter=lambda a, v: bool(v) if a.name not in required else True
-        )
+def filter_empty_fields(data: typing.MutableMapping) -> typing.MutableMapping:
+    required = ('errors',) if data.get('errors') else ('data',)
+    return {
+        key: value
+        for key, value in data.items()
+        if key in required or value
+    }
 
 
 def jsonapi_response(data=SENTINEL, *, text=None, body=None,
@@ -116,35 +103,36 @@ async def encode_resource(resource, context):
 
 
 async def render_document(resources, compound_documents, context, *,
-                          pagination=None, links=None):
-    document = Document()
+                          pagination=None, links=None) -> typing.MutableMapping:
+    document = {'links': {}, 'meta': {}}
     pagination = pagination or context.pagination
 
     if is_collection(resources):
-        document.data = [await encode_resource(r, context) for r in resources]
+        document['data'] = \
+            [await encode_resource(r, context) for r in resources]
     else:
-        document.data = (
+        document['data'] = (
             await encode_resource(resources, context)
             if resources else None
         )
 
     if context.include and compound_documents:
-        document.included = [
+        document['included'] = [
             await encode_resource(r, context)
             for r in compound_documents.values()
         ]
 
-    document.links['self'] = str(context.request.url)
+    document['links']['self'] = str(context.request.url)
     if links is not None:
-        document.links.update(links)
+        document['links'].update(links)
 
     if pagination is not None:
-        document.links.update(pagination.links())
-        document.meta.update(pagination.meta())
+        document['links'].update(pagination.links())
+        document['meta'].update(pagination.meta())
 
-    document.jsonapi.update(context.request.app[JSONAPI]['jsonapi'])
+    document['jsonapi'] = context.request.app[JSONAPI]['jsonapi']
 
-    return document.as_dict_without_empty_fields()
+    return filter_empty_fields(document)
 
 
 async def get_data_from_request(request: web.Request):
@@ -171,19 +159,19 @@ def error_to_response(request: web.Request,
     """
     assert isinstance(error, (Error, ErrorList))
 
-    document = Document()
+    document = {}
     status = HTTPStatus.INTERNAL_SERVER_ERROR
     if isinstance(error, Error):
-        document.errors = [error.json]
+        document['errors'] = [error.json]
         status = error.status
     elif isinstance(error, ErrorList):
-        document.errors = error.json
+        document['errors'] = error.json
         status = max(e.status for e in error.errors)
 
-    document.jsonapi.update(request.app[JSONAPI]['jsonapi'])
+    document['jsonapi'] = request.app[JSONAPI]['jsonapi']
 
     return jsonapi_response(
-        document.as_dict_without_empty_fields(),
+        filter_empty_fields(document),
         status=status.value
     )
 

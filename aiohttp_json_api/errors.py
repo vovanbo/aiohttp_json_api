@@ -49,7 +49,8 @@ class Error(Exception):
 
     This is the base class for all exceptions thrown by the API. All subclasses
     of this exception are catched and converted into a response.
-    All other exceptions will be replaced by an HTTPInternalServerError exception.
+    All other exceptions will be replaced by an HTTPInternalServerError
+    exception.
 
     :arg int http_status:
         The HTTP status code applicable to this problem.
@@ -65,7 +66,8 @@ class Error(Exception):
         from occurrence to occurrence of the problem, except for purposes
         of localization. The default value is the class name.
     :arg str detail:
-        A human-readable explanation specific to this occurrence of the problem.
+        A human-readable explanation specific to this occurrence
+        of the problem.
     :arg source_pointer:
         A JSON Pointer [RFC6901] to the associated entity in the request
         document [e.g. `"/data"` for a primary data object, or

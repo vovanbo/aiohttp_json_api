@@ -17,7 +17,7 @@ All helpers have a similar interface. Here is an example for the
 .. code-block:: python3
 
     >>> p = NumberSize(
-    ...     uri="http://example.org/api/Article/?sort=date_added&page[size]=5&page[number]=10)",
+    ...     request,
     ...     number=2,
     ...     size=25,
     ...     total_resources=106
@@ -42,13 +42,12 @@ All helpers have a similar interface. Here is an example for the
 import re
 import typing
 
-import attr
 import yarl
 from aiohttp import web
+from boltons.typeutils import make_sentinel
 
 from .errors import HTTPBadRequest
 from .log import logger
-from .utils import Symbol
 
 __all__ = (
     'DEFAULT_LIMIT',
@@ -62,12 +61,12 @@ __all__ = (
 DEFAULT_LIMIT = 25
 
 
-@attr.s
 class BasePagination:
-    request = attr.ib(validator=attr.validators.instance_of(web.Request))
+    def __init__(self, request: web.Request):
+        self.request = request
 
     @classmethod
-    def from_request(self, request: web.Request, **kwargs):
+    def from_request(cls, request: web.Request, **kwargs) -> 'BasePagination':
         """
         Checks if the needed pagination parameters are present in the request
         and if so, a new pagination instance with these parameters is returned
@@ -79,7 +78,7 @@ class BasePagination:
     def url(self) -> yarl.URL:
         return self.request.url
 
-    def meta(self):
+    def meta(self) -> typing.MutableMapping:
         """
         **Must be overridden.**
 
@@ -87,7 +86,7 @@ class BasePagination:
         """
         return dict()
 
-    def links(self):
+    def links(self) -> typing.MutableMapping:
         """
         **Must be overridden.**
 
@@ -111,7 +110,7 @@ class BasePagination:
         """
         raise NotImplementedError()
 
-    def page_link(self, pagination: typing.Mapping) -> str:
+    def page_link(self, **kwargs) -> str:
         """
         Uses the :attr:`uri` and replaces the *page* query parameters with the
         values in *pagination*.
@@ -132,13 +131,12 @@ class BasePagination:
         query = self.request.query.copy()
         query.update({
             f'page[{key}]': str(value)
-            for key, value in pagination.items()
+            for key, value in kwargs.items()
         })
 
         return str(self.request.url.update_query(query))
 
 
-@attr.s
 class LimitOffset(BasePagination):
     """
     Implements a pagination based on *limit* and *offset* values.
@@ -147,7 +145,6 @@ class LimitOffset(BasePagination):
 
         /api/Article/?sort=date_added&page[limit]=5&page[offset]=10
 
-    :arg str uri:
     :arg int limit:
         The number of resources on a page.
     :arg int offset:
@@ -155,19 +152,12 @@ class LimitOffset(BasePagination):
     :arg int total_resources:
         The total number of resources in the collection.
     """
-    total_resources = attr.ib(
-        convert=int, validator=[attr.validators.instance_of(int),
-                                lambda i, a, v: v >= 0]
-    )
-    offset = attr.ib(
-        convert=int, validator=[attr.validators.instance_of(int),
-                                lambda i, a, v: v >= 0]
-    )
-    limit = attr.ib(
-        convert=int, validator=[attr.validators.instance_of(int),
-                                lambda i, a, v: v > 0],
-        default=DEFAULT_LIMIT
-    )
+    def __init__(self, request: web.Request, total_resources: int = 0,
+                 offset: int = 0, limit: int = DEFAULT_LIMIT):
+        super(LimitOffset, self).__init__(request)
+        self.total_resources = total_resources
+        self.offset = offset
+        self.limit = limit
 
     @classmethod
     def from_request(cls, request: web.Request,
@@ -186,7 +176,7 @@ class LimitOffset(BasePagination):
             we will use this one as fallback value.
         """
         limit = request.query.get('page[limit]')
-        if limit is not None and ((not limit.isdigit()) or int(limit) <= 0):
+        if limit is not None and (not limit.isdigit() or int(limit) <= 0):
             raise HTTPBadRequest(
                 detail='The limit must be an integer > 0.',
                 source_parameter='page[limit]'
@@ -195,7 +185,7 @@ class LimitOffset(BasePagination):
             limit = default_limit
 
         offset = request.query.get('page[offset]')
-        if offset is not None and ((not offset.isdigit()) or int(offset) < 0):
+        if offset is not None and (not offset.isdigit() or int(offset) < 0):
             raise HTTPBadRequest(
                 detail='The offset must be an integer >= 0.',
                 source_parameter='page[offset]'
@@ -212,30 +202,23 @@ class LimitOffset(BasePagination):
 
     def links(self) -> typing.MutableMapping:
         d = {
-            'self': self.page_link({
-                'limit': self.limit,
-                'offset': self.offset
-            }),
-            'first': self.page_link({
-                'limit': self.limit,
-                'offset': 0
-            }),
-            'last': self.page_link({
-                'limit': self.limit,
-                'offset': int(
-                    (self.total_resources - 1) / self.limit) * self.limit
-            })
+            'self': self.page_link(limit=self.limit, offset=self.offset),
+            'first': self.page_link(limit=self.limit, offset=0),
+            'last': self.page_link(
+                limit=self.limit,
+                offset=int((self.total_resources - 1) / self.limit) * self.limit
+            )
         }
         if self.offset > 0:
-            d['prev'] = self.page_link({
-                'limit': self.limit,
-                'offset': max(self.offset - self.limit, 0)
-            })
+            d['prev'] = self.page_link(
+                limit=self.limit,
+                offset=max(self.offset - self.limit, 0)
+            )
         if self.offset + self.limit < self.total_resources:
-            d['next'] = self.page_link({
-                'limit': self.limit,
-                'offset': self.offset + self.limit
-            })
+            d['next'] = self.page_link(
+                limit=self.limit,
+                offset=self.offset + self.limit
+            )
         return d
 
     def meta(self) -> typing.MutableMapping:
@@ -256,7 +239,6 @@ class LimitOffset(BasePagination):
         }
 
 
-@attr.s
 class NumberSize(BasePagination):
     """
     Implements a pagination based on *number* and *size* values.
@@ -273,19 +255,11 @@ class NumberSize(BasePagination):
     :arg int total_resources:
         The total number of resources in the collection.
     """
-    total_resources = attr.ib(
-        convert=int, validator=[attr.validators.instance_of(int),
-                                lambda i, a, v: v >= 0]
-    )
-    number = attr.ib(
-        convert=int, validator=[attr.validators.instance_of(int),
-                                lambda i, a, v: v >= 0]
-    )
-    size = attr.ib(
-        convert=int, validator=[attr.validators.instance_of(int),
-                                lambda i, a, v: v > 0],
-        default=DEFAULT_LIMIT
-    )
+    def __init__(self, request: web.Request, total_resources, number, size):
+        super(NumberSize, self).__init__(request)
+        self.total_resources = total_resources
+        self.number = number
+        self.size = size
 
     @classmethod
     def from_request(cls, request: web.Request,
@@ -304,7 +278,7 @@ class NumberSize(BasePagination):
             parameter, we will use this one as fallback.
         """
         number = request.query.get('page[number]')
-        if number is not None and ((not number.isdigit()) or int(number) < 0):
+        if number is not None and (not number.isdigit() or int(number) < 0):
             raise HTTPBadRequest(
                 detail='The number must an integer >= 0.',
                 source_parameter='page[number]'
@@ -312,7 +286,7 @@ class NumberSize(BasePagination):
         number = int(number) if number else 0
 
         size = request.query.get('page[size]')
-        if size is not None and ((not size.isdigit()) or int(size) <= 0):
+        if size is not None and (not size.isdigit() or int(size) <= 0):
             raise HTTPBadRequest(
                 detail='The size must be an integer > 0.',
                 source_parameter='page[size]'
@@ -320,6 +294,7 @@ class NumberSize(BasePagination):
         if size is None:
             size = default_size
         size = int(size) if size else 0
+
         return cls(request=request,
                    number=number,
                    size=size,
@@ -348,29 +323,14 @@ class NumberSize(BasePagination):
 
     def links(self) -> typing.MutableMapping:
         d = {
-            'self': self.page_link({
-                'number': self.number,
-                'size': self.size
-            }),
-            'first': self.page_link({
-                'number': 0,
-                'size': self.size
-            }),
-            'last': self.page_link({
-                'number': self.last_page,
-                'size': self.size
-            })
+            'self': self.page_link(number=self.number, size=self.size),
+            'first': self.page_link(number=0, size=self.size),
+            'last': self.page_link(number=self.last_page, size=self.size)
         }
         if self.number > 0:
-            d['prev'] = self.page_link({
-                'number': self.number - 1,
-                'size': self.size
-            })
+            d['prev'] = self.page_link(number=self.number - 1, size=self.size)
         if self.number < self.last_page:
-            d['next'] = self.page_link({
-                'number': self.number + 1,
-                'size': self.size
-            })
+            d['next'] = self.page_link(number=self.number + 1, size=self.size)
         return d
 
     def meta(self) -> typing.MutableMapping:
@@ -394,7 +354,6 @@ class NumberSize(BasePagination):
         }
 
 
-@attr.s
 class Cursor(BasePagination):
     """
     Implements a (generic) approach for a cursor based pagination.
@@ -413,21 +372,20 @@ class Cursor(BasePagination):
     :arg next_cursor:
         The cursor to the next page
     """
-    FIRST = Symbol('jsonapi:first')  # The cursor to the first page
-    LAST = Symbol('jsonapi:last')    # The cursor to the last page
+    # The cursor to the first page
+    FIRST = make_sentinel(var_name='jsonapi:first')
+    # The cursor to the last page
+    LAST = make_sentinel(var_name='jsonapi:last')
 
-    cursor = attr.ib(validator=attr.validators.instance_of(Symbol))
-    prev_cursor = attr.ib(
-        validator=attr.validators.optional(attr.validators.instance_of(Symbol))
-    )
-    next_cursor = attr.ib(
-        validator=attr.validators.optional(attr.validators.instance_of(Symbol))
-    )
-    limit = attr.ib(
-        convert=int, validator=[attr.validators.instance_of(int),
-                                lambda i, a, v: v > 0],
-        default=DEFAULT_LIMIT
-    )
+    def __init__(self, request: web.Request, cursor, prev_cursor=None,
+                 next_cursor=None, limit: int = DEFAULT_LIMIT):
+        super(Cursor, self).__init__(request)
+        self.cursor = make_sentinel(var_name=str(cursor))
+        self.prev_cursor = \
+            make_sentinel(var_name=str(prev_cursor)) if prev_cursor else None
+        self.next_cursor = \
+            make_sentinel(var_name=str(next_cursor)) if next_cursor else None
+        self.limit = limit
 
     @classmethod
     def from_request(cls, request: web.Request,
@@ -463,7 +421,8 @@ class Cursor(BasePagination):
             limit = default_limit
         return cls(request, limit, cursor)
 
-    def links(self, prev_cursor=None, next_cursor=None):
+    def links(self, prev_cursor=None,
+              next_cursor=None) -> typing.MutableMapping:
         """
         :arg str prev_cursor:
             The cursor to the previous page.
@@ -476,31 +435,19 @@ class Cursor(BasePagination):
             next_cursor = self.next_cursor
 
         d = {
-            'self': self.page_link({
-                'cursor': str(self.cursor),
-                'limit': self.limit
-            }),
-            'first': self.page_link({
-                'cursor': str(self.FIRST),
-                'limit': self.limit
-            }),
-            'last': self.page_link({
-                'cursor': str(self.LAST),
-                'limit': self.limit
-            })}
+            'self': self.page_link(cursor=str(self.cursor), limit=self.limit),
+            'first': self.page_link(cursor=str(self.FIRST), limit=self.limit),
+            'last': self.page_link(cursor=str(self.LAST), limit=self.limit)
+        }
         if next_cursor is not None:
-            d['next'] = self.page_link({
-                'cursor': str(next_cursor),
-                'limit': self.limit
-            })
+            d['next'] = self.page_link(cursor=str(next_cursor),
+                                       limit=self.limit)
         if prev_cursor is not None:
-            d['prev'] = self.page_link({
-                'cursor': str(prev_cursor),
-                'limit': self.limit
-            })
+            d['prev'] = self.page_link(cursor=str(prev_cursor),
+                                       limit=self.limit)
         return d
 
-    def meta(self):
+    def meta(self) -> typing.MutableMapping:
         """
         Returns a dictionary with
 

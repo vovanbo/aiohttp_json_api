@@ -50,9 +50,9 @@ class RequestContext(object):
         .. hint::
 
             Please note, that the *filter* strategy is not defined by the
-            jsonapi specification and depends on the implementation. If you want
-            to use another filter strategy, feel free to **override** this
-            property.
+            jsonapi specification and depends on the implementation.
+            If you want to use another filter strategy,
+            feel free to **override** this property.
 
         Returns a list, which contains 3-tuples::
 
