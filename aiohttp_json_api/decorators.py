@@ -1,3 +1,7 @@
+"""
+Handlers decorators
+===================
+"""
 from functools import wraps
 
 from aiohttp import web

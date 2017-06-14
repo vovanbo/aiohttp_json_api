@@ -1,3 +1,8 @@
+"""
+Setup
+=====
+"""
+
 import inspect
 
 import collections

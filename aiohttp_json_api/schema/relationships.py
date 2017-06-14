@@ -1,3 +1,8 @@
+"""
+Relationships
+=============
+"""
+
 import collections
 import typing
 
@@ -25,7 +30,8 @@ class ToOne(Relationship):
     to_many = False
 
     def validate_relationship_object(self, schema, data, sp):
-        """Checks additionaly to :meth:`Relationship.validate_relationship_object`
+        """
+        Checks additionaly to :meth:`Relationship.validate_relationship_object`
         that the *data* member is a valid resource linkage.
         """
         super(ToOne, self).validate_relationship_object(schema,
@@ -36,7 +42,6 @@ class ToOne(Relationship):
 
     def encode(self, schema, data, **kwargs) -> typing.MutableMapping:
         """Composes the final relationships object."""
-        # None
         document = {'links': {}}
 
         if data is None:
@@ -63,22 +68,22 @@ class ToMany(Relationship):
         *   http://jsonapi.org/format/#document-resource-object-relationships
         *   http://jsonapi.org/format/#document-resource-object-linkage
 
-
     Describes how to serialize, deserialize and update a *to-many* relationship.
-    Additionaly to *to-one* relationships, *to-many* relationships must also
+    Additionally to *to-one* relationships, *to-many* relationships must also
     support adding and removing relatives.
 
     :arg callable fadd:
-        A method on a :class:`~aiohttp_json_api.schema.Schema` which adds
-        new resources to the relationship:
-        ``fadd(self, resource, data, sp, **kwargs)``.
+        A method on a :class:`~aiohttp_json_api.schema.Schema`
+        which adds new resources
+        to the relationship ``fadd(self, resource, data, sp, **kwargs)``.
     :arg callable fremove:
         A method on a :class:`~aiohttp_json_api.schema.Schema`
-        which removes some resources from the relationship:
-        ``fremove(self, resource, data, sp, **kwargs)``.
-    :arg :class:`~aiohttp_json_api.pagination.BasePagination` pagination:
+        which removes some resources
+        from the relationship ``fremove(self, resource, data, sp, **kwargs)``.
+    :arg aiohttp_json_api.pagination.BasePagination pagination:
         The pagination helper *class* used to paginate the *to-many*
         relationship.
+
     """
     to_one = False
     to_many = True
@@ -135,15 +140,11 @@ class ToMany(Relationship):
 
     async def add(self, schema, resource, data, sp, **kwargs):
         """Adds new resources to the relationship."""
-        # NOTE: Don't change this method without checking if the *asyncio*
-        #       library still works.
         f = self.fadd or self.default_add
         return await f(schema, resource, data, sp, **kwargs)
 
     async def remove(self, schema, resource, data, sp, **kwargs):
         """Removes resources from the relationship."""
-        # NOTE: Don't change this method without checking if the *asyncio*
-        #       library still works.
         f = self.fremove or self.default_remove
         return await f(schema, resource, data, sp, **kwargs)
 
@@ -174,7 +175,8 @@ class ToMany(Relationship):
         return filter_empty_fields(document)
 
     def validate_relationship_object(self, schema, data, sp):
-        """Checks additionaly to :meth:`Relationship.validate_relationship_object`
+        """
+        Checks additionaly to :meth:`Relationship.validate_relationship_object`
         that the *data* member is a list of resource identifier objects.
         """
         if 'data' in data:

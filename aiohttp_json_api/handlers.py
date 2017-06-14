@@ -1,3 +1,7 @@
+"""
+Handlers
+========
+"""
 import collections
 from http import HTTPStatus
 
@@ -269,7 +273,7 @@ async def patch_relationship(request: web.Request):
 
 async def delete_relationship(request: web.Request):
     """
-    Uses the :meth:`~aiohttp_json_api.schema.Schema.update_relationship`
+    Uses the :meth:`~aiohttp_json_api.schema.Schema.delete_relationship`
     method of the schema to update the relationship.
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships

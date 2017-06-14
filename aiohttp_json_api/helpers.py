@@ -1,3 +1,7 @@
+"""
+Helpers
+=======
+"""
 import inspect
 from collections import Mapping, Iterable
 

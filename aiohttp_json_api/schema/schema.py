@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 """
-aiohttp_json_api.schema.schema
-==============================
+Schema
+======
 
 This module contains the base schema which implements the encoding, decoding,
 validation and update operations based on

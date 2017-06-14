@@ -1,3 +1,7 @@
+"""
+Application registry
+====================
+"""
 import collections
 import typing
 

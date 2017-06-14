@@ -1,3 +1,8 @@
+"""
+Additional trafaret's fields
+============================
+"""
+
 import decimal
 import numbers
 

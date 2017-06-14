@@ -5,7 +5,7 @@ Credits
 Development Lead
 ----------------
 
-* Vladimir Bolshakov <vovanbo@gmail.com>
+* `Vladimir Bolshakov`_
 
 Author of core idea
 -------------------
@@ -18,4 +18,5 @@ Contributors
 None yet. Why not be the first?
 
 
+.. _`Vladimir Bolshakov`: https://github.com/vovanbo
 .. _`Benedikt Schmitt`: https://github.com/benediktschmitt

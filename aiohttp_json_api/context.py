@@ -1,3 +1,8 @@
+"""
+Request context
+===============
+"""
+
 import json
 import re
 

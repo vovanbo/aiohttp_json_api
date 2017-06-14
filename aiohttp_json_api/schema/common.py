@@ -1,3 +1,7 @@
+"""
+Schema's common stuff
+"""
+
 from enum import Enum, Flag, auto
 
 

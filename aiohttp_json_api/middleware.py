@@ -1,3 +1,7 @@
+"""
+Middlewares
+===========
+"""
 from .const import JSONAPI
 from .log import logger
 

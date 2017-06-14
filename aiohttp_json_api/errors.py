@@ -1,3 +1,7 @@
+"""
+Errors
+======
+"""
 import json
 from http import HTTPStatus
 

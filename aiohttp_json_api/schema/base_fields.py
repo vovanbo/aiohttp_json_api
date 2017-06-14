@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 """
-aiohttp_json_api.schema.base_fields
-===================================
+Base fields
+===========
 
 This module contains the definition for all basic fields. A field describes
 how data should be encoded to JSON and decoded again and allows to define
@@ -83,7 +83,7 @@ class BaseField(object):
 
         The inheritance of fields is currently implemented using the
         :func:`~copy.deepcopy` function from the standard library. This means,
-        that in some rare cases, it is necessairy that you implement a
+        that in some rare cases, it is necessarily that you implement a
         custom :meth:`__deepcopy__` method when you subclass :class:`BaseField`.
 
     :arg str name:
@@ -114,21 +114,19 @@ class BaseField(object):
                  fget=None, fset=None):
         #: The name of this field on the
         # :class:`~aiohttp_json_api.schema.Schema`
-        #: it has been defined on.Please note, that not each field has a *key*
+        #: it has been defined on. Please note, that not each field has a *key*
         #: (like some links or meta attributes).
         self.key = None
 
-        #: A :class:`jsonpointer.JSONPointer` to this field in a JSON API
-        #: resource object. The source pointer is set from the Schema class
-        #: during initialisation.
+        #: A :class:`aiohttp_json_api.jsonpointer.JSONPointer`
+        #: to this field in a JSON API resource object. The source pointer is
+        #: set from the Schema class during initialisation.
         self.sp = None
 
         self.name = name
         self.mapped_key = mapped_key
 
         assert isinstance(writable, Event)
-        # if writable is Context.always:
-        #     writable = ("never", "creation")
         self.writable = writable
 
         assert isinstance(required, Event)
@@ -169,9 +167,9 @@ class BaseField(object):
 
         :seealso: :func:`aiohttp_json_api.schema.decorators.validates`
 
-        :arg str step:
+        :arg Step step:
             Must be either *pre-decode* or *post-decode*.
-        :arg str on:
+        :arg Event on:
             The CRUD context in which the validator is invoked. Must
             be *never*, *always*, *creation* or *update*.
         """
@@ -199,8 +197,6 @@ class BaseField(object):
         :arg ~aiohttp_json_api.schema.Schema schema:
             The schema this field has been defined on.
         """
-        # NOTE: Don't change this method without checking if the *asyncio*
-        #       library still works.
         f = self.fget or self.default_get
         return await f(schema, resource, **kwargs)
 
@@ -212,36 +208,37 @@ class BaseField(object):
             The schema this field has been defined on.
         :arg data:
             The (decoded and validated) new value of the field
-        :arg ~jsonpointer.JSONPointer sp:
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of the original input data.
         """
-        # NOTE: Don't change this method without checking if the *asyncio*
-        #       library still works.
         assert self.writable not in Event.NEVER
         f = self.fset or self.default_set
         return await f(schema, resource, data, sp, **kwargs)
 
     def encode(self, schema, data, **kwargs):
-        """Encodes the *data* returned from :meth:`get` so that it can be
+        """
+        Encodes the *data* returned from :meth:`get` so that it can be
         serialized with :func:`json.dumps`. Can be overridden.
         """
         return data
 
     def decode(self, schema, data, sp, **kwargs):
-        """Decodes the raw *data* from the JSON API input document and returns
-        it. Can be overridden.
+        """
+        Decodes the raw *data* from the JSON API input document and returns it.
+        Can be overridden.
         """
         return data
 
     def validate_pre_decode(self, schema, data, sp, context):
-        """Validates the raw JSON API input for this field. This method is
+        """
+        Validates the raw JSON API input for this field. This method is
         called before :meth:`decode`.
 
         :arg ~aiohttp_json_api.schema.Schema schema:
             The schema this field has been defined on.
         :arg data:
             The raw input data
-        :arg ~jsonpointer.JSONPointer sp:
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of *data*.
         """
         for validator in self.fvalidators:
@@ -254,14 +251,15 @@ class BaseField(object):
             f(schema, data, sp)
 
     def validate_post_decode(self, schema, data, sp, context):
-        """Validates the decoded input *data* for this field. This method is
+        """
+        Validates the decoded input *data* for this field. This method is
         called after :meth:`decode`.
 
         :arg ~aiohttp_json_api.schema.Schema schema:
             The schema this field has been defined on.
         :arg data:
             The decoded input data
-        :arg ~jsonpointer.JSONPointer sp:
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of *data*.
         """
         for validator in self.fvalidators:
@@ -276,22 +274,7 @@ class BaseField(object):
 
 class LinksObjectMixin(object):
     """
-    Mixin for JSON API documents that contain a JSON API links object, like
-    relationships::
-
-        class Article(Schema):
-
-            author = ToOne()
-            author.add_link(Link(
-                name="related", href="/Article/{r.id}/author"
-            ))
-
-            # or
-
-            author_self = Link(
-                name="self", href="/Article/{r.id}/relationships/author",
-                link_of="author"
-            )
+    Mixin for JSON API documents that contain a JSON API links object.
 
     The :meth:`BaseField.encode` receives an additional keyword argument *link*
     with the encoded links.
@@ -321,11 +304,11 @@ class Link(BaseField):
 
         class Article(Schema):
 
-            self = Link(href="/api/{s.type}/{r.id}")
+            self = Link(route="some_route_name")
 
             author = ToOne()
             author_related = Link(
-                href="/api/{s.type}/{r.id}/author", link_of="author"
+                route="another_route_name", link_of="author"
             )
 
     In the http://jsonapi.org specification, a link is always part of a
@@ -419,7 +402,7 @@ class Attribute(BaseField):
 
     :arg bool meta:
         If true, the attribute is part of the resource's *meta* object.
-    :arg \*\* kwargs:
+    :arg \*\*kwargs:
         The init arguments for the :class:`BaseField`.
     """
 
@@ -443,14 +426,18 @@ class Relationship(BaseField, LinksObjectMixin):
     Relationships are always part of the resource's JSON API relationships
     object.
 
-    :seealso: :class:`ToOne`, :class:`ToMany`
+    .. seealso::
 
-    :arg str require_data:
+        * :class:`~aiohttp_json_api.schema.relationships.ToOne`
+        * :class:`~aiohttp_json_api.schema.relationships.ToMany`
+
+    :arg Event require_data:
         If true, the JSON API relationship object must contain the *data*
-        member. Must be either *never*, *always*, *creation* or *update*.
+        member. Must be a :class:`~aiohttp_json_api.schema.common.Event`
+        instance.
     :arg bool dereference:
         If true, the relationship linkage is dereferenced automatic when
-        decoded. (Implicitly sets *require_data* to *always*)
+        decoded. (Implicitly sets *require_data* to Event.ALWAYS)
     :arg set foreign_types:
         A set with all foreign types. If given, this list is used to validate
         the input data. Leave it empty to allow all types.
@@ -526,8 +513,6 @@ class Relationship(BaseField, LinksObjectMixin):
         :arg ~aiohttp_json_api.schema.Schema schema:
             The schema this field has been defined on.
         """
-        # NOTE: Don't change this method without checking if the *asyncio*
-        #       library still works.
         f = self.finclude or self.default_include
         return await f(schema, resources, context, **kwargs)
 
@@ -547,15 +532,15 @@ class Relationship(BaseField, LinksObjectMixin):
         raise RuntimeError('No query method and mapped_key have been defined.')
 
     async def query(self, schema, resource, context, **kwargs):
-        """
-        Queries the related resources.
-        """
+        """Queries the related resources."""
         f = self.fquery or self.default_query
         return await f(schema, resource, context, **kwargs)
 
     def validate_resource_identifier(self, schema, data, sp):
         """
-        :seealso: http://jsonapi.org/format/#document-resource-identifier-objects
+        .. seealso::
+
+            http://jsonapi.org/format/#document-resource-identifier-objects
 
         Asserts that *data* is a JSON API resource identifier with the correct
         *type* value.

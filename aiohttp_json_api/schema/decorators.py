@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 """
-aiohttp_json_api.schema.decorators
-==================================
+Schema decorators
+=================
 
 This module contains some decorators, which can be used instead of the
 descriptors on the :class:`~aiohttp_json_api.schema.base_fields.BaseField`

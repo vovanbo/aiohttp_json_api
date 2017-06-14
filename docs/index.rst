@@ -1,5 +1,5 @@
-Welcome to aiohttp JSON API's documentation!
-============================================
+aiohttp JSON API
+================
 
 Contents:
 
@@ -12,7 +12,7 @@ Contents:
    contributing
    authors
    history
-   modules
+   aiohttp_json_api
 
 Indices and tables
 ==================
