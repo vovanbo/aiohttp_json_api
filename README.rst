@@ -51,12 +51,8 @@ Todo
 * Documentation
 * Tests
 * Example application
+* Features description
 
-
-Features
---------
-
-* TODO
 
 Credits
 -------
