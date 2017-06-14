@@ -36,6 +36,7 @@ server's objects, some of it was devided into new separate entities
 Requirements
 ------------
 
+* **Python 3.6** or newer
 * aiohttp_
 * boltons_
 * inflection_
