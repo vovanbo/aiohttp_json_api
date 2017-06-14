@@ -1,5 +1,5 @@
 Welcome to aiohttp JSON API's documentation!
-======================================
+============================================
 
 Contents:
 
@@ -10,7 +10,9 @@ Contents:
    installation
    usage
    contributing
-   authorshistory
+   authors
+   history
+   modules
 
 Indices and tables
 ==================
