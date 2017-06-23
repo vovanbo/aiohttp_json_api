@@ -23,15 +23,17 @@ Introduction
 
 This project heavily inspired by py-jsonapi_ (author is `Benedikt Schmitt`_).
 Some parts of this project is improved and refactored dev-schema_ branch
-of **py-jsonapi**. At beginning of my project dev-schema_ branch was a great,
-but not working attempt to implement JSON API via schema controllers.
+of **py-jsonapi**. At beginning of aiohttp-json-api_ this branch
+was a great, but not finished implementation of JSON API with
+*schema controllers*. Also, py-jsonapi_ is not asynchronous and use inside
+self-implemented Request/Response classes.
 
 Some of base entities of **py-jsonapi** was replaced with **aiohttp**
-server's objects, some of it was devided into new separate entities
-(e.g. ``RequestContext``).
+server's objects, some of it was divided into new separate entities
+(e.g. :class:`.context.RequestContext` or :class:`.registry.Registry`).
 
 * Free software: MIT license
-* Documentation: https://aiohttp-json-api.readthedocs.io.
+* Documentation: https://aiohttp-json-api.readthedocs.io
 
 
 Requirements
@@ -53,6 +55,8 @@ Todo
 * Tests
 * Example application
 * Features description
+* Customizable payload keys inflection (default is `dasherize` <-> `underscore`)
+* Support for JSON API extensions (bulk creation etc.)
 
 
 Credits
@@ -61,6 +65,8 @@ Credits
 This package was created with Cookiecutter_ and the
 `cookiecutter-pypackage`_ project template.
 
+
+.. _aiohttp-json-api: https://github.com/vovanbo/aiohttp_json_api
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _cookiecutter-pypackage: https://github.com/audreyr/cookiecutter-pypackage
 .. _JSON API: http://jsonapi.org

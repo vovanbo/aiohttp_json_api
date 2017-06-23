@@ -122,7 +122,18 @@ html_theme = 'alabaster'
 # Theme options are theme-specific and customize the look and feel of a
 # theme further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+body_default_font = 'system-ui, -apple-system, BlinkMacSystemFont, ' \
+                    '"SF UI Text_", "Segoe UI", Roboto, Oxygen, Ubuntu, ' \
+                    'Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", ' \
+                    'Helvetica, Arial, sans-serif;'
+code_default_font = '"SFMono-Regular", "SF Mono", Consolas, ' \
+                    '"Liberation Mono", Menlo, Courier, monospace;'
+html_theme_options = {
+    'font_family': body_default_font,
+    'font_size': '16px',
+    'head_font_family': body_default_font,
+    'code_font_family': code_default_font
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -279,3 +290,5 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+todo_include_todos = True
