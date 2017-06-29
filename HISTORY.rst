@@ -2,6 +2,24 @@
 History
 =======
 
+0.6.2 (2017-06-29)
+------------------
+
+* Update HISTORY
+
+
+0.6.1 (2017-06-29)
+------------------
+
+* Fix bug with Enum choices of String field
+
+
+0.6.0 (2017-06-29)
+------------------
+
+* Return resource in update method of Schema class. This will be helpful in inherit classes of Schemas.
+
+
 0.5.5 (2017-06-15)
 ------------------
 
