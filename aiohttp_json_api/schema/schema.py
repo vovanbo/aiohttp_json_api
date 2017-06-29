@@ -676,7 +676,8 @@ class Schema(metaclass=SchemaMeta):
         for key, (data, sp) in memo.items():
             field = self._fields_by_key[key]
             await field.set(self, resource, data, sp, **kwargs)
-        return None
+
+        return resource
 
     async def delete_resource(self, resource, context, **kwargs):
         """
