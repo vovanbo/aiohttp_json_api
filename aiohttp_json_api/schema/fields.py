@@ -86,7 +86,7 @@ class String(Attribute):
             choices = tuple(choices.__members__.keys()) \
                 if isinstance(choices, type(Enum)) \
                 else choices
-            self._trafaret = self._trafaret | t.Enum(*choices)
+            self._trafaret = self._trafaret & t.Enum(*choices)
 
         if self.allow_none:
             self._trafaret = self._trafaret | t.Null()
