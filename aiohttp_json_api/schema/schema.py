@@ -564,7 +564,8 @@ class Schema(metaclass=SchemaMeta):
             field_sp = attrs_sp / field.name if field.name in attrs else None
             field_data = attrs.get(field.name)
             if field_data is None and field.required is Event.NEVER:
-                continue
+                if not field.allow_none:
+                    continue
             self._decode_field(field, field_data, field_sp, memo=memo)
 
         # JSON API relationships object
