@@ -2,6 +2,13 @@
 History
 =======
 
+0.7.0 (2017-07-03)
+------------------
+
+* Setup of JSON API must be imported from package directly
+* Fix bugs with decode fields and allow None values
+
+
 0.6.2 (2017-06-29)
 ------------------
 
