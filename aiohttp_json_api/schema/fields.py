@@ -126,7 +126,7 @@ class Integer(Attribute):
         return super().validate_pre_decode(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
-        return int(data)
+        return self._trafaret.check(data)
 
     def encode(self, schema, data, **kwargs):
         return self._trafaret.check(data)
@@ -152,7 +152,7 @@ class Float(Attribute):
         return super().validate_pre_decode(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
-        return float(data)
+        return self._trafaret.check(data)
 
     def encode(self, schema, data, **kwargs):
         return self._trafaret.check(data)
@@ -215,7 +215,7 @@ class Decimal(Attribute):
         return super().validate_pre_decode(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
-        return decimal.Decimal(data)
+        return self._trafaret.check(data)
 
     def encode(self, schema, data, **kwargs):
         return self._trafaret.check(data)
@@ -300,7 +300,7 @@ class DateTime(Attribute):
         return super().validate_pre_decode(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
-        return dateutil.parser.parse(data)
+        return self._trafaret.check(data)
 
     def encode(self, schema, data, **kwargs):
         value = self._trafaret.check(data)
