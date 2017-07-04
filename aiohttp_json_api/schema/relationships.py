@@ -179,11 +179,12 @@ class ToMany(Relationship):
         Checks additionaly to :meth:`Relationship.validate_relationship_object`
         that the *data* member is a list of resource identifier objects.
         """
-        if 'data' in data:
-            if not isinstance(data['data'], collections.Sequence):
-                detail = 'The "data" must be an array ' \
-                         'of resource identifier objects.'
-                raise InvalidType(detail=detail, source_pointer=sp / 'data')
+        super(ToMany, self).validate_relationship_object(schema, data, sp)
+        if 'data' in data and not isinstance(data['data'],
+                                             collections.Sequence):
+            detail = 'The "data" must be an array ' \
+                     'of resource identifier objects.'
+            raise InvalidType(detail=detail, source_pointer=sp / 'data')
 
-            for i, item in enumerate(data['data']):
-                self.validate_resource_identifier(schema, item, sp / 'data' / i)
+        for i, item in enumerate(data['data']):
+            self.validate_resource_identifier(schema, item, sp / 'data' / i)
