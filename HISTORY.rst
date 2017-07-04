@@ -2,6 +2,13 @@
 History
 =======
 
+0.7.1 (2017-07-04)
+------------------
+
+* Fix bugs with validation of resource identifier in relationships fields
+* Add typings for base fields
+
+
 0.7.0 (2017-07-03)
 ------------------
 
