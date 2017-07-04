@@ -17,6 +17,10 @@ class JSONPointer(BaseJsonPointer):
     def __truediv__(self,
                     path: typing.Union['JSONPointer', str]) -> 'JSONPointer':
         parts = self.parts.copy()
+
+        if isinstance(path, int):
+            path = str(path)
+
         if isinstance(path, str):
             if not path.startswith('/'):
                 path = f'/{path}'
