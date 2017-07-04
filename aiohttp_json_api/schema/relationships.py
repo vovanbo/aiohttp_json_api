@@ -34,10 +34,9 @@ class ToOne(Relationship):
         Checks additionaly to :meth:`Relationship.validate_relationship_object`
         that the *data* member is a valid resource linkage.
         """
-        super(ToOne, self).validate_relationship_object(schema,
-                                                        data, sp)
+        super(ToOne, self).validate_relationship_object(schema, data, sp)
         if 'data' in data and data['data'] is not None:
-            self.validate_resource_identifier(schema, data, sp / 'data')
+            self.validate_resource_identifier(schema, data['data'], sp / 'data')
         return None
 
     def encode(self, schema, data, **kwargs) -> typing.MutableMapping:
@@ -52,7 +51,8 @@ class ToOne(Relationship):
                 document['data'] = data
         # the related resource instance
         else:
-            document['data'] = schema.registry.ensure_identifier(data, asdict=True)
+            document['data'] = \
+                schema.registry.ensure_identifier(data, asdict=True)
 
         links = kwargs.get('links', {})
         if links:
@@ -181,9 +181,9 @@ class ToMany(Relationship):
         """
         if 'data' in data:
             if not isinstance(data['data'], collections.Sequence):
-                detail = 'The "data" must be an array of resource identifier ' \
-                         'objects.'
+                detail = 'The "data" must be an array ' \
+                         'of resource identifier objects.'
                 raise InvalidType(detail=detail, source_pointer=sp / 'data')
 
-            for i, item in enumerate(data):
+            for i, item in enumerate(data['data']):
                 self.validate_resource_identifier(schema, item, sp / 'data' / i)
