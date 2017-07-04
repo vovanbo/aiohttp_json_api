@@ -61,6 +61,7 @@ import typing
 
 from .common import Event, Step
 from ..errors import InvalidType, InvalidValue
+from ..jsonpointer import JSONPointer
 
 __all__ = (
     'BaseField',
@@ -108,10 +109,10 @@ class BaseField(object):
         ``fget(self, resource, data, sp, **kwargs)``.
     """
 
-    def __init__(self, *, name='', mapped_key='',
+    def __init__(self, *, name: str = '', mapped_key: str = '',
                  writable: Event = Event.ALWAYS,
                  required: Event = Event.NEVER,
-                 fget=None, fset=None):
+                 fget: typing.Coroutine = None, fset: typing.Coroutine = None):
         #: The name of this field on the
         # :class:`~aiohttp_json_api.schema.Schema`
         #: it has been defined on. Please note, that not each field has a *key*
@@ -121,19 +122,19 @@ class BaseField(object):
         #: A :class:`aiohttp_json_api.jsonpointer.JSONPointer`
         #: to this field in a JSON API resource object. The source pointer is
         #: set from the Schema class during initialisation.
-        self.sp = None
+        self.sp: JSONPointer = None
 
-        self.name = name
+        self.name: str = name
         self.mapped_key = mapped_key
 
         assert isinstance(writable, Event)
-        self.writable = writable
+        self.writable: Event = writable
 
         assert isinstance(required, Event)
-        self.required = required
+        self.required: Event = required
 
-        self.fget = fget
-        self.fset = fset
+        self.fget: typing.Coroutine = fget
+        self.fset: typing.Coroutine = fset
         self.fvalidators = list()
 
     def __call__(self, f):
@@ -272,28 +273,6 @@ class BaseField(object):
             f(schema, data, sp)
 
 
-class LinksObjectMixin(object):
-    """
-    Mixin for JSON API documents that contain a JSON API links object.
-
-    The :meth:`BaseField.encode` receives an additional keyword argument *link*
-    with the encoded links.
-
-    :arg list links:
-        A list of (transient) :class:`links <Link>`.
-    """
-
-    def __init__(self, links=None):
-        self.links = {link.name: link for link in links} if links else {}
-
-    def add_link(self, link):
-        """
-        Adds a new link to the links object.
-        """
-        self.links[link.name] = link
-        return self
-
-
 class Link(BaseField):
     """
     .. seealso::
@@ -329,13 +308,14 @@ class Link(BaseField):
         an object.
     """
 
-    def __init__(self, route='', *,
-                 link_of='<resource>', name='', fget=None, normalize=True):
+    def __init__(self, route: str = '', *,
+                 link_of: str = '<resource>', name: str = '',
+                 fget: typing.Coroutine = None, normalize: bool = True):
         super(Link, self).__init__(name=name, writable=Event.NEVER, fget=fget)
 
-        self.normalize = bool(normalize)
-        self.route = route
-        self.link_of = link_of
+        self.normalize: bool = bool(normalize)
+        self.route: str = route
+        self.link_of: str = link_of
 
     async def default_get(self, schema, resource, **kwargs):
         """Returns the formatted :attr:`href`."""
@@ -361,6 +341,29 @@ class Link(BaseField):
         else:
             # assert isinstance(data, collections.Mapping)
             return result
+
+
+class LinksObjectMixin(object):
+    """
+    Mixin for JSON API documents that contain a JSON API links object.
+
+    The :meth:`BaseField.encode` receives an additional keyword argument *link*
+    with the encoded links.
+
+    :arg typing.Sequence[Link] links:
+        A list of (transient) :class:`links <Link>`.
+    """
+
+    def __init__(self, links: typing.Sequence[Link] = None):
+        self.links: typing.MutableMapping = \
+            {link.name: link for link in links} if links else {}
+
+    def add_link(self, link: Link):
+        """
+        Adds a new link to the links object.
+        """
+        self.links[link.name] = link
+        return self
 
 
 class Attribute(BaseField):
@@ -402,14 +405,17 @@ class Attribute(BaseField):
 
     :arg bool meta:
         If true, the attribute is part of the resource's *meta* object.
+    :arg bool allow_none:
+        Allow to receive 'null' value
     :arg \*\*kwargs:
         The init arguments for the :class:`BaseField`.
     """
 
-    def __init__(self, *, meta=False, allow_none=False, **kwargs):
+    def __init__(self, *, meta: bool = False, allow_none: bool = False,
+                 **kwargs):
         super(Attribute, self).__init__(**kwargs)
-        self.meta = bool(meta)
-        self.allow_none = allow_none
+        self.meta: bool = bool(meta)
+        self.allow_none: bool = allow_none
 
 
 class Relationship(BaseField, LinksObjectMixin):
@@ -438,14 +444,14 @@ class Relationship(BaseField, LinksObjectMixin):
     :arg bool dereference:
         If true, the relationship linkage is dereferenced automatic when
         decoded. (Implicitly sets *require_data* to Event.ALWAYS)
-    :arg set foreign_types:
+    :arg typing.Sequence[str] foreign_types:
         A set with all foreign types. If given, this list is used to validate
         the input data. Leave it empty to allow all types.
-    :arg callable finclude:
+    :arg typing.Coroutine finclude:
         A method on a :class:`~aiohttp_json_api.schema.Schema`
         which returns the related resources:
         ``finclude(self, resource, **kwargs)``.
-    :arg callable fquery:
+    :arg typing.Coroutine fquery:
         A method on a :class:`~aiohttp_json_api.schema.Schema`
         which returns the queries the related resources:
         ``fquery(self, resource, **kwargs)``.
@@ -461,22 +467,26 @@ class Relationship(BaseField, LinksObjectMixin):
     #:      field.to_many == isinstance(field, ToMany)
     to_many = None
 
-    def __init__(self, *, dereference=True, require_data=Event.ALWAYS,
-                 foreign_types=None, finclude=None, fquery=None, links=None,
+    def __init__(self, *, dereference: bool = True,
+                 require_data: Event = Event.ALWAYS,
+                 foreign_types: typing.Sequence[str] = None,
+                 finclude: typing.Coroutine = None,
+                 fquery: typing.Coroutine = None,
+                 links: typing.Sequence[Link] = None,
                  **kwargs):
         BaseField.__init__(self, **kwargs)
         LinksObjectMixin.__init__(self, links=links)
 
         # NOTE: The related resources are loaded by the schema class for
         #       performance reasons (one big query vs many small ones).
-        self.dereference = bool(dereference)
+        self.dereference: bool = dereference
 
-        self.foreign_types = frozenset(foreign_types or [])
-        self.finclude = finclude
-        self.fquery = fquery
+        self.foreign_types: typing.FrozenSet = frozenset(foreign_types or [])
+        self.finclude: typing.Coroutine = finclude
+        self.fquery: typing.Coroutine = fquery
 
         assert isinstance(require_data, Event)
-        self.require_data = require_data
+        self.require_data: Event = require_data
 
         # Add the default links.
         self.add_link(
@@ -486,7 +496,7 @@ class Relationship(BaseField, LinksObjectMixin):
             Link('jsonapi.related', name='related', link_of=self.name)
         )
 
-    def includer(self, f):
+    def includer(self, f: typing.Coroutine):
         """
         Descriptor to change the includer.
 
@@ -516,7 +526,7 @@ class Relationship(BaseField, LinksObjectMixin):
         f = self.finclude or self.default_include
         return await f(schema, resources, context, **kwargs)
 
-    def query_(self, f):
+    def query_(self, f: typing.Coroutine):
         """
         Descriptor to change the query function.
 
