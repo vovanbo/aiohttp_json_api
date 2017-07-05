@@ -289,6 +289,15 @@ class Schema(metaclass=SchemaMeta):
             raise Exception("Could not determine the resource id.")
         return str(resource_id)
 
+    def get_relationship_field(self, relation_name, source_parameter=None):
+        try:
+            return self._relationships[relation_name]
+        except KeyError:
+            raise HTTPBadRequest(
+                detail="Wrong relationship name '{}'.".format(relation_name),
+                source_parameter=source_parameter
+            )
+
     # Encoding
     # --------
 
@@ -381,7 +390,7 @@ class Schema(metaclass=SchemaMeta):
 
         return result
 
-    def encode_relationship(self, relname, resource, *, pagination=None):
+    def encode_relationship(self, relation_name, resource, *, pagination=None):
         """
         .. seealso::
 
@@ -401,7 +410,7 @@ class Schema(metaclass=SchemaMeta):
             The JSON API relationship object for the relationship *relname*
             of the *resource*
         """
-        field = self._relationships[relname]
+        field = self.get_relationship_field(relation_name)
 
         kwargs = dict()
         if field.to_one and pagination:
@@ -714,7 +723,7 @@ class Schema(metaclass=SchemaMeta):
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
         """
-        field = self._relationships[relation_name]
+        field = self.get_relationship_field(relation_name)
 
         self._validate_field_pre_decode(field, data, sp, context)
         decoded = self._decode_field(field, data, sp)
@@ -745,7 +754,7 @@ class Schema(metaclass=SchemaMeta):
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
         """
-        field = self._relationships[relation_name]
+        field = self.get_relationship_field(relation_name)
         assert field.to_many
 
         self._validate_field_pre_decode(field, data, sp, context)
@@ -777,7 +786,7 @@ class Schema(metaclass=SchemaMeta):
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
         """
-        field = self._relationships[relation_name]
+        field = self.get_relationship_field(relation_name)
         assert field.to_many
 
         self._validate_field_pre_decode(field, data, sp, context)
@@ -839,7 +848,7 @@ class Schema(metaclass=SchemaMeta):
             The list of relationships which will be included into the
             response. See also: :attr:`jsonapi.request.Request.japi_include`
         """
-        field = self._relationships[relation_name]
+        field = self.get_relationship_field(relation_name)
         assert field.to_one
 
         relative = await field.query(self, resource, context, **kwargs)
@@ -860,7 +869,7 @@ class Schema(metaclass=SchemaMeta):
         :arg str resource_id:
             The id of the resource or the resource instance.
         """
-        field = self._relationships[relation_name]
+        field = self.get_relationship_field(relation_name)
         assert field.to_many
 
         relatives = await field.query(self, resource, context, **kwargs)
