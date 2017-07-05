@@ -122,7 +122,7 @@ class BaseField(object):
         #: A :class:`aiohttp_json_api.jsonpointer.JSONPointer`
         #: to this field in a JSON API resource object. The source pointer is
         #: set from the Schema class during initialisation.
-        self.sp: JSONPointer = None
+        self.sp: 'JSONPointer' = None
 
         self.name: str = name
         self.mapped_key = mapped_key
