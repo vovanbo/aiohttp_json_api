@@ -3,7 +3,7 @@ Application registry
 ====================
 """
 import collections
-import typing
+from typing import MutableMapping
 
 from boltons.typeutils import make_sentinel
 
@@ -11,9 +11,16 @@ ARG_DEFAULT = make_sentinel(var_name='ARG_DEFAULT')
 ResourceID = collections.namedtuple('ResourceID', ['type', 'id'])
 
 
-class Registry(typing.NamedTuple):
-    schema_by_type: typing.MutableMapping
-    schema_by_resource: typing.MutableMapping
+class Registry:
+    __slots__ = ('schema_by_type', 'schema_by_resource')
+
+    def __init__(self, *, schema_by_type: MutableMapping,
+                 schema_by_resource: MutableMapping):
+        assert isinstance(schema_by_type, MutableMapping)
+        assert isinstance(schema_by_resource, MutableMapping)
+
+        self.schema_by_type = schema_by_type
+        self.schema_by_resource = schema_by_resource
 
     def get_schema(self, obj, default=ARG_DEFAULT):
         """
@@ -64,6 +71,6 @@ class Registry(typing.NamedTuple):
             result = ResourceID(str(obj['type']), str(obj['id']))
         else:
             schema = self.get_schema(obj)
-            result = ResourceID(schema.type, schema._get_id(obj))
+            result = ResourceID(schema.type, str(schema._get_id(obj)))
 
         return result._asdict() if asdict and result else result
