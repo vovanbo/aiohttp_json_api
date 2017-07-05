@@ -5,9 +5,10 @@ __version__ = '0.7.2'
 
 
 def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
-                  meta=None, context_class=None, custom_handlers=None):
-    import collections
+                  meta=None, context_class=None, registry_class=None,
+                  custom_handlers=None):
     import inspect
+    from collections import MutableMapping, Sequence
 
     from boltons.typeutils import issubclass
 
@@ -41,14 +42,20 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
             'Subclass of RequestContext is required. ' \
             'Got: {}'.format(context_class)
 
+    if registry_class is not None:
+        assert issubclass(registry_class, Registry), \
+            'Subclass of Registry is required. Got: {}'.format(registry_class)
+    else:
+        registry_class = Registry
+
     app[JSONAPI] = {
         'context_class': context_class or RequestContext,
         'jsonapi': {
             'version': version,
             'meta': meta
         },
-        'registry': Registry(schema_by_type=schema_by_type,
-                             schema_by_resource=schema_by_resource)
+        'registry': registry_class(schema_by_type=schema_by_type,
+                                   schema_by_resource=schema_by_resource)
     }
 
     collection_resource = app.router.add_resource(
@@ -75,9 +82,9 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
         if i[0] in default_handlers.__all__
     }
     if custom_handlers is not None:
-        if isinstance(custom_handlers, collections.MutableMapping):
+        if isinstance(custom_handlers, MutableMapping):
             handlers.update(custom_handlers)
-        elif isinstance(custom_handlers, collections.Sequence):
+        elif isinstance(custom_handlers, Sequence):
             for custom_handler in custom_handlers:
                 if inspect.iscoroutinefunction(custom_handler):
                     handlers[custom_handler.__name__] = custom_handler
