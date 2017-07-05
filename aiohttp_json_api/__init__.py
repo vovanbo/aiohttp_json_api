@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = """Vladimir Bolshakov"""
 __email__ = 'vovanbo@gmail.com'
-__version__ = '0.8.1'
+__version__ = '0.8.2'
 
 
 def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
