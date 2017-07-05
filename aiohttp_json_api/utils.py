@@ -112,8 +112,9 @@ async def render_document(resources, compound_documents, context, *,
     pagination = pagination or context.pagination
 
     if is_collection(resources):
-        document['data'] = \
-            [await encode_resource(r, context) for r in resources]
+        document['data'] = []
+        for resource in resources:
+            document['data'].append(await encode_resource(resource, context))
     else:
         document['data'] = (
             await encode_resource(resources, context)
