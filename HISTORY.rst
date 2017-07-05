@@ -2,6 +2,12 @@
 History
 =======
 
+0.8.1 (2017-07-05)
+------------------
+
+* Fix bdist_wheel python tag to support Python 3.5
+
+
 0.8.0 (2017-07-05)
 ------------------
 
