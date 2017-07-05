@@ -2,6 +2,12 @@
 History
 =======
 
+0.8.2 (2017-07-05)
+------------------
+
+* Properly handle error with wrong relation name (raise HTTP 400)
+
+
 0.8.1 (2017-07-05)
 ------------------
 
