@@ -100,6 +100,12 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     relationships_resource.add_route('DELETE', handlers['delete_relationship'])
     related_resource.add_route('GET', handlers['get_related'])
 
+    logger.debug('Registered JSON API related resources list:')
+    for resource in filter(lambda r: r.name.startswith('jsonapi'),
+                           app.router.resources()):
+        logger.debug('%s -> %s',
+                     [r.method for r in resource], resource.get_info())
+
     app.middlewares.append(jsonapi_middleware)
 
     return app
