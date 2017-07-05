@@ -346,7 +346,7 @@ class MissingField(ValidationError):
     def __init__(self, type, field, **kwargs):
         kwargs.setdefault(
             'detail',
-            f"The field '{type}.{field}' is required."
+            "The field '{}.{}' is required.".format(type, field)
         )
         super(MissingField, self).__init__(**kwargs)
 
@@ -366,7 +366,7 @@ class UnresolvableIncludePath(HTTPBadRequest):
 
         kwargs.setdefault(
             'detail',
-            f"The include path '{path}' does not exist."
+            "The include path '{}' does not exist.".format(path)
         )
         kwargs.setdefault('source_parameter', 'include')
         super(UnresolvableIncludePath, self).__init__(**kwargs)
@@ -382,7 +382,7 @@ class UnsortableField(HTTPBadRequest):
     def __init__(self, type, field, **kwargs):
         kwargs.setdefault(
             'detail',
-            f"The field '{type}.{field}' can not be used for sorting."
+            "The field '{}.{}' can not be used for sorting.".format(type, field)
         )
         kwargs.setdefault('source_parameter', 'sort')
         super(UnsortableField, self).__init__(**kwargs)
@@ -399,10 +399,10 @@ class UnfilterableField(HTTPBadRequest):
     def __init__(self, type, field, filtername, **kwargs):
         kwargs.setdefault(
             "detail",
-            f"The field '{type}.{field}' does not support "
-            f"the '{filtername}' filter."
+            "The field '{}.{}' does not support "
+            "the '{}' filter.".format(type, field, filtername)
         )
-        kwargs.setdefault('source_parameter', f'filter[{field}]')
+        kwargs.setdefault('source_parameter', 'filter[{}]'.format(field))
         super(UnfilterableField, self).__init__(**kwargs)
 
 
@@ -414,6 +414,6 @@ class ResourceNotFound(HTTPNotFound):
     def __init__(self, type, id, **kwargs):
         kwargs.setdefault(
             "detail",
-            f"The resource (type='{type}', id='{id}') does not exist."
+            "The resource (type='{}', id='{}') does not exist.".format(type, id)
         )
         super(ResourceNotFound, self).__init__(**kwargs)

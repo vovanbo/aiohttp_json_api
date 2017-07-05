@@ -130,7 +130,7 @@ class BasePagination:
         """
         query = self.request.query.copy()
         query.update({
-            f'page[{key}]': str(value)
+            'page[{}]'.format(key): str(value)
             for key, value in kwargs.items()
         })
 

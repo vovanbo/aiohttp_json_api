@@ -24,7 +24,7 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
 
     for schema_cls in schemas:
         assert issubclass(schema_cls, Schema), \
-            f'Schema class is required. Got: {schema_cls}'
+            'Schema class is required. Got: {}'.format(schema_cls)
 
         schema = schema_cls(app)
         schema_by_type[schema.type] = schema
@@ -38,7 +38,8 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
 
     if context_class is not None:
         assert issubclass(context_class, RequestContext), \
-            f'Subclass of RequestContext is required. Got: {context_class}'
+            'Subclass of RequestContext is required. ' \
+            'Got: {}'.format(context_class)
 
     app[JSONAPI] = {
         'context_class': context_class or RequestContext,
@@ -51,19 +52,19 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     }
 
     collection_resource = app.router.add_resource(
-        f'{base_path}/{{type}}',
+        '{}/{{type}}'.format(base_path),
         name='jsonapi.collection'
     )
     resource_resource = app.router.add_resource(
-        f'{base_path}/{{type}}/{{id}}',
+        '{}/{{type}}/{{id}}'.format(base_path),
         name='jsonapi.resource'
     )
     relationships_resource = app.router.add_resource(
-        f'{base_path}/{{type}}/{{id}}/relationships/{{relation}}',
+        '{}/{{type}}/{{id}}/relationships/{{relation}}'.format(base_path),
         name='jsonapi.relationships'
     )
     related_resource = app.router.add_resource(
-        f'{base_path}/{{type}}/{{id}}/{{relation}}',
+        '{}/{{type}}/{{id}}/{{relation}}'.format(base_path),
         name='jsonapi.related'
     )
 

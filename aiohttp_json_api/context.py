@@ -104,7 +104,8 @@ class RequestContext(object):
             if key_match and not value_match:
                 field = key_match.group('field')
                 raise HTTPBadRequest(
-                    detail=f"The filter '{field}' is not correct applied.",
+                    detail="The filter '{}' "
+                           "is not correct applied.".format(field),
                     source_parameter=key
                 )
 
@@ -118,7 +119,8 @@ class RequestContext(object):
                 except Exception as err:
                     logger.debug(err, exc_info=False)
                     raise HTTPBadRequest(
-                        detail=f"The rule '{rule}' is not JSON serializable",
+                        detail="The rule '{}' "
+                               "is not JSON serializable".format(rule),
                         source_parameter=key
                     )
                 filters.append((field, filtername, rule))

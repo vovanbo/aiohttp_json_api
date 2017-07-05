@@ -23,8 +23,8 @@ def jsonapi_content(handler):
 
         if context.request.content_type != JSONAPI_CONTENT_TYPE:
             raise HTTPUnsupportedMediaType(
-                detail=f"Only '{JSONAPI_CONTENT_TYPE}' "
-                       f"content-type is acceptable."
+                detail="Only '{}' content-type "
+                       "is acceptable.".format(JSONAPI_CONTENT_TYPE)
             )
         return await handler(*args, **kwargs)
     return wrapper

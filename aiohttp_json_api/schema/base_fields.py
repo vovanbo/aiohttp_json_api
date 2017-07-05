@@ -564,7 +564,7 @@ class Relationship(BaseField, LinksObjectMixin):
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if self.foreign_types and not data['type'] in self.foreign_types:
-            detail = f'Unexpected type: "{data["type"]}".'
+            detail = 'Unexpected type: "{}".'.format(data["type"])
             raise InvalidValue(detail=detail, source_pointer=sp / 'type')
 
     def validate_relationship_object(self, schema, data, sp):
@@ -587,7 +587,7 @@ class Relationship(BaseField, LinksObjectMixin):
 
         if not (data.keys() <= {'links', 'data', 'meta'}):
             unexpected = (data.keys() - {'links', 'data', 'meta'}).pop()
-            detail = f'Unexpected member: "{unexpected}".'
+            detail = 'Unexpected member: "{}".'.format(unexpected)
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if (self.dereference or self.require_data) and 'data' not in data:
