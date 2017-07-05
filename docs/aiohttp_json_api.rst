@@ -62,11 +62,6 @@ Submodules
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: aiohttp_json_api.setup
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 .. automodule:: aiohttp_json_api.utils
     :members:
     :undoc-members:
