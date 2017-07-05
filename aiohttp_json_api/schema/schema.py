@@ -108,7 +108,7 @@ class SchemaMeta(type):
             A dictionary with all properties defined on the schema class
             (attributes, methods, ...)
         """
-        fields_by_key = dict()
+        fields_by_key = collections.OrderedDict()
 
         # Create a copy of the inherited fields.
         for base in reversed(bases):
@@ -159,38 +159,38 @@ class SchemaMeta(type):
                 parent.add_link(field)
 
         # Find the *top-level* attributes, relationships, links and meta fields.
-        attributes = {
-            key: field
+        attributes = collections.OrderedDict(
+            (key, field)
             for key, field in fields_by_key.items()
             if isinstance(field, Attribute) and not field.meta
-        }
+        )
         attributes.pop('id', None)
         cls._assign_sp(attributes.values(), JSONPointer('/attributes'))
         attrs['_attributes'] = attributes
 
-        relationships = {
-            key: field
+        relationships = collections.OrderedDict(
+            (key, field)
             for key, field in fields_by_key.items()
             if isinstance(field, Relationship)
-        }
+        )
         cls._assign_sp(
             relationships.values(), JSONPointer('/relationships')
         )
         attrs['_relationships'] = relationships
 
-        links = {
-            key: field
+        links = collections.OrderedDict(
+            (key, field)
             for key, field in fields_by_key.items()
             if isinstance(field, Link) and not field.link_of
-        }
+        )
         cls._assign_sp(links.values(), JSONPointer('/links'))
         attrs['_links'] = links
 
-        meta = {
-            key: field
+        meta = collections.OrderedDict(
+            (key, field)
             for key, field in fields_by_key.items()
             if isinstance(field, Attribute) and field.meta
-        }
+        )
         cls._assign_sp(links.values(), JSONPointer('/meta'))
         attrs['_meta'] = meta
 
