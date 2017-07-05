@@ -2,6 +2,23 @@
 History
 =======
 
+0.8.0 (2017-07-05)
+------------------
+
+* Python 3.5 support (avoid usage of Python 3.6 format strings)
+* Registry is plain object now
+* Custom Registry support (`registry_class` parameter in ``aiohttp_json_api.setup_jsonapi`` method)
+* Log debugging information at start about registered resources, methods and routes
+* Use OrderedDict inside SchemaMeta
+
+
+0.7.2 (2017-07-04)
+------------------
+
+* Fix bug with JSONPointer when part passed via __truediv__ is integer
+* Validate relationship object before adding relationship in ToMany field
+
+
 0.7.1 (2017-07-04)
 ------------------
 
