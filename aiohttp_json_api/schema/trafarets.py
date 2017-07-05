@@ -28,7 +28,8 @@ class DecimalTrafaret(t.Float):
             return self.value_type(value)
         except (ValueError, decimal.InvalidOperation):
             self._failure(
-                f"value can't be converted to {self.value_type.__name__}",
+                "value can't be converted "
+                "to {}".format(self.value_type.__name__),
                 value=value
             )
 

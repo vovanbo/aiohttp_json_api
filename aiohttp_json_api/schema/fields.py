@@ -375,7 +375,7 @@ class UUID(Attribute):
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if self.version is not None and self.version != data.version:
-            detail = f"Not a UUID{self.version}."
+            detail = "Not a UUID{}.".format(self.version)
             raise InvalidValue(detail=detail, source_pointer=sp)
         return super().validate_pre_decode(schema, data, sp, context)
 

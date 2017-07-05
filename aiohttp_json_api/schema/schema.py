@@ -425,12 +425,12 @@ class Schema(metaclass=SchemaMeta):
         """
         writable = field.writable in (Event.ALWAYS, context.event)
         if not writable and sp is not None:
-            detail = f"The field '{field.name}' is readonly."
+            detail = "The field '{}' is readonly.".format(field.name)
             raise ValidationError(detail=detail, source_pointer=sp)
 
         required = field.required in (Event.ALWAYS, context.event)
         if required and data is None:
-            detail = f"The field '{field.name}' is required."
+            detail = "The field '{}' is required.".format(field.name)
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if sp is not None:
@@ -462,8 +462,8 @@ class Schema(metaclass=SchemaMeta):
 
         if expected_id:
             if data['id'] != expected_id:
-                detail = f'The id "{data["id"]}" does not match the endpoint ' \
-                         f'("{expected_id}").'
+                detail = 'The id "{}" does not match the endpoint ' \
+                         '("{}").'.format(data["id"], expected_id)
                 raise HTTPConflict(detail=detail, source_pointer=sp / 'id')
             else:
                 self._validate_field_pre_decode(
@@ -894,7 +894,7 @@ class Schema(metaclass=SchemaMeta):
         field = self._relationships.get(relation_name)
         if field is None:
             raise HTTPBadRequest(
-                detail=f"Wrong relation name '{relation_name}'.",
+                detail="Wrong relation name '{}'.".format(relation_name),
                 source_parameter='include'
             )
         return await field.include(self, resources, context,
