@@ -900,11 +900,7 @@ class Schema(metaclass=SchemaMeta):
             If *to-many* relationships are paginated, the relatives from the
             first page should be returned.
         """
-        field = self._relationships.get(relation_name)
-        if field is None:
-            raise HTTPBadRequest(
-                detail="Wrong relation name '{}'.".format(relation_name),
-                source_parameter='include'
-            )
+        field = self.get_relationship_field(relation_name,
+                                            source_parameter='include')
         return await field.include(self, resources, context,
                                    rest_path=rest_path, **kwargs)

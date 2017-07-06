@@ -180,8 +180,10 @@ async def get_relationship(request: web.Request):
     if schema is None:
         raise HTTPNotFound()
 
-    relation_type = request.match_info['relation']
-    relation_field = schema._relationships[relation_type]
+    relation_name = request.match_info['relation']
+    relation_field = schema.get_relationship_field(
+        relation_name, source_parameter='URI'
+    )
 
     resource_id = request.match_info.get('id')
     await validate_uri_resource_id(schema, resource_id, context)
@@ -194,7 +196,9 @@ async def get_relationship(request: web.Request):
 
     resource = await schema.query_resource(id_=resource_id, context=context)
     relation = await relation_field.query(schema, resource, context)
-    result = relation_field.encode(schema, relation)
+    result = await schema.encode_relationship(
+        relation_name, relation, pagination=pagination
+    )
     return jsonapi_response(result)
 
 
@@ -212,7 +216,9 @@ async def post_relationship(request: web.Request):
         raise HTTPNotFound()
 
     relation_name = request.match_info['relation']
-    relation_field = schema._relationships[relation_name]
+    relation_field = schema.get_relationship_field(
+        relation_name, source_parameter='URI'
+    )
     pagination = None
 
     resource_id = request.match_info.get('id')
@@ -231,7 +237,9 @@ async def post_relationship(request: web.Request):
         data=data,
         sp=JSONPointer('')
     )
-    result = relation_field.encode(schema, resource)
+    result = await schema.encode_relationship(
+        relation_name, resource, pagination=pagination
+    )
     return jsonapi_response(result)
 
 
@@ -249,7 +257,9 @@ async def patch_relationship(request: web.Request):
         raise HTTPNotFound()
 
     relation_name = request.match_info['relation']
-    relation_field = schema._relationships[relation_name]
+    relation_field = schema.get_relationship_field(
+        relation_name, source_parameter='URI'
+    )
 
     resource_id = request.match_info.get('id')
     await validate_uri_resource_id(schema, resource_id, context)
@@ -268,7 +278,9 @@ async def patch_relationship(request: web.Request):
         sp=JSONPointer('')
     )
 
-    result = relation_field.encode(schema, resource)
+    result = await schema.encode_relationship(
+        relation_name, resource, pagination=pagination
+    )
     return jsonapi_response(result)
 
 
@@ -313,7 +325,9 @@ async def get_related(request: web.Request):
         raise HTTPNotFound()
 
     relation_name = request.match_info['relation']
-    relation_field = schema._relationships[relation_name]
+    relation_field = schema.get_relationship_field(
+        relation_name, source_parameter='URI'
+    )
     compound_documents = None
     pagination = None
 
