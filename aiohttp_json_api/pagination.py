@@ -390,7 +390,7 @@ class Cursor(BasePagination):
     @classmethod
     def from_request(cls, request: web.Request,
                      default_limit: int = DEFAULT_LIMIT,
-                     cursor_re: typing.Optional[str] = None) -> 'Cursor':
+                     cursor_re: str = None) -> 'Cursor':
         """
         Extracts the current pagination values (*limit* and *cursor*) from the
         request's query parameters.
