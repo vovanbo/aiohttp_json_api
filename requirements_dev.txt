@@ -9,5 +9,6 @@ pyyaml==3.12
 sphinx==1.6.2
 tox==2.7.0
 twine==1.9.1
+typing==3.6.1
 wheel==0.29.0
 watchdog==0.8.3
