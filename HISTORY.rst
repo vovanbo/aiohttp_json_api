@@ -2,6 +2,14 @@
 History
 =======
 
+0.9.3 (2017-07-06)
+------------------
+
+* Setup content-type validation on mutation API methods (application/vnd.api+json is required)
+* Properly get and encode relationships fields
+* Update docs and typing for ensure_identifier Registry's method
+
+
 0.9.2 (2017-07-06)
 ------------------
 
