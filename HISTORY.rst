@@ -2,6 +2,16 @@
 History
 =======
 
+0.9.0 (2017-07-06)
+------------------
+
+* Handle aiohttp-json-api exceptions and errors in middleware. If exceptions is not related to JSON API errors, then exception is reraised
+* Huge refactoring of RequestContext
+* No more use of boltons cachedproperties, instead use parsing static methods related to each request context' entity
+* Update docs for RequestContext methods
+* Add typings to RequestContext
+
+
 0.8.2 (2017-07-05)
 ------------------
 
