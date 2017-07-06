@@ -70,12 +70,11 @@ __all__ = [
 class String(Attribute):
     def __init__(self, *, allow_blank: bool = False,
                  regex: typing.Union[str, bytes, typing.re] = None,
-                 choices:
-                    typing.Optional[typing.Union[
-                        typing.Iterable[str], typing.Type[Enum]
-                    ]] = None,
-                 min_length: typing.Optional[int] = None,
-                 max_length: typing.Optional[int] = None,
+                 choices: typing.Union[
+                     typing.Iterable[str], typing.Type[Enum]
+                 ] = None,
+                 min_length: int = None,
+                 max_length: int = None,
                  **kwargs):
         super(String, self).__init__(**kwargs)
         self._trafaret = t.String(allow_blank=allow_blank, regex=regex,
@@ -105,12 +104,8 @@ class String(Attribute):
 
 
 class Integer(Attribute):
-    def __init__(self, *,
-                 gte: typing.Optional[int] = None,
-                 lte: typing.Optional[int] = None,
-                 gt: typing.Optional[int] = None,
-                 lt: typing.Optional[int] = None,
-                 **kwargs):
+    def __init__(self, *, gte: int = None, lte: int = None,
+                 gt: int = None, lt: int = None, **kwargs):
         super(Integer, self).__init__(**kwargs)
         self._trafaret = t.Int(gte=gte, lte=lte, gt=gt, lt=lt)
         if self.allow_none:
@@ -131,12 +126,8 @@ class Integer(Attribute):
 
 
 class Float(Attribute):
-    def __init__(self, *,
-                 gte: typing.Optional[int] = None,
-                 lte: typing.Optional[int] = None,
-                 gt: typing.Optional[int] = None,
-                 lt: typing.Optional[int] = None,
-                 **kwargs):
+    def __init__(self, *, gte: int = None, lte: int = None,
+                 gt: int = None, lt: int = None, **kwargs):
         super(Float, self).__init__(**kwargs)
         self._trafaret = t.Float(gte=gte, lte=lte, gt=gt, lt=lt)
         if self.allow_none:
@@ -194,12 +185,8 @@ class Complex(Attribute):
 
 class Decimal(Attribute):
     """Encodes and decodes a :class:`decimal.Decimal` as a string."""
-    def __init__(self, *,
-                 gte: typing.Optional[int] = None,
-                 lte: typing.Optional[int] = None,
-                 gt: typing.Optional[int] = None,
-                 lt: typing.Optional[int] = None,
-                 **kwargs):
+    def __init__(self, *, gte: int = None, lte: int = None,
+                 gt: int = None, lt: int = None, **kwargs):
         super(Decimal, self).__init__(**kwargs)
         self._trafaret = DecimalTrafaret(gte=gte, lte=lte, gt=gt, lt=lt) >> str
         if self.allow_none:
