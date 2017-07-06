@@ -6,6 +6,7 @@ Subpackages
 
 .. toctree::
 
+    aiohttp_json_api.compat
     aiohttp_json_api.jsonpointer
     aiohttp_json_api.schema
 
