@@ -6,7 +6,7 @@ __version__ = '0.8.2'
 
 def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
                   meta=None, context_class=None, registry_class=None,
-                  custom_handlers=None):
+                  custom_handlers=None, log_errors=True):
     import inspect
     from collections import MutableMapping, Sequence
 
@@ -55,7 +55,8 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
             'meta': meta
         },
         'registry': registry_class(schema_by_type=schema_by_type,
-                                   schema_by_resource=schema_by_resource)
+                                   schema_by_resource=schema_by_resource),
+        'log_errors': log_errors
     }
 
     collection_resource = app.router.add_resource(
