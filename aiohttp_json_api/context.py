@@ -5,28 +5,49 @@ Request context
 
 import json
 import re
+from collections import OrderedDict
+from enum import Enum
+from typing import Optional, Tuple, MutableMapping, Any, Union
 
 from aiohttp import web
-from boltons.cacheutils import cachedproperty
 
 from .const import JSONAPI
 from .errors import HTTPBadRequest
 from .log import logger
+from .schema import Schema
 from .schema.common import Event
 
+FILTER_KEY = re.compile(r"filter\[(?P<field>\w[-\w_]*)\]")
+FILTER_VALUE = re.compile(r"(?P<name>[a-z]+):(?P<rule>.*)")
+FIELDS_RE = re.compile(r"fields\[(?P<name>\w[-\w_]*)\]")
 
-class RequestContext(object):
-    FILTER_KEY = re.compile(r"filter\[(?P<field>[A-z0-9-]+)\]")
-    FILTER_VALUE = re.compile(r"(?P<filtername>[a-z]+):(?P<rule>.*)")
-    FIELDS_RE = re.compile(r"fields\[([A-z0-9-]+)\]")
 
+class SortDirection(Enum):
+    ASC = '+'
+    DESC = '-'
+
+
+class RequestContext:
     def __init__(self, request: web.Request):
         self._pagination = None
-        self.request = request
+        self.request: 'web.Request' = request
+        self.event: Event = Event[self.request.method]
+        self.filters: MutableMapping[Tuple[str, str], Any] = \
+            self.parse_request_filters(request)
+        self.fields: MutableMapping[str, Tuple[str, ...]] = \
+            self.parse_request_fields(request)
+        self.include: Tuple[Tuple[str], ...] = \
+            self.parse_request_includes(request)
+        self.sorting: MutableMapping[Tuple[str, ...], SortDirection] = \
+            self.parse_request_sorting(request)
 
     @property
-    def event(self):
-        return Event[self.request.method]
+    def schema(self) -> Optional[Schema]:
+        registry = self.request.app[JSONAPI]['registry']
+        try:
+            return registry.get_schema(self.request.match_info.get('type'))
+        except KeyError:
+            return None
 
     @property
     def pagination(self):
@@ -41,63 +62,58 @@ class RequestContext(object):
 
         return None
 
-    @property
-    def schema(self):
-        registry = self.request.app[JSONAPI]['registry']
-        try:
-            return registry.get_schema(self.request.match_info.get('type'))
-        except KeyError:
-            return None
-
-    @cachedproperty
-    def filters(self):
+    @staticmethod
+    def parse_request_filters(
+        request: web.Request) -> MutableMapping[Tuple[str, str], Any]:
         """
         .. hint::
 
             Please note, that the *filter* strategy is not defined by the
-            jsonapi specification and depends on the implementation.
+            JSON API specification and depends on the implementation.
             If you want to use another filter strategy,
-            feel free to **override** this property.
+            feel free to **override** this method.
 
-        Returns a list, which contains 3-tuples::
+        Returns a OrderedDict with tuples (field, name) as keys
+        and rule as values. Rule value is JSON deserialized from query string.
 
-            (fieldname, filtername, rule)
+        Filters can be applied using the query string.
 
-        This tuples describes on which field a filter is applied. For example::
+        .. code-block:: python3
 
-            ("name", "startswith", "Homer")
-            ("age", "gt", 25)
-            ("name", "in", ["Homer", "Marge"])
+            >>> from aiohttp_json_api.context import RequestContext
+            >>> from aiohttp.test_utils import make_mocked_request
 
-        Filters can be applied using the query string::
+            >>> request = make_mocked_request('GET', '/api/User/?filter[name]=endswith:"Simpson"')
+            >>> RequestContext.parse_request_filters(request)
+            OrderedDict([(('name', 'endswith'), 'Simpson')])
 
-            >>> # /api/User/?filter[name]=endswith:'Simpson'
-            >>> context.filters
-            [("name", "endswith", "Simpson")]
+            >>> request = make_mocked_request('GET', '/api/User/?filter[name]=endswith:"Simpson"&filter[name]=in:["Some","Names"]')
+            >>> RequestContext.parse_request_filters(request)
+            OrderedDict([(('name', 'endswith'), 'Simpson'), (('name', 'in'), ['Some', 'Names'])])
 
-            >>> # /api/User/?filter[name]=in:['Homer Simpson', 'Darth Vader']
-            >>> context.filters
-            [("name", "in", ["Homer Simpson", "Darth Vader"])]
+            >>> request = make_mocked_request('GET', '/api/User/?filter[name]=in:["Homer Simpson", "Darth Vader"]')
+            >>> RequestContext.parse_request_filters(request)
+            OrderedDict([(('name', 'in'), ['Homer Simpson', 'Darth Vader'])])
 
-            >>> # /api/User/?filter[email]=startswith:'lisa'&filter[age]=lt:20
-            >>> context.filters
-            [("email", "startswith", "lisa"), ("age", "lt", 20)]
+            >>> request = make_mocked_request('GET', '/api/User/?filter[email]=startswith:"lisa"&filter[age]=lt:20')
+            >>> RequestContext.parse_request_filters(request)
+            OrderedDict([(('email', 'startswith'), 'lisa'), (('age', 'lt'), 20)])
 
         The general syntax is::
 
-            "?filter[fieldname]=filtername:rule"
+            "?filter[field]=name:rule"
 
         where *rule* is a JSON value.
 
-        :raises BadRequest:
+        :raises HTTPBadRequest:
             If the rule of a filter is not a JSON object.
-        :raises BadRequest:
+        :raises HTTPBadRequest:
             If a filtername contains other characters than *[a-z]*.
         """
-        filters = []
-        for key, values in self.request.query.items():
-            key_match = re.fullmatch(self.FILTER_KEY, key)
-            value_match = re.fullmatch(self.FILTER_VALUE, values[0])
+        filters = OrderedDict()
+        for key, value in request.query.items():
+            key_match = re.fullmatch(FILTER_KEY, key)
+            value_match = re.fullmatch(FILTER_VALUE, value)
 
             # If the key indicates a filter, but the value is not correct
             # formatted.
@@ -109,10 +125,10 @@ class RequestContext(object):
                     source_parameter=key
                 )
 
-            # The key indicates a filter and the filternames exists.
+            # The key indicates a filter and the filter name exists.
             elif key_match and value_match:
-                field = key_match.group(1)
-                filtername = value_match.group('filtername')
+                field = key_match.group('field')
+                name = value_match.group('name')
                 rule = value_match.group('rule')
                 try:
                     rule = json.loads(rule)
@@ -123,124 +139,127 @@ class RequestContext(object):
                                "is not JSON serializable".format(rule),
                         source_parameter=key
                     )
-                filters.append((field, filtername, rule))
+                filters[(field, name)] = rule
         return filters
 
-    @cachedproperty
-    def fields(self):
+    @staticmethod
+    def parse_request_fields(
+        request: web.Request) -> MutableMapping[str, Tuple[str, ...]]:
         """
         The fields, which should be included in the response (sparse fieldset).
 
         .. code-block:: python3
 
-            >>> # /api/User?fields[User]=email,name&fields[Post]=comments
-            >>> context.fields
-            {"User": ["email", "name"], "Post": ["comments"]}
+            >>> from aiohttp_json_api.context import RequestContext
+            >>> from aiohttp.test_utils import make_mocked_request
+            >>> request = make_mocked_request('GET', '/api/User?fields[User]=email,name&fields[Post]=comments')
+            >>> RequestContext.parse_request_fields(request)
+            OrderedDict([('User', ('email', 'name')), ('Post', ('comments',))])
 
         :seealso: http://jsonapi.org/format/#fetching-sparse-fieldsets
         """
-        fields = dict()
-        for key, value in self.request.query.items():
-            match = re.fullmatch(self.FIELDS_RE, key)
+        fields = OrderedDict()
+        for key, value in request.query.items():
+            match = re.fullmatch(FIELDS_RE, key)
             if match:
-                typename = match.group(1)
-                type_fields = value[0].split(',')
-                type_fields = [
-                    item.strip() for item in type_fields if item.strip()
-                ]
+                typename = match.group('name')
+                type_fields = tuple(item.strip()
+                                    for item in value.split(',')
+                                    if item.strip())
 
                 fields[typename] = type_fields
         return fields
 
-    @cachedproperty
-    def include(self):
+    @staticmethod
+    def parse_request_includes(request: web.Request) -> Tuple[Tuple[str], ...]:
         """
         Returns the names of the relationships, which should be included into
         the response.
 
         .. code-block:: python3
 
-            >>> # /api/Post?include=author,comments.author
-            >>> context.include
-            [["author"], ["comments", "author"]]
+            >>> from aiohttp_json_api.context import RequestContext
+            >>> from aiohttp.test_utils import make_mocked_request
+            >>> request = make_mocked_request('GET', '/api/Post?include=author,comments.author')
+            >>> RequestContext.parse_request_includes(request)
+            (('author',), ('comments', 'author'))
 
         :seealso: http://jsonapi.org/format/#fetching-includes
         """
-        include = self.request.query.get('include', '')
-        return [path.split('.') for path in include.split(',') if path]
+        include = request.query.get('include', '')
+        return tuple(
+            tuple(path.split('.')) for path in include.split(',') if path
+        )
 
-    @cachedproperty
-    def sort(self):
+    @staticmethod
+    def parse_request_sorting(
+        request: web.Request) -> MutableMapping[Tuple[str, ...], SortDirection]:
         """
-        Returns a list with two tuples, describing how the output should be
-        sorted:
+        Returns a mapping with tuples as keys, and values with SortDirection,
+        describing how the output should be sorted.
 
         .. code-block:: python3
 
-            >>> # /api/Post?sort=name,-age,+comments.count
-            [("+", ["name"]), ("-", ["age"]), ("+", ["comments", "count"])]]
+            >>> from aiohttp_json_api.context import RequestContext
+            >>> from aiohttp.test_utils import make_mocked_request
+            >>> request = make_mocked_request('GET', '/api/Post?sort=name,-age,+comments.count')
+            >>> RequestContext.parse_request_sorting(request)
+            OrderedDict([(('name',), <SortDirection.ASC: '+'>), (('age',), <SortDirection.DESC: '-'>), (('comments', 'count'), <SortDirection.ASC: '+'>)])
 
         :seealso: http://jsonapi.org/format/#fetching-sorting
         """
-        sort_in_query = self.request.query.get('sort')
+        sort_in_query = request.query.get('sort')
         sort_in_query = sort_in_query.split(',') if sort_in_query else list()
 
-        sort = list()
+        sort = OrderedDict()
+
         for field in sort_in_query:
             if field[0] == '+' or field[0] == '-':
-                direction = field[0]
+                direction = SortDirection(field[0])
                 field = field[1:]
             else:
-                direction = '+'
+                direction = SortDirection.ASC
 
-            field = field.split('.')
-            field = [e.strip() for e in field]
+            field = tuple(e.strip() for e in field.split('.'))
+            sort[field] = direction
 
-            sort.append((direction, field))
         return sort
 
-    def has_filter(self, field, filtername):
+    def has_filter(self, field: str, name: str) -> bool:
         """
-        Returns true, if the filter *filtername* has been applied at least once
+        Returns true, if the filter *name* has been applied at least once
         on the *field*.
 
         :arg str field:
-        :arg str filtername:
+            Name of field
+        :arg str name:
+            Name of filter
         """
-        return any(
-            field == item[0] and filtername == item[1]
-            for item in self.filters
-        )
+        return (field, name) in self.filters
 
-    def get_filter(self, field, filtername, default=None):
+    def get_filter(self, field: str, name: str, default: Any = None) -> Any:
         """
-        If the filter *filtername* has been applied on the *field*, the
-        *filterrule* is returned and *default* otherwise.
+        If the filter *name* has been applied on the *field*, the
+        *filter* is returned and *default* otherwise.
 
         :arg str field:
-        :arg str filtername:
-        :arg default:
-            A fallback value for the filter.
+            Name of field
+        :arg str name:
+            Name of filter
+        :arg Any default:
+            A fallback rule value for the filter.
         """
-        for item in self.filters:
-            if item[0] == field and item[1] == filtername:
-                return item[2]
-        return default
+        return self.filters.get((field, name), default)
 
-    def get_order(self, field, default='+'):
+    def get_order(self, field: Union[str, Tuple[str, ...]],
+                  default: SortDirection = SortDirection.ASC) -> SortDirection:
         """
         Checks if a sort criterion (``+`` or ``-``) for the *field* exists
         and returns it.
 
-        :arg str field:
-        :arg default:
+        :arg Union[str, Tuple[str, ...]] field:
+        :arg SortDirection default:
             Returned, if no criterion is set by the request.
         """
-        if isinstance(field, str):
-            field = field.split('.')
-
-        for direction, field_ in self.sort:
-            print(field_, field)
-            if field_ == field:
-                return direction
-        return default
+        field = tuple(field.split('.')) if isinstance(field, str) else field
+        return self.sorting.get(field, default)
