@@ -1,8 +1,12 @@
 """
 Schema's common stuff
 """
+import sys
 
-from enum import Enum, Flag, auto
+if sys.version_info < (3, 6):
+    from aiohttp_json_api.compat.enum import Enum, Flag, auto
+else:
+    from enum import Enum, Flag, auto
 
 
 class Step(Enum):
