@@ -30,16 +30,12 @@ class SortDirection(Enum):
 class RequestContext:
     def __init__(self, request: web.Request):
         self._pagination = None
-        self.request: 'web.Request' = request
-        self.event: Event = Event[self.request.method]
-        self.filters: MutableMapping[Tuple[str, str], Any] = \
-            self.parse_request_filters(request)
-        self.fields: MutableMapping[str, Tuple[str, ...]] = \
-            self.parse_request_fields(request)
-        self.include: Tuple[Tuple[str], ...] = \
-            self.parse_request_includes(request)
-        self.sorting: MutableMapping[Tuple[str, ...], SortDirection] = \
-            self.parse_request_sorting(request)
+        self.request = request
+        self.event = Event[self.request.method]
+        self.filters = self.parse_request_filters(request)
+        self.fields = self.parse_request_fields(request)
+        self.include = self.parse_request_includes(request)
+        self.sorting = self.parse_request_sorting(request)
 
     @property
     def schema(self) -> Optional[Schema]:
