@@ -2,6 +2,13 @@
 History
 =======
 
+0.9.2 (2017-07-06)
+------------------
+
+* Fix bugs related to Python 3.5
+* Generation of documentation on RTD is fixed
+
+
 0.9.1 (2017-07-06)
 ------------------
 
