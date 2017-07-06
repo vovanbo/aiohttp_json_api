@@ -123,6 +123,7 @@ async def get_resource(request: web.Request):
     return jsonapi_response(result)
 
 
+@jsonapi_content
 async def patch_resource(request: web.Request):
     """
     Uses the :meth:`~aiohttp_json_api.schema.Schema.update_resource`
@@ -197,6 +198,7 @@ async def get_relationship(request: web.Request):
     return jsonapi_response(result)
 
 
+@jsonapi_content
 async def post_relationship(request: web.Request):
     """
     Uses the :meth:`~aiohttp_json_api.schema.Schema.add_relationship`
@@ -233,6 +235,7 @@ async def post_relationship(request: web.Request):
     return jsonapi_response(result)
 
 
+@jsonapi_content
 async def patch_relationship(request: web.Request):
     """
     Uses the :meth:`~aiohttp_json_api.schema.Schema.update_relationship`
