@@ -41,7 +41,6 @@ async def get_collection(request: web.Request):
     """
     context = request[JSONAPI]
     schema = context.schema
-
     if schema is None:
         raise HTTPNotFound()
 
@@ -93,7 +92,7 @@ async def post_resource(request: web.Request):
     )
 
     return jsonapi_response(result,
-                            status=HTTPStatus.CREATED.value,
+                            status=HTTPStatus.CREATED,
                             headers={hdrs.LOCATION: str(location)})
 
 
@@ -106,7 +105,6 @@ async def get_resource(request: web.Request):
     """
     context = request[JSONAPI]
     schema = context.schema
-
     if schema is None:
         raise HTTPNotFound()
 
