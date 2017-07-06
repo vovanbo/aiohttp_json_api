@@ -92,17 +92,17 @@ class BaseField(object):
     :arg str mapped_key:
         The name of the associated property on the resource class. If not
         explicitly given, it's the same as :attr:`key`.
-    :arg str writable:
+    :arg Event writable:
         Can be either *never*, *always*, *creation* or *update* and
         describes in which CRUD context the field is writable.
-    :arg str required:
+    :arg Event required:
         Can be either *never*, *always*, *creation* or *update* and
         describes in which CRUD context the field is required as input.
-    :arg callable fget:
+    :arg typing.Coroutine fget:
         A method on a :class:`~aiohttp_json_api.schema.Schema`
         which returns the current value of the resource's attribute:
         ``fget(self, resource, **kwargs)``.
-    :arg fset:
+    :arg typing.Coroutine fset:
         A method on a :class:`~aiohttp_json_api.schema.Schema`
         which updates the current value of the resource's attribute:
         ``fget(self, resource, data, sp, **kwargs)``.
@@ -123,17 +123,17 @@ class BaseField(object):
         #: set from the Schema class during initialisation.
         self.sp = None
 
-        self.name: str = name
+        self.name = name
         self.mapped_key = mapped_key
 
         assert isinstance(writable, Event)
-        self.writable: Event = writable
+        self.writable = writable
 
         assert isinstance(required, Event)
-        self.required: Event = required
+        self.required = required
 
-        self.fget: typing.Coroutine = fget
-        self.fset: typing.Coroutine = fset
+        self.fget = fget
+        self.fset = fset
         self.fvalidators = list()
 
     def __call__(self, f):
@@ -312,9 +312,9 @@ class Link(BaseField):
                  fget: typing.Coroutine = None, normalize: bool = True):
         super(Link, self).__init__(name=name, writable=Event.NEVER, fget=fget)
 
-        self.normalize: bool = bool(normalize)
-        self.route: str = route
-        self.link_of: str = link_of
+        self.normalize = bool(normalize)
+        self.route = route
+        self.link_of = link_of
 
     async def default_get(self, schema, resource, **kwargs):
         """Returns the formatted :attr:`href`."""
@@ -413,8 +413,8 @@ class Attribute(BaseField):
     def __init__(self, *, meta: bool = False, allow_none: bool = False,
                  **kwargs):
         super(Attribute, self).__init__(**kwargs)
-        self.meta: bool = bool(meta)
-        self.allow_none: bool = allow_none
+        self.meta = bool(meta)
+        self.allow_none = allow_none
 
 
 class Relationship(BaseField, LinksObjectMixin):
@@ -478,14 +478,14 @@ class Relationship(BaseField, LinksObjectMixin):
 
         # NOTE: The related resources are loaded by the schema class for
         #       performance reasons (one big query vs many small ones).
-        self.dereference: bool = dereference
+        self.dereference = dereference
 
-        self.foreign_types: typing.FrozenSet = frozenset(foreign_types or [])
-        self.finclude: typing.Coroutine = finclude
-        self.fquery: typing.Coroutine = fquery
+        self.foreign_types = frozenset(foreign_types or [])
+        self.finclude = finclude
+        self.fquery = fquery
 
         assert isinstance(require_data, Event)
-        self.require_data: Event = require_data
+        self.require_data = require_data
 
         # Add the default links.
         self.add_link(
