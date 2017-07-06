@@ -57,7 +57,7 @@ You should only work with the following fields directly:
 """
 
 import collections
-import typing
+from typing import Coroutine, Callable, Sequence
 
 from .common import Event, Step
 from ..errors import InvalidType, InvalidValue
@@ -98,11 +98,11 @@ class BaseField(object):
     :arg Event required:
         Can be either *never*, *always*, *creation* or *update* and
         describes in which CRUD context the field is required as input.
-    :arg typing.Coroutine fget:
+    :arg Coroutine fget:
         A method on a :class:`~aiohttp_json_api.schema.Schema`
         which returns the current value of the resource's attribute:
         ``fget(self, resource, **kwargs)``.
-    :arg typing.Coroutine fset:
+    :arg Coroutine fset:
         A method on a :class:`~aiohttp_json_api.schema.Schema`
         which updates the current value of the resource's attribute:
         ``fget(self, resource, data, sp, **kwargs)``.
@@ -111,7 +111,7 @@ class BaseField(object):
     def __init__(self, *, name: str = '', mapped_key: str = '',
                  writable: Event = Event.ALWAYS,
                  required: Event = Event.NEVER,
-                 fget: typing.Coroutine = None, fset: typing.Coroutine = None):
+                 fget: Coroutine = None, fset: Coroutine = None):
         #: The name of this field on the
         # :class:`~aiohttp_json_api.schema.Schema`
         #: it has been defined on. Please note, that not each field has a *key*
@@ -159,7 +159,7 @@ class BaseField(object):
         self.fset = f
         return self
 
-    def validator(self, f: typing.Callable,
+    def validator(self, f: Callable,
                   step: Step = Step.POST_DECODE,
                   on: Event = Event.ALWAYS):
         """
@@ -309,7 +309,7 @@ class Link(BaseField):
 
     def __init__(self, route: str = '', *,
                  link_of: str = '<resource>', name: str = '',
-                 fget: typing.Coroutine = None, normalize: bool = True):
+                 fget: Coroutine = None, normalize: bool = True):
         super(Link, self).__init__(name=name, writable=Event.NEVER, fget=fget)
 
         self.normalize = bool(normalize)
@@ -354,7 +354,7 @@ class LinksObjectMixin(object):
         value is a link itself.
     """
 
-    def __init__(self, links: typing.Sequence[Link] = None):
+    def __init__(self, links: Sequence[Link] = None):
         self.links = {link.name: link for link in links} if links else {}
 
     def add_link(self, link: Link):
@@ -443,14 +443,14 @@ class Relationship(BaseField, LinksObjectMixin):
     :arg bool dereference:
         If true, the relationship linkage is dereferenced automatic when
         decoded. (Implicitly sets *require_data* to Event.ALWAYS)
-    :arg typing.Sequence[str] foreign_types:
+    :arg Sequence[str] foreign_types:
         A set with all foreign types. If given, this list is used to validate
         the input data. Leave it empty to allow all types.
-    :arg typing.Coroutine finclude:
+    :arg Coroutine finclude:
         A method on a :class:`~aiohttp_json_api.schema.Schema`
         which returns the related resources:
         ``finclude(self, resource, **kwargs)``.
-    :arg typing.Coroutine fquery:
+    :arg Coroutine fquery:
         A method on a :class:`~aiohttp_json_api.schema.Schema`
         which returns the queries the related resources:
         ``fquery(self, resource, **kwargs)``.
@@ -468,10 +468,10 @@ class Relationship(BaseField, LinksObjectMixin):
 
     def __init__(self, *, dereference: bool = True,
                  require_data: Event = Event.ALWAYS,
-                 foreign_types: typing.Sequence[str] = None,
-                 finclude: typing.Coroutine = None,
-                 fquery: typing.Coroutine = None,
-                 links: typing.Sequence[Link] = None,
+                 foreign_types: Sequence[str] = None,
+                 finclude: Coroutine = None,
+                 fquery: Coroutine = None,
+                 links: Sequence[Link] = None,
                  **kwargs):
         BaseField.__init__(self, **kwargs)
         LinksObjectMixin.__init__(self, links=links)
@@ -495,7 +495,7 @@ class Relationship(BaseField, LinksObjectMixin):
             Link('jsonapi.related', name='related', link_of=self.name)
         )
 
-    def includer(self, f: typing.Coroutine):
+    def includer(self, f: Coroutine):
         """
         Descriptor to change the includer.
 
@@ -525,7 +525,7 @@ class Relationship(BaseField, LinksObjectMixin):
         f = self.finclude or self.default_include
         return await f(schema, resources, context, **kwargs)
 
-    def query_(self, f: typing.Coroutine):
+    def query_(self, f: Coroutine):
         """
         Descriptor to change the query function.
 
