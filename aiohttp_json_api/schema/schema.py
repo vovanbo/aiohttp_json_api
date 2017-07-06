@@ -345,40 +345,40 @@ class Schema(metaclass=SchemaMeta):
         }
 
         # JSON API attributes object
-        attributes = {
-            self.inflect(field.name):
-                await self._encode_field(field, resource, **kwargs)
-            for field in self._attributes.values()
-            if fieldset is None or field.name in fieldset
-        }
+        attributes = collections.OrderedDict()
+        for field in self._attributes.values():
+            if fieldset is None or field.name in fieldset:
+                attributes[self.inflect(field.name)] = \
+                    await self._encode_field(field, resource, **kwargs)
+
         if attributes:
             result['attributes'] = attributes
 
         # JSON API relationships object
-        relationships = {
-            self.inflect(field.name):
-                await self._encode_field(field, resource, **kwargs)
-            for field in self._relationships.values()
-            if fieldset is None or field.name in fieldset
-        }
+        relationships = collections.OrderedDict()
+        for field in self._relationships.values():
+            if fieldset is None or field.name in fieldset:
+                relationships[self.inflect(field.name)] = \
+                    await self._encode_field(field, resource, **kwargs)
+
         if relationships:
             result['relationships'] = relationships
 
         # JSON API meta object
-        meta = {
-            self.inflect(field.name):
+        meta = collections.OrderedDict()
+        for field in self._meta.values():
+            meta[self.inflect(field.name)] = \
                 await self._encode_field(field, resource, **kwargs)
-            for field in self._meta.values()
-        }
+
         if meta:
             result['meta'] = meta
 
         # JSON API links object
-        links = {
-            self.inflect(field.name):
+        links = collections.OrderedDict()
+        for field in self._links.values():
+            links[self.inflect(field.name)] = \
                 await self._encode_field(field, resource, **kwargs)
-            for field in self._links.values()
-        }
+
         if 'self' not in links:
             self_url = self.app.router['jsonapi.resource'].url_for(
                 **self.registry.ensure_identifier(resource, asdict=True)
