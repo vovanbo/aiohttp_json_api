@@ -32,13 +32,11 @@ from the standard library.
 """
 import collections
 import datetime
-import decimal
 import fractions
 import typing
 import uuid
 from enum import Enum
 
-import dateutil.parser
 import trafaret as t
 from trafaret.contrib import rfc_3339
 from yarl import URL
