@@ -68,13 +68,8 @@ __all__ = [
 
 
 class String(Attribute):
-    def __init__(self, *, allow_blank: bool = False,
-                 regex: typing.Union[str, bytes, typing.re] = None,
-                 choices: typing.Union[
-                     typing.Iterable[str], typing.Type[Enum]
-                 ] = None,
-                 min_length=None, max_length=None,
-                 **kwargs):
+    def __init__(self, *, allow_blank=False, regex=None, choices=None,
+                 min_length=None, max_length=None, **kwargs):
         super(String, self).__init__(**kwargs)
         self._trafaret = t.String(allow_blank=allow_blank, regex=regex,
                                   min_length=min_length, max_length=max_length)
