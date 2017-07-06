@@ -122,10 +122,11 @@ async def render_document(resources, compound_documents, context, *,
         )
 
     if context.include and compound_documents:
-        document['included'] = [
-            await encode_resource(r, context)
-            for r in compound_documents.values()
-        ]
+        document['included'] = []
+        for resource in compound_documents.values():
+            document['included'].append(
+                await encode_resource(resource, context)
+            )
 
     document['links']['self'] = str(context.request.url)
     if links is not None:
