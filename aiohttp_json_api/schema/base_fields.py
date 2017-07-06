@@ -56,8 +56,8 @@ You should only work with the following fields directly:
                 return BoundField
 """
 
-import collections
-from typing import Coroutine, Callable, Sequence
+from collections import Coroutine, Callable, Mapping
+from typing import Sequence
 
 from .common import Event, Step
 from ..errors import InvalidType, InvalidValue
@@ -554,7 +554,7 @@ class Relationship(BaseField, LinksObjectMixin):
         Asserts that *data* is a JSON API resource identifier with the correct
         *type* value.
         """
-        if not isinstance(data, collections.Mapping):
+        if not isinstance(data, Mapping):
             detail = 'Must be an object.'
             raise InvalidType(detail=detail, source_pointer=sp)
 
@@ -576,7 +576,7 @@ class Relationship(BaseField, LinksObjectMixin):
         *   *data* must contain a *data* member, if :attr:`dereference` or
             :attr:`require_data` is true.
         """
-        if not isinstance(data, collections.Mapping):
+        if not isinstance(data, Mapping):
             detail = 'Must be an object.'
             raise InvalidType(detail=detail, source_pointer=sp)
 
