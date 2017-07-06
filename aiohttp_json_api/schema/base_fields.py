@@ -349,13 +349,13 @@ class LinksObjectMixin(object):
     The :meth:`BaseField.encode` receives an additional keyword argument *link*
     with the encoded links.
 
-    :arg typing.Sequence[Link] links:
-        A list of (transient) :class:`links <Link>`.
+    :arg dict links:
+        A mapping of (transient) :class:`links <Link>`. Key is link name,
+        value is a link itself.
     """
 
     def __init__(self, links: typing.Sequence[Link] = None):
-        self.links: typing.MutableMapping = \
-            {link.name: link for link in links} if links else {}
+        self.links = {link.name: link for link in links} if links else {}
 
     def add_link(self, link: Link):
         """
