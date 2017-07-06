@@ -3,7 +3,7 @@ Application registry
 ====================
 """
 import collections
-from typing import MutableMapping
+from typing import MutableMapping, Union
 
 from boltons.typeutils import make_sentinel
 
@@ -47,23 +47,23 @@ class Registry:
             return default
         raise KeyError()
 
-    def ensure_identifier(self, obj, asdict=False) -> ResourceID:
+    def ensure_identifier(self, obj, asdict=False) -> \
+        Union[ResourceID, MutableMapping[str, str]]:
         """
-        Does the same as :meth:`ensure_identifier_object`, but returns the two
-        tuple identifier object instead of the document:
+        Returns the identifier object (:class:`ResourceID`) for the *resource*:
 
         .. code-block:: python3
 
-            # (typename, id)
-            ("people", "42")
+            >>> registry.ensure_identifier({'type': 'something', 'id': 123})
+            ResourceID(type='something', id='123')
 
         :arg obj:
             A two tuple ``(typename, id)``, a resource object or a resource
             document, which contains the *id* and *type* key
             ``{"type": ..., "id": ...}``.
+        :arg bool asdict:
+            Return ResourceID as dictionary if true
         """
-        result = None
-
         if isinstance(obj, collections.Sequence):
             assert len(obj) == 2
             result = ResourceID(str(obj[0]), str(obj[1]))
