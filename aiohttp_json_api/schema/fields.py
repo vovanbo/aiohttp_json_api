@@ -490,8 +490,8 @@ class List(Attribute):
 
     def decode(self, schema, data, sp, **kwargs):
         return [
-            self.field.decode(schema, item, sp / i) for item, i in
-            enumerate(data)
+            self.field.decode(schema, item, sp / i)
+            for item, i in enumerate(data)
         ]
 
     def encode(self, schema, data, **kwargs):
