@@ -35,22 +35,68 @@ class.
         def get_author(self, article, **kargs):
             return article.author_id
 """
-
-__all__ = [
-    "gets",
-    "sets",
-    "updates",
-    "validates",
-    "adds",
-    "removes",
-    "includes",
-    "queries"
-]
+import functools
+from enum import Enum
 
 from .common import Step, Event
 
+__all__ = (
+    'Tag',
+    'gets',
+    'sets',
+    'updates',
+    'validates',
+    'adds',
+    'removes',
+    'includes',
+    'queries'
+)
 
-def gets(field):
+
+class Tag(Enum):
+    GET = 'get'
+    SET = 'set'
+    VALIDATE = 'validate'
+    ADD = 'add'
+    REMOVE = 'remove'
+    INCLUDE = 'include'
+    QUERY = 'query'
+
+
+def tag_processor(tag, fn, **kwargs):
+    """
+    Tags decorated processor function to be picked up later.
+
+    .. note::
+        Currently ony works with functions and instance methods. Class and
+        static methods are not supported.
+
+    :return: Decorated function if supplied, else this decorator with its args
+        bound.
+    """
+    # Allow using this as either a decorator or a decorator factory.
+    if fn is None:
+        return functools.partial(tag_processor, tag, **kwargs)
+
+    try:
+        processing_tags = fn.__processing_tags__
+    except AttributeError:
+        fn.__processing_tags__ = processing_tags = set()
+    # Also save the kwargs for the tagged function on
+    # __processing_kwargs__, keyed by (<tag_name>, <pass_many>)
+    try:
+        processing_kwargs = fn.__processing_kwargs__
+    except AttributeError:
+        fn.__processing_kwargs__ = processing_kwargs = {}
+
+    field_key = kwargs.get('field_key')
+    processing_tags.add((tag, field_key))
+    processing_kwargs[(tag, field_key)] = kwargs
+
+    return fn
+
+
+def gets(field_key):
     """
     Decorator for marking the getter of a field::
 
@@ -64,16 +110,13 @@ def gets(field):
 
     A field can have at most **one** getter.
 
-    :arg str field:
+    :arg str field_key:
         The key of the field.
     """
-    def decorator(f):
-        f.japi_getter = {"field": field}
-        return f
-    return decorator
+    return tag_processor(Tag.GET, None, field_key=field_key)
 
 
-def sets(field):
+def sets(field_key):
     """
     Decorator for marking the setter of a field::
 
@@ -88,20 +131,18 @@ def sets(field):
 
     A field can have at most **one** updater.
 
-    :arg str field:
+    :arg str field_key:
         The key of the field.
     """
-    def decorator(f):
-        f.japi_setter = {"field": field}
-        return f
-    return decorator
+    return tag_processor(Tag.SET, None, field_key=field_key)
 
 
 #: Alias for :func:`sets`.
 updates = sets
 
 
-def validates(field, step: Step = Step.POST_DECODE, on: Event = Event.ALWAYS):
+def validates(field_key,
+              step: Step = Step.POST_DECODE, on: Event = Event.ALWAYS):
     """
     Decorator for adding a validator::
 
@@ -119,20 +160,18 @@ def validates(field, step: Step = Step.POST_DECODE, on: Event = Event.ALWAYS):
     A field can have as many validators as you want. Note, that they are not
     necessarily called in the order of their definition.
 
-    :arg str field:
+    :arg str field_key:
         The key of the field.
     :arg Step step:
         Must be either *pre-decode* or *post-decode*.
-    :arg str context:
-        Must be either *always*, *never*, *on_create* or *on_update*.
+    :arg Event on:
+        Validator's Event
     """
-    def decorator(f):
-        f.japi_validator = {"field": field, "step": step, "on": on}
-        return f
-    return decorator
+    return tag_processor(Tag.VALIDATE, None,
+                         field_key=field_key, step=step, on=on)
 
 
-def adds(field):
+def adds(field_key):
     """
     Decorator for marking the adder of a relationship::
 
@@ -148,16 +187,13 @@ def adds(field):
 
     A relationship can have at most **one** adder.
 
-    :arg str field:
+    :arg str field_key:
         The key of the relationship.
     """
-    def decorator(f):
-        f.japi_adder = {"field": field}
-        return f
-    return decorator
+    return tag_processor(Tag.ADD, None, field_key=field_key)
 
 
-def removes(field):
+def removes(field_key):
     """
     Decorator for marking the remover of a relationship::
 
@@ -173,16 +209,13 @@ def removes(field):
 
     A relationship can have at most **one** remover.
 
-    :arg str field:
+    :arg str field_key:
         The key of the relationship.
     """
-    def decorator(f):
-        f.japi_remover = {"field": field}
-        return f
-    return decorator
+    return tag_processor(Tag.REMOVE, None, field_key=field_key)
 
 
-def includes(field):
+def includes(field_key):
     """
     Decorator for marking the includer of a relationship::
 
@@ -202,16 +235,13 @@ def includes(field):
         better performance. The included relationships should be
         loaded in the same request as the resource.
 
-    :arg str field:
+    :arg str field_key:
         The name of the relationship.
     """
-    def decorator(f):
-        f.japi_includer = {"field": field}
-        return f
-    return decorator
+    return tag_processor(Tag.INCLUDE, None, field_key=field_key)
 
 
-def queries(field):
+def queries(field_key):
     """
     Decorator for marking the function used to query the resources in a
     relationship::
@@ -230,10 +260,7 @@ def queries(field):
 
         Add an example.
 
-    :arg str field:
+    :arg str field_key:
         The name of the relationship.
     """
-    def decorator(f):
-        f.japi_query = {"field": field}
-        return f
-    return decorator
+    return tag_processor(Tag.QUERY, None, field_key=field_key)

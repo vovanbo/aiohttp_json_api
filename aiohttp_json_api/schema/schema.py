@@ -9,17 +9,22 @@ validation and update operations based on
 :class:`fields <aiohttp_json_api.schema.base_fields.BaseField>`.
 """
 import copy
-import collections
+import inspect
 import typing
+from collections import OrderedDict, Mapping, defaultdict
 from functools import partial
+from types import MappingProxyType
 
 import inflection
+import itertools
 from aiohttp import web
 
+from . import abc
 from .base_fields import (
     BaseField, LinksObjectMixin, Link, Attribute, Relationship
 )
 from .common import Event
+from ..helpers import is_instance_or_subclass
 from ..const import JSONAPI
 from ..errors import (
     ValidationError, InvalidValue, InvalidType, HTTPConflict,
@@ -33,32 +38,74 @@ __all__ = (
 )
 
 
+def _get_fields(attrs, field_class, pop=False):
+    """
+    Get fields from a class.
+
+    :param attrs: Mapping of class attributes
+    :param type field_class: Base field class
+    :param bool pop: Remove matching fields
+    """
+    fields = [
+        (field_name, field_value)
+        for field_name, field_value in attrs.items()
+        if is_instance_or_subclass(field_value, field_class)
+    ]
+    if pop:
+        for field_name, _ in fields:
+            del attrs[field_name]
+    return fields
+
+
+# This function allows Schemas to inherit from non-Schema classes and ensures
+#   inheritance according to the MRO
+def _get_fields_by_mro(klass, field_class):
+    """
+    Collect fields from a class, following its method resolution order. The
+    class itself is excluded from the search; only its parents are checked. Get
+    fields from ``_declared_fields`` if available, else use ``__dict__``.
+    :param type klass: Class whose fields to retrieve
+    :param type field_class: Base field class
+    """
+    mro = inspect.getmro(klass)
+    # Loop over mro in reverse to maintain correct order of fields
+    return sum(
+        (
+            _get_fields(
+                getattr(base, '_declared_fields', base.__dict__),
+                field_class,
+            )
+            for base in mro[:0:-1]
+        ),
+        [],
+    )
+
+
 class SchemaMeta(type):
     @classmethod
-    def _assign_sp(cls, fields, sp: JSONPointer):
+    def _assign_sp(mcs, fields, sp: JSONPointer):
         """Sets the :attr:`BaseField.sp` (source pointer) property recursively
         for all child fields.
         """
         for field in fields:
             field.sp = sp / field.name
             if isinstance(field, LinksObjectMixin):
-                cls._assign_sp(field.links.values(), field.sp / 'links')
-        return None
+                mcs._assign_sp(field.links.values(), field.sp / 'links')
 
     @classmethod
-    def _sp_to_field(cls, fields):
+    def _sp_to_field(mcs, fields):
         """
         Returns an ordered dictionary, which maps the source pointer of a
         field to the field. Nested fields are listed before the parent.
         """
-        d = collections.OrderedDict()
+        d = OrderedDict()
         for field in fields:
             if isinstance(field, LinksObjectMixin):
-                d.update(cls._sp_to_field(field.links.values()))
+                d.update(mcs._sp_to_field(field.links.values()))
             d[field.sp] = field
-        return d
+        return MappingProxyType(d)
 
-    def __new__(cls, name, bases, attrs):
+    def __new__(mcs, name, bases, attrs):
         """
         Detects all fields and wires everything up. These class attributes are
         defined here:
@@ -108,122 +155,119 @@ class SchemaMeta(type):
             A dictionary with all properties defined on the schema class
             (attributes, methods, ...)
         """
-        fields_by_key = collections.OrderedDict()
+        cls_fields = _get_fields(attrs, abc.FieldABC, pop=True)
+        klass = super(SchemaMeta, mcs).__new__(mcs, name, bases, attrs)
+        inherited_fields = _get_fields_by_mro(klass, abc.FieldABC)
+        declared_fields = OrderedDict()
 
-        # Create a copy of the inherited fields.
-        for base in reversed(bases):
-            if issubclass(base, Schema):
-                fields_by_key.update(base._fields_by_key)
-        fields_by_key = copy.deepcopy(fields_by_key)
-
-        for key, prop in attrs.items():
-            if isinstance(prop, BaseField):
-                prop.key = key
-                prop.name = prop.name or key
-                prop.mapped_key = prop.mapped_key or key
-                fields_by_key[prop.key] = prop
+        for key, prop in inherited_fields + cls_fields:
+            prop.key = key
+            prop.name = prop.name or key
+            prop.mapped_key = prop.mapped_key or key
+            declared_fields[prop.key] = prop
 
         # Apply the decorators.
         # TODO: Use a more generic approach.
         for key, prop in attrs.items():
             if hasattr(prop, 'japi_getter'):
-                field = fields_by_key[prop.japi_getter['field']]
+                field = declared_fields[prop.japi_getter['field']]
                 field.getter(prop)
             elif hasattr(prop, 'japi_setter'):
-                field = fields_by_key[prop.japi_setter['field']]
+                field = declared_fields[prop.japi_setter['field']]
                 field.setter(prop)
             elif hasattr(prop, 'japi_validates'):
-                field = fields_by_key[prop.japi_validates['field']]
+                field = declared_fields[prop.japi_validates['field']]
                 field.validator(
                     prop, step=prop.japi_validator['step'],
                     on=prop.japi_validator['on']
                 )
             elif hasattr(prop, 'japi_adder'):
-                field = fields_by_key[prop.japi_adder['field']]
+                field = declared_fields[prop.japi_adder['field']]
                 field.adder(prop)
             elif hasattr(prop, 'japi_remover'):
-                field = fields_by_key[prop.japi_remover['field']]
+                field = declared_fields[prop.japi_remover['field']]
                 field.remover(prop)
             elif hasattr(prop, 'japi_includer'):
-                field = fields_by_key[prop.japi_includer['field']]
+                field = declared_fields[prop.japi_includer['field']]
                 field.includer(prop)
             elif hasattr(prop, 'japi_query'):
-                field = fields_by_key[prop.japi_query['field']]
+                field = declared_fields[prop.japi_query['field']]
                 field.query_(prop)
 
         # Find nested fields (link_of, ...) and link them with
         # their parent.
-        for key, field in fields_by_key.items():
+        for key, field in declared_fields.items():
             if getattr(field, 'link_of', None):
-                parent = fields_by_key[field.link_of]
-                parent.add_link(field)
+                declared_fields[field.link_of].add_link(field)
+
+        klass._id = declared_fields.pop('id', None)
 
         # Find the *top-level* attributes, relationships, links and meta fields.
-        attributes = collections.OrderedDict(
+        attributes = OrderedDict(
             (key, field)
-            for key, field in fields_by_key.items()
+            for key, field in declared_fields.items()
             if isinstance(field, Attribute) and not field.meta
         )
-        attributes.pop('id', None)
-        cls._assign_sp(attributes.values(), JSONPointer('/attributes'))
-        attrs['_attributes'] = attributes
+        mcs._assign_sp(attributes.values(), JSONPointer('/attributes'))
+        klass._attributes = MappingProxyType(attributes)
 
-        relationships = collections.OrderedDict(
+        relationships = OrderedDict(
             (key, field)
-            for key, field in fields_by_key.items()
+            for key, field in declared_fields.items()
             if isinstance(field, Relationship)
         )
-        cls._assign_sp(
+        mcs._assign_sp(
             relationships.values(), JSONPointer('/relationships')
         )
-        attrs['_relationships'] = relationships
+        klass._relationships = MappingProxyType(relationships)
 
-        links = collections.OrderedDict(
+        links = OrderedDict(
             (key, field)
-            for key, field in fields_by_key.items()
+            for key, field in declared_fields.items()
             if isinstance(field, Link) and not field.link_of
         )
-        cls._assign_sp(links.values(), JSONPointer('/links'))
-        attrs['_links'] = links
+        mcs._assign_sp(links.values(), JSONPointer('/links'))
+        klass._links = MappingProxyType(links)
 
-        meta = collections.OrderedDict(
+        meta = OrderedDict(
             (key, field)
-            for key, field in fields_by_key.items()
+            for key, field in declared_fields.items()
             if isinstance(field, Attribute) and field.meta
         )
-        cls._assign_sp(links.values(), JSONPointer('/meta'))
-        attrs['_meta'] = meta
+        mcs._assign_sp(links.values(), JSONPointer('/meta'))
+        klass._meta = MappingProxyType(meta)
 
         # Collect all top level fields in a list.
-        toplevel = list()
-        toplevel.extend(attributes.values())
-        toplevel.extend(relationships.values())
-        toplevel.extend(links.values())
-        toplevel.extend(meta.values())
-        attrs['_toplevel'] = toplevel
+        toplevel = tuple(
+            itertools.chain(
+                klass._attributes.values(),
+                klass._relationships.values(),
+                klass._links.values(),
+                klass._meta.values()
+            )
+        )
+        klass._toplevel = toplevel
 
         # Create the source pointer map.
-        fields_by_sp = cls._sp_to_field(toplevel)
-        attrs['_fields_by_sp'] = fields_by_sp
-        attrs['_fields_by_key'] = fields_by_key
+        klass._fields_by_sp = mcs._sp_to_field(toplevel)
 
         # Determine 'type' name.
         if not attrs.get('type') and attrs.get('resource_class'):
-            attrs['type'] = inflection.dasherize(
+            klass.type = inflection.dasherize(
                 inflection.tableize(attrs['resource_class'].__name__)
             )
         if not attrs.get('type'):
-            attrs['type'] = name
+            klass.type = name
 
-        attrs['_id'] = fields_by_key.pop('id', None)
-
-        return super().__new__(cls, name, bases, attrs)
+        klass._declared_fields = MappingProxyType(declared_fields)
+        return klass
 
     def __init__(cls, name, bases, attrs):
         """
         Initialise a new schema class.
         """
         super(SchemaMeta, cls).__init__(name, bases, attrs)
+        cls._resolve_processors()
 
     def __call__(cls, *args):
         """
@@ -231,8 +275,45 @@ class SchemaMeta(type):
         """
         return super(SchemaMeta, cls).__call__(*args)
 
+    def _resolve_processors(self):
+        """
+        Add in the decorated processors
+        By doing this after constructing the class, we let standard inheritance
+        do all the hard work.
+        """
+        mro = inspect.getmro(self)
+        self._has_processors = False
+        self.__processors__ = defaultdict(list)
+        for attr_name in dir(self):
+            # Need to look up the actual descriptor, not whatever might be
+            # bound to the class. This needs to come from the __dict__ of the
+            # declaring class.
+            for parent in mro:
+                try:
+                    attr = parent.__dict__[attr_name]
+                except KeyError:
+                    continue
+                else:
+                    break
+            else:
+                # In case we didn't find the attribute and didn't break above.
+                # We should never hit this - it's just here for completeness
+                # to exclude the possibility of attr being undefined.
+                continue
 
-class Schema(metaclass=SchemaMeta):
+            try:
+                processor_tags = attr.__processing_tags__
+            except AttributeError:
+                continue
+
+            self._has_processors = bool(processor_tags)
+            for tag in processor_tags:
+                # Use name here so we can get the bound method later, in case
+                # the processor was a descriptor or something.
+                self.__processors__[tag].append(attr_name)
+
+
+class Schema(abc.SchemaABC, metaclass=SchemaMeta):
     """
     A schema defines how we can encode a resource and patch it. It also allows
     to patch a resource. All in all, it defines a **controller** for a *type*
@@ -241,21 +322,12 @@ class Schema(metaclass=SchemaMeta):
     If you want, you can implement your own request handlers and only use
     the schema for validation and serialization.
     """
-
-    # TODO: The options dictionary.
-    opts = dict()
-    opts['pagination'] = None
-
-    #: The resource class associated with this schema.
-    resource_class = None
-
-    #: The JSON API *type*. (Leave it empty to derive it automatic from the
-    #: resource class name or the schema name).
-    type = ''
     inflect = partial(inflection.dasherize)
 
     def __init__(self, app: web.Application = None):
         self.app = app
+        if self.opts is None:
+            self.opts = {'pagination': None}
 
     @property
     def registry(self):
@@ -279,14 +351,14 @@ class Schema(metaclass=SchemaMeta):
         :returns:
             The id of the *resource*
         """
-        if hasattr(resource, "id"):
+        if hasattr(resource, 'id'):
             resource_id = resource.id() if callable(resource.id) else resource.id
-        elif hasattr(resource, "get_id"):
+        elif hasattr(resource, 'get_id'):
             resource_id = resource.get_id()
-        elif "id" in resource:
-            resource_id = resource["id"]
+        elif 'id' in resource:
+            resource_id = resource['id']
         else:
-            raise Exception("Could not determine the resource id.")
+            raise Exception('Could not determine the resource id.')
         return str(resource_id)
 
     def get_relationship_field(self, relation_name, source_parameter=None):
@@ -317,8 +389,7 @@ class Schema(metaclass=SchemaMeta):
         data = await field.get(self, resource, **kwargs)
         return field.encode(self, data, links=links, **kwargs)
 
-    async def encode_resource(self, resource, *,
-                              is_data=False, is_included=False,
+    async def encode_resource(self, resource,
                               **kwargs) -> typing.MutableMapping:
         """
         .. seealso::
@@ -345,7 +416,7 @@ class Schema(metaclass=SchemaMeta):
         }
 
         # JSON API attributes object
-        attributes = collections.OrderedDict()
+        attributes = OrderedDict()
         for field in self._attributes.values():
             if fieldset is None or field.name in fieldset:
                 attributes[self.inflect(field.name)] = \
@@ -355,7 +426,7 @@ class Schema(metaclass=SchemaMeta):
             result['attributes'] = attributes
 
         # JSON API relationships object
-        relationships = collections.OrderedDict()
+        relationships = OrderedDict()
         for field in self._relationships.values():
             if fieldset is None or field.name in fieldset:
                 relationships[self.inflect(field.name)] = \
@@ -365,7 +436,7 @@ class Schema(metaclass=SchemaMeta):
             result['relationships'] = relationships
 
         # JSON API meta object
-        meta = collections.OrderedDict()
+        meta = OrderedDict()
         for field in self._meta.values():
             meta[self.inflect(field.name)] = \
                 await self._encode_field(field, resource, **kwargs)
@@ -374,7 +445,7 @@ class Schema(metaclass=SchemaMeta):
             result['meta'] = meta
 
         # JSON API links object
-        links = collections.OrderedDict()
+        links = OrderedDict()
         for field in self._links.values():
             links[self.inflect(field.name)] = \
                 await self._encode_field(field, resource, **kwargs)
@@ -446,7 +517,7 @@ class Schema(metaclass=SchemaMeta):
             field.pre_validate(self, data, sp, context)
 
     def validate_resource_pre_decode(self, data, sp, context, *,
-                                     expected_id=""):
+                                     expected_id=None):
         """
         Validates a JSON API resource object received from an API client::
 
@@ -458,8 +529,10 @@ class Schema(metaclass=SchemaMeta):
             The received JSON API resource object
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
+        :arg RequestContext context:
+            Request context instance
         """
-        if not isinstance(data, collections.Mapping):
+        if not isinstance(data, Mapping):
             detail = 'Must be an object.'
             raise InvalidType(detail=detail, source_pointer=sp)
 
@@ -482,7 +555,7 @@ class Schema(metaclass=SchemaMeta):
         attrs = data.get('attributes', {})
         attrs_sp = sp / 'attributes'
 
-        if not isinstance(attrs, collections.Mapping):
+        if not isinstance(attrs, Mapping):
             detail = 'Must be an object.'
             raise InvalidType(detail=detail, source_pointer=attrs_sp)
 
@@ -536,7 +609,7 @@ class Schema(metaclass=SchemaMeta):
             The field whichs input data is decoded.
         :arg data:
             The input data for the field
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer:
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*
         :arg dict memo:
             The decoded data will be stored additionaly in this dictionary
@@ -563,7 +636,7 @@ class Schema(metaclass=SchemaMeta):
             ``(data, sp)`` which contains the input data and the source pointer
             to it.
         """
-        memo = collections.OrderedDict()
+        memo = OrderedDict()
 
         # JSON API attributes object
         attrs = data.get('attributes', {})
@@ -606,8 +679,8 @@ class Schema(metaclass=SchemaMeta):
         # NOTE: The fields in *memo* are ordered, such that children are
         #       listed before their parent.
         for key, (data, sp) in memo.items():
-            field = self._fields_by_key[key]
-            field.validate_post_decode(self, data, sp, context)
+            field = self._declared_fields[key]
+            field.post_validate(self, data, sp, context)
 
     # CRUD (resource)
     # ---------------
@@ -638,7 +711,7 @@ class Schema(metaclass=SchemaMeta):
 
         # Map the property names on the resource instance to its initial data.
         initial_data = {
-            self._fields_by_key[key].mapped_key: data
+            self._declared_fields[key].mapped_key: data
             for key, (data, sp) in memo.items()
         }
         if 'id' in data:
@@ -683,7 +756,7 @@ class Schema(metaclass=SchemaMeta):
             resource = await self.query_resource(resource, context, **kwargs)
 
         for key, (data, sp) in memo.items():
-            field = self._fields_by_key[key]
+            field = self._declared_fields[key]
             await field.set(self, resource, data, sp, **kwargs)
 
         return resource
