@@ -212,7 +212,7 @@ class BaseField(FieldABC):
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of the original input data.
         """
-        assert self.writable not in Event.NEVER
+        assert self.writable is not Event.NEVER
         f = self.fset or self.default_set
         return await f(schema, resource, data, sp, **kwargs)
 
