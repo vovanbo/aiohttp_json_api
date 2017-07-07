@@ -443,8 +443,7 @@ class Schema(metaclass=SchemaMeta):
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if sp is not None:
-            field.validate_pre_decode(self, data, sp, context)
-        return None
+            field.pre_validate(self, data, sp, context)
 
     def validate_resource_pre_decode(self, data, sp, context, *,
                                      expected_id=""):

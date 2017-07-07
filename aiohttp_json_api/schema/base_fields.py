@@ -59,6 +59,7 @@ You should only work with the following fields directly:
 from collections import Coroutine, Callable, Mapping
 from typing import Sequence
 
+from .abc import FieldABC
 from .common import Event, Step
 from ..errors import InvalidType, InvalidValue
 
@@ -71,7 +72,7 @@ __all__ = (
 )
 
 
-class BaseField(object):
+class BaseField(FieldABC):
     """
     This class describes the base for all fields defined on a schema and
     knows how to encode, decode and update the field. A field is usually
@@ -229,7 +230,7 @@ class BaseField(object):
         """
         return data
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         """
         Validates the raw JSON API input for this field. This method is
         called before :meth:`decode`.
@@ -250,7 +251,7 @@ class BaseField(object):
             f = validator['validator']
             f(schema, data, sp)
 
-    def validate_post_decode(self, schema, data, sp, context):
+    def post_validate(self, schema, data, sp, context):
         """
         Validates the decoded input *data* for this field. This method is
         called after :meth:`decode`.
@@ -593,6 +594,6 @@ class Relationship(BaseField, LinksObjectMixin):
             detail = 'The "data" member is required.'
             raise InvalidValue(detail=detail, source_pointer=sp)
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         self.validate_relationship_object(schema, data, sp)
-        super(Relationship, self).validate_pre_decode(schema, data, sp, context)
+        super(Relationship, self).pre_validate(schema, data, sp, context)
