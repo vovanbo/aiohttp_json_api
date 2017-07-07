@@ -186,8 +186,8 @@ async def validate_uri_resource_id(schema, resource_id, context):
     field = schema._id
     if field:
         try:
-            field.validate_pre_decode(schema, resource_id,
-                                      sp=None, context=context)
+            field.pre_validate(schema, resource_id,
+                               sp=None, context=context)
         except ValidationError as e:
             e.source_parameter = 'id'
             raise e

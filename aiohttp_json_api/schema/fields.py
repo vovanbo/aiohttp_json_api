@@ -81,13 +81,13 @@ class String(Attribute):
         if self.allow_none:
             self._trafaret = self._trafaret | t.Null()
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
-        return super(String, self).validate_pre_decode(schema, data, sp,
-                                                       context)
+        return super(String, self).pre_validate(schema, data, sp,
+                                                context)
 
     def encode(self, schema, data, **kwargs):
         result = self._trafaret.converter(data)
@@ -103,12 +103,12 @@ class Integer(Attribute):
         if self.allow_none:
             self._trafaret = self._trafaret | t.Null()
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
-        return super().validate_pre_decode(schema, data, sp, context)
+        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return self._trafaret.check(data)
@@ -124,12 +124,12 @@ class Float(Attribute):
         if self.allow_none:
             self._trafaret = self._trafaret | t.Null()
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
-        return super().validate_pre_decode(schema, data, sp, context)
+        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return self._trafaret.check(data)
@@ -146,7 +146,7 @@ class Complex(Attribute):
         {"real": 1.2, "imag": 42}
     """
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         detail = "Must be an object with a 'real' and 'imag' member.'"
 
         if not isinstance(data, collections.Mapping):
@@ -164,7 +164,7 @@ class Complex(Attribute):
         if not isinstance(data["imag"], (int, float)):
             detail = "The imaginar part must be a number."
             raise InvalidValue(detail=detail, source_pointer=sp / "imag")
-        return super().validate_pre_decode(schema, data, sp, context)
+        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return complex(data["real"], data["imag"])
@@ -182,12 +182,12 @@ class Decimal(Attribute):
         if self.allow_none:
             self._trafaret = self._trafaret | t.Null()
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
-        return super().validate_pre_decode(schema, data, sp, context)
+        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return self._trafaret.check(data)
@@ -218,7 +218,7 @@ class Fraction(Attribute):
         self.min = min
         self.max = max
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         if not isinstance(data, dict):
             detail = "Must be an object with a 'numerator' and 'denominator' " \
                      "member."
@@ -247,7 +247,7 @@ class Fraction(Attribute):
         if self.max is not None and self.max < val:
             detail = "Must be <= {}.".format(self.max)
             raise InvalidValue(detail=detail, source_pointer=sp)
-        return super().validate_pre_decode(schema, data, sp, context)
+        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return fractions.Fraction(int(data[0]), int(data[1]))
@@ -267,12 +267,12 @@ class DateTime(Attribute):
         if self.allow_none:
             self._trafaret = self._trafaret | t.Null()
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
-        return super().validate_pre_decode(schema, data, sp, context)
+        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return self._trafaret.check(data)
@@ -303,7 +303,7 @@ class TimeDelta(Attribute):
         self.min = min
         self.max = max
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         try:
             data = float(data)
         except TypeError:
@@ -317,7 +317,7 @@ class TimeDelta(Attribute):
             raise InvalidValue(detail=detail, source_pointer=sp)
         if self.max is not None and self.max < data:
             detail = "The timedelta must be <= {}.".format(self.max)
-        return super().validate_pre_decode(schema, data, sp, context)
+        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return datetime.timedelta(seconds=float(data))
@@ -337,7 +337,7 @@ class UUID(Attribute):
         super(UUID, self).__init__(**kwargs)
         self.version = version
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         if not isinstance(data, str):
             detail = "The UUID must be a hexadecimal string."
             raise InvalidType(detail=detail, source_pointer=sp)
@@ -352,7 +352,7 @@ class UUID(Attribute):
         if self.version is not None and self.version != data.version:
             detail = "Not a UUID{}.".format(self.version)
             raise InvalidValue(detail=detail, source_pointer=sp)
-        return super().validate_pre_decode(schema, data, sp, context)
+        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return uuid.UUID(hex=data)
@@ -371,12 +371,12 @@ class Boolean(Attribute):
         if self.allow_none:
             self._trafaret = self._trafaret | t.Null()
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
             raise InvalidType(detail=error.as_dict(), source_pointer=sp)
-        return super().validate_pre_decode(schema, data, sp, context)
+        return super().pre_validate(schema, data, sp, context)
 
     def encode(self, schema, data, **kwargs):
         return self._trafaret.check(data)
@@ -385,7 +385,7 @@ class Boolean(Attribute):
 class URI(Attribute):
     """Parses the URI with :func:`rfc3986.urlparse` and returns the result."""
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         if not isinstance(data, str):
             detail = "Must be a string."
             raise InvalidType(detail=detail, source_pointer=sp)
@@ -394,7 +394,7 @@ class URI(Attribute):
         except ValueError:
             detail = "Not a valid URI."
             raise InvalidValue(detail=detail, source_pointer=sp)
-        return super().validate_pre_decode(schema, data, sp, context)
+        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return URL(data)
@@ -411,7 +411,7 @@ class Email(Attribute):
         if self.allow_none:
             self._trafaret = self._trafaret | t.Null()
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         try:
             self._trafaret.check(data)
         except t.DataError:
@@ -421,7 +421,7 @@ class Email(Attribute):
             else:
                 detail = "Not a valid Email address."
                 raise InvalidValue(detail=detail, source_pointer=sp)
-        return super().validate_pre_decode(schema, data, sp, context)
+        return super().pre_validate(schema, data, sp, context)
 
     def encode(self, schema, data, **kwargs):
         return self._trafaret.check(data)
