@@ -101,9 +101,7 @@ async def get_compound_documents(resources, context, **kwargs):
 async def encode_resource(resource, context):
     registry = context.request.app[JSONAPI]['registry']
     schema = registry.get_schema(resource)
-    return await schema.encode_resource(
-        resource, is_data=True, context=context,
-    )
+    return await schema.encode_resource(resource, context=context)
 
 
 async def render_document(resources, compound_documents, context, *,
