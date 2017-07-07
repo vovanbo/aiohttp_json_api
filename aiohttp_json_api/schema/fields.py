@@ -33,7 +33,6 @@ from the standard library.
 import collections
 import datetime
 import fractions
-import typing
 import uuid
 from enum import Enum
 

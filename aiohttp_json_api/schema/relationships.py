@@ -41,7 +41,7 @@ class ToOne(Relationship):
 
     def encode(self, schema, data, **kwargs) -> typing.MutableMapping:
         """Composes the final relationships object."""
-        document = {'links': {}}
+        document = {'links': kwargs.get('links', {})}
 
         if data is None:
             document['data'] = data
@@ -53,10 +53,6 @@ class ToOne(Relationship):
         else:
             document['data'] = \
                 schema.registry.ensure_identifier(data, asdict=True)
-
-        links = kwargs.get('links', {})
-        if links:
-            document['links'].update(links)
 
         return filter_empty_fields(document)
 
@@ -155,17 +151,13 @@ class ToMany(Relationship):
             If not *None*, the links and meta members of the pagination
             helper are added to the final JSON API relationship object.
         """
-        document = {'links': {}, 'meta': {}}
+        document = {'links': kwargs.get('links', {}), 'meta': {}}
 
         if isinstance(data, collections.Iterable):
             document['data'] = [
                 schema.registry.ensure_identifier(item, asdict=True)
                 for item in data
             ]
-
-        links = kwargs.get('links', {})
-        if links:
-            document['links'].update(links)
 
         pagination = kwargs.get('pagination')
         if pagination:
