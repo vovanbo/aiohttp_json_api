@@ -700,7 +700,7 @@ class Schema(metaclass=SchemaMeta):
         :arg resource:
             The id of the resource or the resource instance
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     # CRUD (relationships)
     # --------------------
@@ -727,7 +727,6 @@ class Schema(metaclass=SchemaMeta):
 
         self._validate_field_pre_decode(field, data, sp, context)
         decoded = self._decode_field(field, data, sp)
-        # self._validate_field_post_decode(field, data, sp, context)
 
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
@@ -759,7 +758,6 @@ class Schema(metaclass=SchemaMeta):
 
         self._validate_field_pre_decode(field, data, sp, context)
         decoded = self._decode_field(field, data, sp)
-        # self._validate_field_post_decode(field, data, sp, context)
 
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
@@ -791,7 +789,6 @@ class Schema(metaclass=SchemaMeta):
 
         self._validate_field_pre_decode(field, data, sp, context)
         decoded = self._decode_field(field, data, sp)
-        # self._validate_field_post_decode(field, data, sp, context)
 
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
@@ -813,7 +810,7 @@ class Schema(metaclass=SchemaMeta):
         :arg ~aiohttp_json_api.context.RequestContext context:
             Request context object.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     async def query_resource(self, id_, context, **kwargs):
         """
@@ -831,7 +828,7 @@ class Schema(metaclass=SchemaMeta):
         :raises ~aiohttp_json_api.errors.ResourceNotFound:
             If there is no resource with the given *id_*.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     async def query_relative(self, relation_name, resource, context, **kwargs):
         """
