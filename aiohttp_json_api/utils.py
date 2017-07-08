@@ -78,9 +78,9 @@ async def get_compound_documents(resources, context, **kwargs):
         if relation_name in relationships[schema.type]:
             return
 
-        relatives = await schema.fetch_include(relation_name,
-                                               collection, context,
-                                               rest_path=rest_path, **kwargs)
+        relatives = await schema.fetch_compound_documents(
+            relation_name, collection, context, rest_path=rest_path, **kwargs
+        )
 
         if any(relatives):
             for relative in relatives:

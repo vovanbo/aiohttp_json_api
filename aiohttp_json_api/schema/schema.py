@@ -944,8 +944,8 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         relatives = await field.query(self, resource, context, **kwargs)
         return relatives
 
-    async def fetch_include(self, relation_name, resources, context, *,
-                            rest_path=None, **kwargs):
+    async def fetch_compound_documents(self, relation_name, resources, context,
+                                       *, rest_path=None, **kwargs):
         """
         .. seealso::
 
@@ -955,10 +955,12 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         :meth:`~aiohttp_json_api.schema.base_fields.Relationship.include`
         method of the *Relationship* fields. **Can be overridden.**
 
-        :arg resources:
-            A list of resources.
         :arg str relation_name:
             The name of the relationship.
+        :arg resources:
+            A list of resources.
+        :arg RequestContext context:
+            Request context instance.
         :arg list rest_path:
             The name of the relationships of the returned relatives, which
             will also be included.
