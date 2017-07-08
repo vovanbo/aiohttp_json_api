@@ -93,6 +93,6 @@ class SchemaABC(object):
     async def query_relatives(self, relation_name, resource, context, **kwargs):
         raise NotImplementedError
 
-    async def fetch_include(self, relation_name, resources, context, *,
-                            rest_path=None, **kwargs):
+    async def fetch_compound_documents(self, relation_name, resources, context,
+                                       *, rest_path=None, **kwargs):
         raise NotImplementedError
