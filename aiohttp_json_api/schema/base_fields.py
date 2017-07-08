@@ -379,7 +379,6 @@ class Relationship(BaseField):
     def __init__(self, *, dereference: bool = True,
                  require_data: Event = Event.ALWAYS,
                  foreign_types: Sequence[str] = None,
-                 finclude: Coroutine = None,
                  fquery: Coroutine = None,
                  links: Sequence[Link] = None,
                  **kwargs):
@@ -391,7 +390,6 @@ class Relationship(BaseField):
         self.dereference = dereference
 
         self.foreign_types = frozenset(foreign_types or [])
-        self.finclude = finclude
         self.fquery = fquery
 
         assert isinstance(require_data, Event)
@@ -409,36 +407,6 @@ class Relationship(BaseField):
         """
         self.links[link.name] = link
         return self
-
-    def includer(self, f: Coroutine):
-        """
-        Descriptor to change the includer.
-
-        :seealso: :func:`~aiohttp_json_api.schema.decorators.includes`
-        """
-        self.finclude = f
-        return f
-
-    async def default_include(self, schema, resources, context, **kwargs):
-        """Used if no *includer* has been defined. Can be overridden."""
-        if self.mapped_key:
-            compound_documents = []
-            for resource in resources:
-                compound_document = getattr(resource, self.mapped_key)
-                if compound_document:
-                    compound_documents.extend(compound_document)
-            return compound_documents
-        raise RuntimeError('No includer and mapped_key have been defined.')
-
-    async def include(self, schema, resources, context, **kwargs):
-        """
-        Returns the related resources.
-
-        :arg ~aiohttp_json_api.schema.Schema schema:
-            The schema this field has been defined on.
-        """
-        f = self.finclude or self.default_include
-        return await f(schema, resources, context, **kwargs)
 
     def query_(self, f: Coroutine):
         """

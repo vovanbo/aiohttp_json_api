@@ -182,9 +182,6 @@ class SchemaMeta(type):
             elif hasattr(prop, 'japi_remover'):
                 field = declared_fields[prop.japi_remover['field']]
                 field.remover(prop)
-            elif hasattr(prop, 'japi_includer'):
-                field = declared_fields[prop.japi_includer['field']]
-                field.includer(prop)
             elif hasattr(prop, 'japi_query'):
                 field = declared_fields[prop.japi_query['field']]
                 field.query_(prop)
@@ -376,6 +373,16 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
     def default_setter(self, field, resource, data, sp, **kwargs):
         if field.mapped_key:
             setattr(resource, field.mapped_key, data)
+
+    async def default_include(self, field, resources, context, **kwargs):
+        if field.mapped_key:
+            compound_documents = []
+            for resource in resources:
+                compound_document = getattr(resource, field.mapped_key)
+                if compound_document:
+                    compound_documents.extend(compound_document)
+            return compound_documents
+        raise RuntimeError('No includer and mapped_key have been defined.')
 
     def get_value(self, field, resource, **kwargs):
         getter = self.default_getter
@@ -908,7 +915,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         return relatives
 
     async def fetch_compound_documents(self, relation_name, resources, context,
-                                       *, rest_path=None, **kwargs):
+                                       **kwargs):
         """
         .. seealso::
 
@@ -936,5 +943,13 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         """
         field = self.get_relationship_field(relation_name,
                                             source_parameter='include')
-        return await field.include(self, resources, context,
-                                   rest_path=rest_path, **kwargs)
+        include = self.default_include
+        include_kwargs = {}
+        if self._has_processors:
+            tag = Tag.INCLUDE, field.key
+            include_processors = self.__processors__.get(tag)
+            if include_processors:
+                include = getattr(self, first(include_processors))
+                include_kwargs = include.__processing_kwargs__.get(tag)
+        return await include(field, resources, context,
+                             **include_kwargs, **kwargs)
