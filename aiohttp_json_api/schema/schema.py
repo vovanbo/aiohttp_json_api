@@ -182,9 +182,6 @@ class SchemaMeta(type):
             elif hasattr(prop, 'japi_remover'):
                 field = declared_fields[prop.japi_remover['field']]
                 field.remover(prop)
-            elif hasattr(prop, 'japi_query'):
-                field = declared_fields[prop.japi_query['field']]
-                field.query_(prop)
 
         # Find nested fields (link_of, ...) and link them with
         # their parent.
@@ -384,6 +381,11 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             return compound_documents
         raise RuntimeError('No includer and mapped_key have been defined.')
 
+    async def default_query(self, field, resource, context, **kwargs):
+        if field.mapped_key:
+            return getattr(resource, field.mapped_key)
+        raise RuntimeError('No query method and mapped_key have been defined.')
+
     def get_value(self, field, resource, **kwargs):
         getter = self.default_getter
         getter_kwargs = {}
@@ -461,7 +463,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         return result
 
     def serialize_relationship(self, relation_name, resource,
-                                     *, pagination=None):
+                               *, pagination=None):
         """
         .. seealso::
 
@@ -872,27 +874,6 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         """
         raise NotImplementedError
 
-    async def query_relative(self, relation_name, resource, context, **kwargs):
-        """
-        Controller for the *related* endpoint of the to-one relationship with
-        then name *relname*.
-
-        Returns the related resource or ``None``.
-
-        :arg str relation_name:
-            The name of a to-one relationship.
-        :arg str resource:
-            The id of the resource or the resource instance.
-        :arg list include:
-            The list of relationships which will be included into the
-            response. See also: :attr:`jsonapi.request.Request.japi_include`
-        """
-        field = self.get_relationship_field(relation_name)
-        assert field.to_one
-
-        relative = await field.query(self, resource, context, **kwargs)
-        return relative
-
     async def query_relatives(self, relation_name, resource, context, **kwargs):
         """
         Controller for the *related* endpoint of the to-many relationship with
@@ -904,15 +885,21 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         Returns the related resource or ``None``.
 
         :arg str relation_name:
-            The name of a to-one relationship.
+            The name of a relationship.
         :arg str resource_id:
             The id of the resource or the resource instance.
         """
         field = self.get_relationship_field(relation_name)
-        assert field.to_many
 
-        relatives = await field.query(self, resource, context, **kwargs)
-        return relatives
+        query = self.default_query
+        query_kwargs = {}
+        if self._has_processors:
+            tag = Tag.QUERY, field.key
+            query_processors = self.__processors__.get(tag)
+            if query_processors:
+                query = getattr(self, first(query_processors))
+                query_kwargs = query.__processing_kwargs__.get(tag)
+        return await query(field, resource, context, **query_kwargs, **kwargs)
 
     async def fetch_compound_documents(self, relation_name, resources, context,
                                        **kwargs):

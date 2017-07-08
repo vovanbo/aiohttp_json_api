@@ -379,7 +379,6 @@ class Relationship(BaseField):
     def __init__(self, *, dereference: bool = True,
                  require_data: Event = Event.ALWAYS,
                  foreign_types: Sequence[str] = None,
-                 fquery: Coroutine = None,
                  links: Sequence[Link] = None,
                  **kwargs):
         BaseField.__init__(self, **kwargs)
@@ -390,7 +389,6 @@ class Relationship(BaseField):
         self.dereference = dereference
 
         self.foreign_types = frozenset(foreign_types or [])
-        self.fquery = fquery
 
         assert isinstance(require_data, Event)
         self.require_data = require_data
@@ -407,21 +405,6 @@ class Relationship(BaseField):
         """
         self.links[link.name] = link
         return self
-
-    def query_(self, f: Coroutine):
-        """
-        Descriptor to change the query function.
-
-        :seealso: :func:`~aiohttp_json_api.schema.decorators.queries`
-        """
-        self.fquery = f
-        return self
-
-    async def default_query(self, schema, resource, context, **kwargs):
-        """Used of no *query* function has been defined. Can be overridden."""
-        if self.mapped_key:
-            return getattr(resource, self.mapped_key)
-        raise RuntimeError('No query method and mapped_key have been defined.')
 
     async def query(self, schema, resource, context, **kwargs):
         """Queries the related resources."""
