@@ -196,9 +196,8 @@ async def get_relationship(request: web.Request):
 
     resource = await schema.query_resource(id_=resource_id, context=context)
     relation = await relation_field.query(schema, resource, context)
-    result = await schema.encode_relationship(
-        relation_name, relation, pagination=pagination
-    )
+    result = schema.serialize_relationship(relation_name, relation,
+                                           pagination=pagination)
     return jsonapi_response(result)
 
 
@@ -237,9 +236,8 @@ async def post_relationship(request: web.Request):
         data=data,
         sp=JSONPointer('')
     )
-    result = await schema.encode_relationship(
-        relation_name, resource, pagination=pagination
-    )
+    result = schema.serialize_relationship(relation_name, resource,
+                                           pagination=pagination)
     return jsonapi_response(result)
 
 
@@ -278,9 +276,8 @@ async def patch_relationship(request: web.Request):
         sp=JSONPointer('')
     )
 
-    result = await schema.encode_relationship(
-        relation_name, resource, pagination=pagination
-    )
+    result = schema.serialize_relationship(relation_name, resource,
+                                           pagination=pagination)
     return jsonapi_response(result)
 
 

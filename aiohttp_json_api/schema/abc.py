@@ -1,14 +1,8 @@
 class FieldABC(object):
-    def getter(self, f):
-        raise NotImplementedError
-
     def setter(self, f):
         raise NotImplementedError
 
     def validator(self, f, step, on):
-        raise NotImplementedError
-
-    async def default_get(self, schema, resource, **kwargs):
         raise NotImplementedError
 
     async def default_set(self, schema, resource, data, sp, **kwargs):
@@ -44,17 +38,17 @@ class SchemaABC(object):
     def get_relationship_field(self, relation_name, source_parameter=None):
         raise NotImplementedError
 
-    async def encode_resource(self, resource, **kwargs):
+    def serialize_resource(self, resource, **kwargs):
         raise NotImplementedError
 
-    def encode_relationship(self, relation_name, resource, *, pagination=None):
+    def serialize_relationship(self, relation_name, resource, *, pagination=None):
         raise NotImplementedError
 
     def validate_resource_pre_decode(self, data, sp, context, *,
                                      expected_id=None):
         raise NotImplementedError
 
-    def decode_resource(self, data, sp):
+    def deserialize_resource(self, data, sp):
         raise NotImplementedError
 
     def validate_resource_post_decode(self, memo, context):
