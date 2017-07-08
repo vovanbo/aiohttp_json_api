@@ -445,8 +445,14 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             for field in fields.values():
                 if fieldset is None or field.name in fieldset:
                     field_data = self.get_value(field, resource, **kwargs)
-                    result[key][field.name] = field.encode(self, field_data,
-                                                           **kwargs)
+                    links = None
+                    if isinstance(field, Relationship):
+                        links = {
+                            link.name: link.encode(self, resource, **kwargs)
+                            for link in field.links.values()
+                        }
+                    result[key][field.name] = \
+                        field.encode(self, field_data, links=links, **kwargs)
 
             # Filter out empty keys
             if not result.get(key):

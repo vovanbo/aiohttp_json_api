@@ -42,12 +42,7 @@ class ToOne(Relationship):
 
     def encode(self, schema, data, **kwargs) -> typing.MutableMapping:
         """Composes the final relationships object."""
-        document = {
-            'links': {
-                link.name: link.encode(schema, data, **kwargs)
-                for link in self.links.values()
-            }
-        }
+        document = {'links': kwargs.get('links', {})}
 
         if data is None:
             document['data'] = data
@@ -158,10 +153,7 @@ class ToMany(Relationship):
             helper are added to the final JSON API relationship object.
         """
         document = {
-            'links': {
-                link.name: link.encode(schema, data, **kwargs)
-                for link in self.links.values()
-            },
+            'links': kwargs.get('links', {}),
             'meta': {}
         }
 
