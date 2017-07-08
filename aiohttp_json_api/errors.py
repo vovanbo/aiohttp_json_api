@@ -121,8 +121,7 @@ class Error(Exception):
         if self.source_pointer or self.source_parameter:
             d['source'] = dict()
             if self.source_pointer:
-                d['source']['pointer'] = \
-                    inflection.dasherize(self.source_pointer.path)
+                d['source']['pointer'] = self.source_pointer
             if self.source_parameter:
                 d['source']['parameter'] = self.source_parameter
         if self.meta:

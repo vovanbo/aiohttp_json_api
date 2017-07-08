@@ -3,9 +3,10 @@ Relationships
 =============
 """
 
-import collections
 import typing
+from collections import OrderedDict, Mapping
 
+from aiohttp_json_api.helpers import is_collection
 from .base_fields import Relationship
 from ..errors import InvalidType
 from ..log import logger
@@ -41,12 +42,17 @@ class ToOne(Relationship):
 
     def encode(self, schema, data, **kwargs) -> typing.MutableMapping:
         """Composes the final relationships object."""
-        document = {'links': kwargs.get('links', {})}
+        document = {
+            'links': {
+                link.name: link.encode(schema, data, **kwargs)
+                for link in self.links.values()
+            }
+        }
 
         if data is None:
             document['data'] = data
         # JSON API resource linkage or JSON API relationships object
-        elif isinstance(data, collections.Mapping):
+        elif isinstance(data, Mapping):
             if 'type' in data and 'id' in data:
                 document['data'] = data
         # the related resource instance
@@ -151,9 +157,15 @@ class ToMany(Relationship):
             If not *None*, the links and meta members of the pagination
             helper are added to the final JSON API relationship object.
         """
-        document = {'links': kwargs.get('links', {}), 'meta': {}}
+        document = {
+            'links': {
+                link.name: link.encode(schema, data, **kwargs)
+                for link in self.links.values()
+            },
+            'meta': {}
+        }
 
-        if isinstance(data, collections.Iterable):
+        if is_collection(data):
             document['data'] = [
                 schema.registry.ensure_identifier(item, asdict=True)
                 for item in data
@@ -172,8 +184,7 @@ class ToMany(Relationship):
         that the *data* member is a list of resource identifier objects.
         """
         super(ToMany, self).validate_relationship_object(schema, data, sp)
-        if 'data' in data and not isinstance(data['data'],
-                                             collections.Sequence):
+        if 'data' in data and not is_collection(data['data']):
             detail = 'The "data" must be an array ' \
                      'of resource identifier objects.'
             raise InvalidType(detail=detail, source_pointer=sp / 'data')

@@ -8,7 +8,6 @@ This module contains the base schema which implements the encoding, decoding,
 validation and update operations based on
 :class:`fields <aiohttp_json_api.schema.base_fields.BaseField>`.
 """
-import copy
 import inspect
 import typing
 from collections import OrderedDict, Mapping, defaultdict
@@ -18,11 +17,11 @@ from types import MappingProxyType
 import inflection
 import itertools
 from aiohttp import web
+from boltons.iterutils import first
 
 from . import abc
-from .base_fields import (
-    BaseField, LinksObjectMixin, Link, Attribute, Relationship
-)
+from .base_fields import BaseField, Link, Attribute, Relationship
+from .decorators import Tag
 from .common import Event
 from ..helpers import is_instance_or_subclass
 from ..const import JSONAPI
@@ -89,7 +88,7 @@ class SchemaMeta(type):
         """
         for field in fields:
             field.sp = sp / field.name
-            if isinstance(field, LinksObjectMixin):
+            if isinstance(field, Relationship):
                 mcs._assign_sp(field.links.values(), field.sp / 'links')
 
     @classmethod
@@ -100,7 +99,7 @@ class SchemaMeta(type):
         """
         d = OrderedDict()
         for field in fields:
-            if isinstance(field, LinksObjectMixin):
+            if isinstance(field, Relationship):
                 d.update(mcs._sp_to_field(field.links.values()))
             d[field.sp] = field
         return MappingProxyType(d)
@@ -162,7 +161,9 @@ class SchemaMeta(type):
 
         for key, prop in inherited_fields + cls_fields:
             prop.key = key
-            prop.name = prop.name or key
+            prop.name = \
+                prop.name or (klass.inflect(key)
+                              if callable(klass.inflect) else key)
             prop.mapped_key = prop.mapped_key or key
             declared_fields[prop.key] = prop
 
@@ -373,24 +374,23 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
     # Encoding
     # --------
 
-    async def _encode_field(self, field, resource, **kwargs):
-        """
-        Encodes the *field* and if has nested fields (e.g. inherits from
-        :class:`LinksObjectMixin`), the nested fields are encoded first and
-        passed to the encode method of the *field*.
-        """
-        links = None
-        if isinstance(field, LinksObjectMixin):
-            links = {
-                self.inflect(link.name): link.encode(self, resource, **kwargs)
-                for link in field.links.values()
-            }
+    def default_getter(self, field, resource, **kwargs):
+        if field.mapped_key:
+            return getattr(resource, field.mapped_key)
+        return None
 
-        data = await field.get(self, resource, **kwargs)
-        return field.encode(self, data, links=links, **kwargs)
+    def get_value(self, field, resource, **kwargs):
+        getter = self.default_getter
+        getter_kwargs = {}
+        if self._has_processors:
+            tag = Tag.GET, field.key
+            getters = self.__processors__.get(tag)
+            if getters:
+                getter = getattr(self, first(getters))
+                getter_kwargs = getter.__processing_kwargs__.get(tag)
+        return getter(field, resource, **getter_kwargs, **kwargs)
 
-    async def encode_resource(self, resource,
-                              **kwargs) -> typing.MutableMapping:
+    def serialize_resource(self, resource, **kwargs) -> typing.MutableMapping:
         """
         .. seealso::
 
@@ -410,58 +410,41 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         context = kwargs['context']
         fieldset = context.fields.get(self.type)
 
-        result = {
-            'type': self.type,
-            'id': self._get_id(resource)
-        }
+        fields_map = (
+            ('attributes', self._attributes),
+            ('relationships', self._relationships),
+            ('meta', self._meta),
+            ('links', self._links)
+        )
 
-        # JSON API attributes object
-        attributes = OrderedDict()
-        for field in self._attributes.values():
-            if fieldset is None or field.name in fieldset:
-                attributes[self.inflect(field.name)] = \
-                    await self._encode_field(field, resource, **kwargs)
+        result = OrderedDict()
+        result['type'] = self.type
+        result['id'] = self._get_id(resource)
 
-        if attributes:
-            result['attributes'] = attributes
+        for key, fields in fields_map:
+            result[key] = OrderedDict()
+            for field in fields.values():
+                if fieldset is None or field.name in fieldset:
+                    field_data = self.get_value(field, resource, **kwargs)
+                    result[key][field.name] = field.encode(self, field_data,
+                                                           **kwargs)
 
-        # JSON API relationships object
-        relationships = OrderedDict()
-        for field in self._relationships.values():
-            if fieldset is None or field.name in fieldset:
-                relationships[self.inflect(field.name)] = \
-                    await self._encode_field(field, resource, **kwargs)
+            # Filter out empty keys
+            if not result.get(key):
+                result.pop(key, None)
 
-        if relationships:
-            result['relationships'] = relationships
-
-        # JSON API meta object
-        meta = OrderedDict()
-        for field in self._meta.values():
-            meta[self.inflect(field.name)] = \
-                await self._encode_field(field, resource, **kwargs)
-
-        if meta:
-            result['meta'] = meta
-
-        # JSON API links object
-        links = OrderedDict()
-        for field in self._links.values():
-            links[self.inflect(field.name)] = \
-                await self._encode_field(field, resource, **kwargs)
-
-        if 'self' not in links:
+        if result.get('links') and 'self' not in result['links']:
             self_url = self.app.router['jsonapi.resource'].url_for(
                 **self.registry.ensure_identifier(resource, asdict=True)
             )
             if context.request is not None:
                 self_url = context.request.url.join(self_url)  # Absolute URL
-            links['self'] = str(self_url)
-        result['links'] = links
+            result['links']['self'] = str(self_url)
 
         return result
 
-    def encode_relationship(self, relation_name, resource, *, pagination=None):
+    def serialize_relationship(self, relation_name, resource,
+                                     *, pagination=None):
         """
         .. seealso::
 
@@ -469,7 +452,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         Creates the JSON API relationship object of the relationship *relname*.
 
-        :arg str relname:
+        :arg str relation_name:
             The name of the relationship
         :arg resource:
             A resource object
@@ -478,15 +461,16 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         :rtype: dict
         :returns:
-            The JSON API relationship object for the relationship *relname*
-            of the *resource*
+            The JSON API relationship object for the relationship
+            *relation_name* of the *resource*
         """
         field = self.get_relationship_field(relation_name)
 
         kwargs = dict()
         if field.to_one and pagination:
             kwargs['pagination'] = pagination
-        return self._encode_field(field, resource, **kwargs)
+        field_data = self.get_value(field, resource, **kwargs)
+        return field.encode(self, field_data, **kwargs)
 
     # Validation (pre decode)
     # -----------------------
@@ -570,7 +554,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         rels = data.get('relationships', {})
         rels_sp = sp / 'relationships'
 
-        if not isinstance(rels, dict):
+        if not isinstance(rels, Mapping):
             detail = 'Must be an object.'
             raise InvalidType(detail=detail, source_pointer=rels_sp)
 
@@ -599,33 +583,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
     # Decoding
     # --------
 
-    def _decode_field(self, field, data, sp, *, memo=None, kwargs=None):
-        """
-        Decodes the input data for the *field*. If the *field* has nested
-        fields, the nested fields are decoded first and passed to the
-        decode method of the field.
-
-        :arg ~aiohttp_json_api.schema.base_fields.BaseField field:
-            The field whichs input data is decoded.
-        :arg data:
-            The input data for the field
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
-            The JSON pointer to the source of *data*
-        :arg dict memo:
-            The decoded data will be stored additionaly in this dictionary
-            with the key *field.key*.
-        :arg dict kwargs:
-            A dictionary with additional keyword arguments passed to
-            :meth:`BaseField.decode`.
-        """
-        kwargs = kwargs or {}
-
-        d = field.decode(self, data, sp, **kwargs)
-        if memo is not None and field.key:
-            memo[field.key] = (d, sp)
-        return d
-
-    def decode_resource(self, data, sp):
+    def deserialize_resource(self, data, sp):
         """
         Decodes the JSON API resource object *data* and returns a dictionary
         which maps the key of a field to its decoded input data.
@@ -636,35 +594,30 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             ``(data, sp)`` which contains the input data and the source pointer
             to it.
         """
-        memo = OrderedDict()
+        result = OrderedDict()
+        fields_map = (
+            ('attributes', self._attributes),
+            ('relationships', self._relationships),
+            ('meta', self._meta),
+        )
 
-        # JSON API attributes object
-        attrs = data.get('attributes', {})
-        attrs_sp = sp / 'attributes'
-        for field in self._attributes.values():
-            field_sp = attrs_sp / field.name if field.name in attrs else None
-            field_data = attrs.get(field.name)
-            if field_data is None and field.required is Event.NEVER:
-                if not field.allow_none:
-                    continue
-            self._decode_field(field, field_data, field_sp, memo=memo)
+        for key, fields in fields_map:
+            data_for_fields = data.get(key, {})
 
-        # JSON API relationships object
-        rels = data.get('relationships', {})
-        rels_sp = sp / 'relationships'
-        for field in self._relationships.values():
-            field_sp = rels_sp / field.name if field.name in rels else None
-            field_data = rels.get(field.name)
-            self._decode_field(field, field_data, field_sp, memo=memo)
+            for field in fields.values():
+                field_data = data_for_fields.get(field.name)
+                if field_data is None and field.required is Event.NEVER:
+                    if not field.allow_none:
+                        continue
 
-        # JSON API meta object
-        meta = data.get('meta', {})
-        meta_sp = sp / 'meta'
-        for field in self._meta.values():
-            field_sp = meta_sp / field.name if field.name in meta else None
-            field_data = meta.get(field.name)
-            self._decode_field(field, field_data, field_sp, memo=memo)
-        return memo
+                if field.key:
+                    field_sp = sp / key / field.name \
+                        if field.name in data_for_fields \
+                        else None
+                    result[field.key] = (
+                        field.decode(self, field_data, field_sp), field_sp
+                    )
+        return result
 
     # Validate (post decode)
     # ----------------------
@@ -674,7 +627,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         Validates the decoded *data* of JSON API resource object.
 
         :arg ~collections.OrderedDict memo:
-            The *memo* object returned from :meth:`decode_resource`.
+            The *memo* object returned from :meth:`deserialize_resource`.
         """
         # NOTE: The fields in *memo* are ordered, such that children are
         #       listed before their parent.
@@ -706,7 +659,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             The JSON pointer to the source of *data*.
         """
         self.validate_resource_pre_decode(data, sp, context)
-        memo = self.decode_resource(data, sp)
+        memo = self.deserialize_resource(data, sp)
         self.validate_resource_post_decode(memo, context)
 
         # Map the property names on the resource instance to its initial data.
@@ -749,7 +702,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         self.validate_resource_pre_decode(
             data, sp, context, expected_id=resource_id
         )
-        memo = self.decode_resource(data, sp)
+        memo = self.deserialize_resource(data, sp)
         self.validate_resource_post_decode(memo, context)
 
         if not isinstance(resource, self.resource_class):
@@ -798,7 +751,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         field = self.get_relationship_field(relation_name)
 
         self._validate_field_pre_decode(field, data, sp, context)
-        decoded = self._decode_field(field, data, sp)
+        decoded = field.decode(self, data, sp, **kwargs)
 
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
@@ -829,7 +782,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         assert field.to_many
 
         self._validate_field_pre_decode(field, data, sp, context)
-        decoded = self._decode_field(field, data, sp)
+        decoded = field.decode(self, data, sp, **kwargs)
 
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
@@ -860,7 +813,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         assert field.to_many
 
         self._validate_field_pre_decode(field, data, sp, context)
-        decoded = self._decode_field(field, data, sp)
+        decoded = field.decode(self, data, sp, **kwargs)
 
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)

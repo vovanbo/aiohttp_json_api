@@ -89,7 +89,7 @@ def tag_processor(tag, fn, **kwargs):
     except AttributeError:
         fn.__processing_kwargs__ = processing_kwargs = {}
 
-    field_key = kwargs.get('field_key')
+    field_key = kwargs.pop('field_key', None)
     processing_tags.add((tag, field_key))
     processing_kwargs[(tag, field_key)] = kwargs
 

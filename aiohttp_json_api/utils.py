@@ -98,33 +98,26 @@ async def get_compound_documents(resources, context, **kwargs):
     return compound_documents, relationships
 
 
-async def encode_resource(resource, context):
+def serialize_resource(resource, context):
     registry = context.request.app[JSONAPI]['registry']
     schema = registry.get_schema(resource)
-    return await schema.encode_resource(resource, context=context)
+    return schema.serialize_resource(resource, context=context)
 
 
-async def render_document(resources, compound_documents, context, *,
-                          pagination=None, links=None) -> typing.MutableMapping:
+def render_document(resources, compound_documents, context, *,
+                    pagination=None, links=None) -> typing.MutableMapping:
     document = {'links': {}, 'meta': {}}
     pagination = pagination or context.pagination
 
     if is_collection(resources):
-        document['data'] = []
-        for resource in resources:
-            document['data'].append(await encode_resource(resource, context))
+        document['data'] = [serialize_resource(r, context) for r in resources]
     else:
-        document['data'] = (
-            await encode_resource(resources, context)
-            if resources else None
-        )
+        document['data'] = \
+            serialize_resource(resources, context) if resources else None
 
     if context.include and compound_documents:
-        document['included'] = []
-        for resource in compound_documents.values():
-            document['included'].append(
-                await encode_resource(resource, context)
-            )
+        document['included'] = [serialize_resource(r, context)
+                                for r in compound_documents.values()]
 
     document['links']['self'] = str(context.request.url)
     if links is not None:
