@@ -1,17 +1,5 @@
 class FieldABC(object):
-    def setter(self, f):
-        raise NotImplementedError
-
     def validator(self, f, step, on):
-        raise NotImplementedError
-
-    async def default_set(self, schema, resource, data, sp, **kwargs):
-        raise NotImplementedError
-
-    async def get(self, schema, resource, **kwargs):
-        raise NotImplementedError
-
-    async def set(self, schema, resource, data, sp, **kwargs):
         raise NotImplementedError
 
     def encode(self, schema, data, **kwargs):
