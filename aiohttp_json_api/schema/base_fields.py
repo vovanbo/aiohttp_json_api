@@ -106,8 +106,7 @@ class BaseField(FieldABC):
 
     def __init__(self, *, name: str = '', mapped_key: str = '',
                  writable: Event = Event.ALWAYS,
-                 required: Event = Event.NEVER,
-                 fset: Coroutine = None):
+                 required: Event = Event.NEVER):
         #: The name of this field on the
         # :class:`~aiohttp_json_api.schema.Schema`
         #: it has been defined on. Please note, that not each field has a *key*
@@ -128,17 +127,7 @@ class BaseField(FieldABC):
         assert isinstance(required, Event)
         self.required = required
 
-        self.fset = fset
         self.fvalidators = list()
-
-    def setter(self, f):
-        """
-        Descriptor to change the setter.
-
-        :seealso: :func:`aiohttp_json_api.schema.decorators.sets`
-        """
-        self.fset = f
-        return self
 
     def validator(self, f: Callable,
                   step: Step = Step.POST_DECODE,
@@ -158,27 +147,6 @@ class BaseField(FieldABC):
             'validator': f, 'step': step, 'on': on
         })
         return self
-
-    async def default_set(self, schema, resource, data, sp, **kwargs):
-        """Used if no *setter* has been defined. Can be overridden."""
-        if self.mapped_key:
-            setattr(resource, self.mapped_key, data)
-        return None
-
-    async def set(self, schema, resource, data, sp, **kwargs):
-        """
-        Changes the value of the field on the resource.
-
-        :arg ~aiohttp_json_api.schema.Schema schema:
-            The schema this field has been defined on.
-        :arg data:
-            The (decoded and validated) new value of the field
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
-            A JSON pointer to the source of the original input data.
-        """
-        assert self.writable is not Event.NEVER
-        f = self.fset or self.default_set
-        return await f(schema, resource, data, sp, **kwargs)
 
     def encode(self, schema, data, **kwargs):
         """

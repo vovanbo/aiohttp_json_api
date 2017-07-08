@@ -170,13 +170,7 @@ class SchemaMeta(type):
         # Apply the decorators.
         # TODO: Use a more generic approach.
         for key, prop in attrs.items():
-            if hasattr(prop, 'japi_getter'):
-                field = declared_fields[prop.japi_getter['field']]
-                field.getter(prop)
-            elif hasattr(prop, 'japi_setter'):
-                field = declared_fields[prop.japi_setter['field']]
-                field.setter(prop)
-            elif hasattr(prop, 'japi_validates'):
+            if hasattr(prop, 'japi_validates'):
                 field = declared_fields[prop.japi_validates['field']]
                 field.validator(
                     prop, step=prop.japi_validator['step'],
@@ -379,6 +373,10 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             return getattr(resource, field.mapped_key)
         return None
 
+    def default_setter(self, field, resource, data, sp, **kwargs):
+        if field.mapped_key:
+            setattr(resource, field.mapped_key, data)
+
     def get_value(self, field, resource, **kwargs):
         getter = self.default_getter
         getter_kwargs = {}
@@ -389,6 +387,18 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                 getter = getattr(self, first(getters))
                 getter_kwargs = getter.__processing_kwargs__.get(tag)
         return getter(field, resource, **getter_kwargs, **kwargs)
+
+    def set_value(self, field, resource, data, sp, **kwargs):
+        assert field.writable is not Event.NEVER
+        setter = self.default_setter
+        setter_kwargs = {}
+        if self._has_processors:
+            tag = Tag.SET, field.key
+            setters = self.__processors__.get(tag)
+            if setters:
+                setter = getattr(self, first(setters))
+                setter_kwargs = setter.__processing_kwargs__.get(tag)
+        return setter(field, resource, data, sp, **setter_kwargs, **kwargs)
 
     def serialize_resource(self, resource, **kwargs) -> typing.MutableMapping:
         """
@@ -710,7 +720,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         for key, (data, sp) in memo.items():
             field = self._declared_fields[key]
-            await field.set(self, resource, data, sp, **kwargs)
+            self.set_value(field, resource, data, sp, **kwargs)
 
         return resource
 
@@ -756,7 +766,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
 
-        await field.set(self, resource, decoded, sp, **kwargs)
+        self.set_value(field, resource, decoded, sp, **kwargs)
         return resource
 
     async def add_relationship(self, relation_name, resource,
