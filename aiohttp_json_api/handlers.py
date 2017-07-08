@@ -109,7 +109,7 @@ async def get_resource(request: web.Request):
         raise HTTPNotFound()
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     resource = await schema.query_resource(id_=resource_id, context=context)
 
@@ -137,7 +137,7 @@ async def patch_resource(request: web.Request):
         raise HTTPNotFound()
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     data = await get_data_from_request(request)
     if not isinstance(data, collections.Mapping):
@@ -168,7 +168,7 @@ async def delete_resource(request: web.Request):
         raise HTTPNotFound()
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     await schema.delete_resource(resource=resource_id, context=context)
     return web.HTTPNoContent()
@@ -186,7 +186,7 @@ async def get_relationship(request: web.Request):
     )
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     pagination = None
     if relation_field.to_many:
@@ -222,7 +222,7 @@ async def post_relationship(request: web.Request):
     pagination = None
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     if relation_field.to_many:
         pagination_type = relation_field.pagination
@@ -262,7 +262,7 @@ async def patch_relationship(request: web.Request):
     )
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     pagination = None
     if relation_field.to_many:
@@ -299,7 +299,7 @@ async def delete_relationship(request: web.Request):
     relation_name = request.match_info['relation']
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     data = await get_data_from_request(request)
     await schema.remove_relationship(
@@ -332,7 +332,7 @@ async def get_related(request: web.Request):
     pagination = None
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     if relation_field.to_many:
         pagination_type = relation_field.pagination

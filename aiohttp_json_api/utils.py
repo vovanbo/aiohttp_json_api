@@ -180,7 +180,7 @@ def error_to_response(request: web.Request,
     )
 
 
-async def validate_uri_resource_id(schema, resource_id, context):
+def validate_uri_resource_id(schema, resource_id, context):
     field = schema._id
     if field:
         try:
