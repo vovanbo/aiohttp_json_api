@@ -56,11 +56,11 @@ You should only work with the following fields directly:
                 return BoundField
 """
 
-from collections import Coroutine, Callable, Mapping
+from collections import Coroutine, Mapping
 from typing import Sequence
 
 from .abc import FieldABC
-from .common import Event, Step
+from .common import Event
 from ..errors import InvalidType, InvalidValue
 
 __all__ = (
@@ -92,19 +92,18 @@ class BaseField(FieldABC):
     :arg str mapped_key:
         The name of the associated property on the resource class. If not
         explicitly given, it's the same as :attr:`key`.
+    :arg bool allow_none:
+        Allow to receive 'null' value
     :arg Event writable:
         Can be either *never*, *always*, *creation* or *update* and
         describes in which CRUD context the field is writable.
     :arg Event required:
         Can be either *never*, *always*, *creation* or *update* and
         describes in which CRUD context the field is required as input.
-    :arg Coroutine fset:
-        A method on a :class:`~aiohttp_json_api.schema.Schema`
-        which updates the current value of the resource's attribute:
-        ``fget(self, resource, data, sp, **kwargs)``.
     """
 
     def __init__(self, *, name: str = '', mapped_key: str = '',
+                 allow_none: bool = False,
                  writable: Event = Event.ALWAYS,
                  required: Event = Event.NEVER):
         #: The name of this field on the
@@ -120,33 +119,13 @@ class BaseField(FieldABC):
 
         self.name = name
         self.mapped_key = mapped_key
+        self.allow_none = allow_none
 
         assert isinstance(writable, Event)
         self.writable = writable
 
         assert isinstance(required, Event)
         self.required = required
-
-        self.fvalidators = list()
-
-    def validator(self, f: Callable,
-                  step: Step = Step.POST_DECODE,
-                  on: Event = Event.ALWAYS):
-        """
-        Descriptor to add a validator.
-
-        :seealso: :func:`aiohttp_json_api.schema.decorators.validates`
-
-        :arg Step step:
-            Must be either *pre-decode* or *post-decode*.
-        :arg Event on:
-            The CRUD context in which the validator is invoked. Must
-            be *never*, *always*, *creation* or *update*.
-        """
-        self.fvalidators.append({
-            'validator': f, 'step': step, 'on': on
-        })
-        return self
 
     def encode(self, schema, data, **kwargs):
         """
@@ -174,14 +153,7 @@ class BaseField(FieldABC):
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of *data*.
         """
-        for validator in self.fvalidators:
-            if validator['step'] is not Step.PRE_DECODE:
-                continue
-            if validator['on'] not in (Event.ALWAYS, context.event):
-                continue
-
-            f = validator['validator']
-            f(schema, data, sp)
+        pass
 
     def post_validate(self, schema, data, sp, context):
         """
@@ -195,14 +167,7 @@ class BaseField(FieldABC):
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of *data*.
         """
-        for validator in self.fvalidators:
-            if validator['step'] is not Step.POST_DECODE:
-                continue
-            if validator['on'] not in (Event.ALWAYS, context.event):
-                continue
-
-            f = validator['validator']
-            f(schema, data, sp)
+        pass
 
 
 class Attribute(BaseField):
@@ -244,17 +209,13 @@ class Attribute(BaseField):
 
     :arg bool meta:
         If true, the attribute is part of the resource's *meta* object.
-    :arg bool allow_none:
-        Allow to receive 'null' value
     :arg \*\*kwargs:
         The init arguments for the :class:`BaseField`.
     """
 
-    def __init__(self, *, meta: bool = False, allow_none: bool = False,
-                 **kwargs):
+    def __init__(self, *, meta: bool = False, **kwargs):
         super(Attribute, self).__init__(**kwargs)
         self.meta = bool(meta)
-        self.allow_none = allow_none
 
 
 class Link(BaseField):
@@ -406,11 +367,6 @@ class Relationship(BaseField):
         self.links[link.name] = link
         return self
 
-    async def query(self, schema, resource, context, **kwargs):
-        """Queries the related resources."""
-        f = self.fquery or self.default_query
-        return await f(schema, resource, context, **kwargs)
-
     def validate_resource_identifier(self, schema, data, sp):
         """
         .. seealso::
@@ -452,7 +408,7 @@ class Relationship(BaseField):
 
         if not (data.keys() <= {'links', 'data', 'meta'}):
             unexpected = (data.keys() - {'links', 'data', 'meta'}).pop()
-            detail = 'Unexpected member: "{}".'.format(unexpected)
+            detail = "Unexpected member: '{}'.".format(unexpected)
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if (self.dereference or self.require_data) and 'data' not in data:

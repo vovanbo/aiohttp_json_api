@@ -86,8 +86,6 @@ class String(Attribute):
             self._trafaret.check(data)
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
-        return super(String, self).pre_validate(schema, data, sp,
-                                                context)
 
     def encode(self, schema, data, **kwargs):
         result = self._trafaret.converter(data)
@@ -108,7 +106,6 @@ class Integer(Attribute):
             self._trafaret.check(data)
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
-        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return self._trafaret.check(data)
@@ -129,7 +126,6 @@ class Float(Attribute):
             self._trafaret.check(data)
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
-        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return self._trafaret.check(data)
@@ -164,7 +160,6 @@ class Complex(Attribute):
         if not isinstance(data["imag"], (int, float)):
             detail = "The imaginar part must be a number."
             raise InvalidValue(detail=detail, source_pointer=sp / "imag")
-        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return complex(data["real"], data["imag"])
@@ -187,7 +182,6 @@ class Decimal(Attribute):
             self._trafaret.check(data)
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
-        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return self._trafaret.check(data)
@@ -220,8 +214,8 @@ class Fraction(Attribute):
 
     def pre_validate(self, schema, data, sp, context):
         if not isinstance(data, dict):
-            detail = "Must be an object with a 'numerator' and 'denominator' " \
-                     "member."
+            detail = "Must be an object with " \
+                     "a 'numerator' and 'denominator' member."
             raise InvalidType(detail=detail, source_pointer=sp)
         if not "numerator" in data:
             detail = "Does not have a 'numerator' member."
@@ -247,7 +241,6 @@ class Fraction(Attribute):
         if self.max is not None and self.max < val:
             detail = "Must be <= {}.".format(self.max)
             raise InvalidValue(detail=detail, source_pointer=sp)
-        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return fractions.Fraction(int(data[0]), int(data[1]))
@@ -272,7 +265,6 @@ class DateTime(Attribute):
             self._trafaret.check(data)
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
-        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return self._trafaret.check(data)
@@ -317,7 +309,7 @@ class TimeDelta(Attribute):
             raise InvalidValue(detail=detail, source_pointer=sp)
         if self.max is not None and self.max < data:
             detail = "The timedelta must be <= {}.".format(self.max)
-        return super().pre_validate(schema, data, sp, context)
+            raise InvalidValue(detail=detail, source_pointer=sp)
 
     def decode(self, schema, data, sp, **kwargs):
         return datetime.timedelta(seconds=float(data))
@@ -332,7 +324,6 @@ class UUID(Attribute):
     :arg int version:
         The required version of the UUID.
     """
-
     def __init__(self, *, version=None, **kwargs):
         super(UUID, self).__init__(**kwargs)
         self.version = version
@@ -352,7 +343,6 @@ class UUID(Attribute):
         if self.version is not None and self.version != data.version:
             detail = "Not a UUID{}.".format(self.version)
             raise InvalidValue(detail=detail, source_pointer=sp)
-        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return uuid.UUID(hex=data)
@@ -376,7 +366,6 @@ class Boolean(Attribute):
             self._trafaret.check(data)
         except t.DataError as error:
             raise InvalidType(detail=error.as_dict(), source_pointer=sp)
-        return super().pre_validate(schema, data, sp, context)
 
     def encode(self, schema, data, **kwargs):
         return self._trafaret.check(data)
@@ -394,7 +383,6 @@ class URI(Attribute):
         except ValueError:
             detail = "Not a valid URI."
             raise InvalidValue(detail=detail, source_pointer=sp)
-        return super().pre_validate(schema, data, sp, context)
 
     def decode(self, schema, data, sp, **kwargs):
         return URL(data)
@@ -421,7 +409,6 @@ class Email(Attribute):
             else:
                 detail = "Not a valid Email address."
                 raise InvalidValue(detail=detail, source_pointer=sp)
-        return super().pre_validate(schema, data, sp, context)
 
     def encode(self, schema, data, **kwargs):
         return self._trafaret.check(data)
