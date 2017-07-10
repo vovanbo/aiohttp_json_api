@@ -28,6 +28,11 @@ Submodules
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: aiohttp_json_api.encoder
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. automodule:: aiohttp_json_api.errors
     :members:
     :undoc-members:
