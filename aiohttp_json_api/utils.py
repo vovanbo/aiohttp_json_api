@@ -2,6 +2,7 @@
 Utilities
 =========
 """
+import functools
 import json
 import typing
 from collections import OrderedDict, defaultdict
@@ -12,11 +13,20 @@ from aiohttp import web
 from boltons.iterutils import remap, first
 from boltons.typeutils import make_sentinel
 
+from .jsonpointer import JSONPointer
 from .helpers import is_collection
 from .const import JSONAPI, JSONAPI_CONTENT_TYPE
 from .errors import Error, ErrorList, ValidationError
 
 SENTINEL = make_sentinel()
+
+
+class JSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, JSONPointer):
+            return o.path
+        else:
+            return super(JSONEncoder, self).default(o)
 
 
 def filter_empty_fields(data: typing.MutableMapping) -> typing.MutableMapping:
@@ -31,7 +41,10 @@ def filter_empty_fields(data: typing.MutableMapping) -> typing.MutableMapping:
 def jsonapi_response(data=SENTINEL, *, text=None, body=None,
                      status=web.HTTPOk.status_code,
                      reason=None, headers=None,
-                     dumps=json.dumps):
+                     dumps=None):
+    if not callable(dumps):
+        dumps = functools.partial(json.dumps, cls=JSONEncoder)
+
     return web.json_response(
         data=data, text=text, body=body, status=status,
         reason=reason, headers=headers, content_type=JSONAPI_CONTENT_TYPE,
