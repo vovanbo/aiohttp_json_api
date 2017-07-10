@@ -5,7 +5,7 @@ Errors
 import json
 from http import HTTPStatus
 
-import inflection
+from .encoder import json_dumps
 
 __all__ = (
     'Error',
@@ -99,7 +99,7 @@ class Error(Exception):
         """
         Returns the :attr:`detail` attribute per default.
         """
-        return json.dumps(self.json, indent=4, sort_keys=True)
+        return json_dumps(self.json, indent=4, sort_keys=True)
 
     @property
     def json(self):
