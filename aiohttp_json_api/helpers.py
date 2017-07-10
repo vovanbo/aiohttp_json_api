@@ -77,11 +77,6 @@ def make_sentinel(name='_MISSING', var_name=None):
     usage as a "sentinel", a kind of singleton often used to indicate
     a value is missing when ``None`` is a valid input.
 
-    Args:
-        name (str): Name of the Sentinel
-        var_name (str): Set this name to the name of the variable in
-            its respective module enable pickleability.
-
     >>> make_sentinel(var_name='_MISSING')
     _MISSING
 
@@ -101,6 +96,11 @@ def make_sentinel(name='_MISSING', var_name=None):
       >>> type(make_sentinel('TEST')) == type(make_sentinel('TEST'))
       False
 
+    :arg str name:
+        Name of the Sentinel
+    :arg str var_name:
+        Set this name to the name of the variable in its respective
+        module enable pickleability.
     """
     class Sentinel(object):
         def __init__(self):
