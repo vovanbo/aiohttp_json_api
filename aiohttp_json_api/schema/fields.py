@@ -42,6 +42,7 @@ from yarl import URL
 
 from .trafarets import DecimalTrafaret
 from .base_fields import Attribute
+from ..helpers import is_collection
 from ..errors import InvalidType, InvalidValue
 
 __all__ = [
@@ -72,11 +73,13 @@ class String(Attribute):
         super(String, self).__init__(**kwargs)
         self._trafaret = t.String(allow_blank=allow_blank, regex=regex,
                                   min_length=min_length, max_length=max_length)
-        if choices:
-            choices = tuple(choices.__members__.keys()) \
-                if isinstance(choices, type(Enum)) \
-                else choices
-            self._trafaret = self._trafaret & t.Enum(*choices)
+        self.choices = None
+        if choices and is_collection(choices):
+            if isinstance(choices, type(Enum)):
+                self.choices = choices
+                self._trafaret &= t.Enum(*choices.__members__.keys())
+            else:
+                self._trafaret &= t.Enum(*choices)
 
         if self.allow_none:
             self._trafaret = self._trafaret | t.Null()
@@ -86,6 +89,11 @@ class String(Attribute):
             self._trafaret.check(data)
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
+
+    def decode(self, schema, data, sp, **kwargs):
+        return self.choices[data] \
+            if isinstance(self.choices, type(Enum)) \
+            else data
 
     def encode(self, schema, data, **kwargs):
         result = self._trafaret.converter(data)
