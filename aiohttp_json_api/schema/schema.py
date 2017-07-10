@@ -406,7 +406,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
     def _get_processors(self, tag: Tag, field: BaseField,
                         default: typing.Union[typing.Callable,
-                                              typing.Coroutine] = None):
+                                              typing.Coroutine]):
         if self._has_processors:
             processor_tag = tag, field.key
             processors = self.__processors__.get(processor_tag)
@@ -421,14 +421,14 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
     def get_value(self, field, resource, **kwargs):
         getter, getter_kwargs = first(
-            self._get_processors(Tag.GET, field, default=self.default_getter)
+            self._get_processors(Tag.GET, field, self.default_getter)
         )
         return getter(field, resource, **getter_kwargs, **kwargs)
 
     def set_value(self, field, resource, data, sp, **kwargs):
         assert field.writable is not Event.NEVER
         setter, setter_kwargs = first(
-            self._get_processors(Tag.SET, field, default=self.default_setter)
+            self._get_processors(Tag.SET, field, self.default_setter)
         )
         return setter(field, resource, data, sp, **setter_kwargs, **kwargs)
 
@@ -839,7 +839,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             resource = await self.query_resource(resource, context, **kwargs)
 
         adder, adder_kwargs = first(
-            self._get_processors(Tag.ADD, field, default=self.default_add)
+            self._get_processors(Tag.ADD, field, self.default_add)
         )
         await adder(field, resource, decoded, sp,
                     context=context, **adder_kwargs, **kwargs)
@@ -874,8 +874,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             resource = await self.query_resource(resource, context, **kwargs)
 
         remover, remover_kwargs = first(
-            self._get_processors(Tag.REMOVE, field,
-                                 default=self.default_remove)
+            self._get_processors(Tag.REMOVE, field, self.default_remove)
         )
         await remover(field, resource, decoded, sp,
                       context=context, **remover_kwargs, **kwargs)
@@ -933,7 +932,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         field = self.get_relationship_field(relation_name)
 
         query, query_kwargs = first(
-            self._get_processors(Tag.QUERY, field, default=self.default_query)
+            self._get_processors(Tag.QUERY, field, self.default_query)
         )
         return await query(field, resource, context, **query_kwargs, **kwargs)
 
@@ -967,8 +966,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         field = self.get_relationship_field(relation_name,
                                             source_parameter='include')
         include, include_kwargs = first(
-            self._get_processors(Tag.INCLUDE, field,
-                                 default=self.default_include)
+            self._get_processors(Tag.INCLUDE, field, self.default_include)
         )
         return await include(field, resources, context,
                              **include_kwargs, **kwargs)
