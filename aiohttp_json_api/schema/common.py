@@ -10,10 +10,10 @@ else:
 
 
 class Step(Enum):
-    PRE_DECODE = auto()
-    POST_DECODE = auto()
-    PRE_ENCODE = auto()
-    POST_ENCODE = auto()
+    BEFORE_DESERIALIZATION = auto()
+    AFTER_DESERIALIZATION = auto()
+    BEFORE_SERIALIZATION = auto()
+    AFTER_SERIALIZATION = auto()
 
 
 class Event(Flag):
