@@ -56,22 +56,22 @@ You should only work with the following fields directly:
                 return BoundField
 """
 
-from collections import Coroutine, Callable, Mapping
+from collections import Coroutine, Mapping
 from typing import Sequence
 
-from .common import Event, Step
+from .abc import FieldABC
+from .common import Event
 from ..errors import InvalidType, InvalidValue
 
 __all__ = (
     'BaseField',
     'Attribute',
     'Link',
-    'LinksObjectMixin',
     'Relationship',
 )
 
 
-class BaseField(object):
+class BaseField(FieldABC):
     """
     This class describes the base for all fields defined on a schema and
     knows how to encode, decode and update the field. A field is usually
@@ -92,26 +92,20 @@ class BaseField(object):
     :arg str mapped_key:
         The name of the associated property on the resource class. If not
         explicitly given, it's the same as :attr:`key`.
+    :arg bool allow_none:
+        Allow to receive 'null' value
     :arg Event writable:
         Can be either *never*, *always*, *creation* or *update* and
         describes in which CRUD context the field is writable.
     :arg Event required:
         Can be either *never*, *always*, *creation* or *update* and
         describes in which CRUD context the field is required as input.
-    :arg Coroutine fget:
-        A method on a :class:`~aiohttp_json_api.schema.Schema`
-        which returns the current value of the resource's attribute:
-        ``fget(self, resource, **kwargs)``.
-    :arg Coroutine fset:
-        A method on a :class:`~aiohttp_json_api.schema.Schema`
-        which updates the current value of the resource's attribute:
-        ``fget(self, resource, data, sp, **kwargs)``.
     """
 
     def __init__(self, *, name: str = '', mapped_key: str = '',
+                 allow_none: bool = False,
                  writable: Event = Event.ALWAYS,
-                 required: Event = Event.NEVER,
-                 fget: Coroutine = None, fset: Coroutine = None):
+                 required: Event = Event.NEVER):
         #: The name of this field on the
         # :class:`~aiohttp_json_api.schema.Schema`
         #: it has been defined on. Please note, that not each field has a *key*
@@ -125,95 +119,13 @@ class BaseField(object):
 
         self.name = name
         self.mapped_key = mapped_key
+        self.allow_none = allow_none
 
         assert isinstance(writable, Event)
         self.writable = writable
 
         assert isinstance(required, Event)
         self.required = required
-
-        self.fget = fget
-        self.fset = fset
-        self.fvalidators = list()
-
-    def __call__(self, f):
-        """The same as :meth:`getter`."""
-        return self.getter(f)
-
-    def getter(self, f):
-        """
-        Descriptor to change the getter.
-
-        :seealso: :func:`aiohttp_json_api.schema.decorators.gets`
-        """
-        self.fget = f
-        self.name = self.name or f.__name__
-        return self
-
-    def setter(self, f):
-        """
-        Descriptor to change the setter.
-
-        :seealso: :func:`aiohttp_json_api.schema.decorators.sets`
-        """
-        self.fset = f
-        return self
-
-    def validator(self, f: Callable,
-                  step: Step = Step.POST_DECODE,
-                  on: Event = Event.ALWAYS):
-        """
-        Descriptor to add a validator.
-
-        :seealso: :func:`aiohttp_json_api.schema.decorators.validates`
-
-        :arg Step step:
-            Must be either *pre-decode* or *post-decode*.
-        :arg Event on:
-            The CRUD context in which the validator is invoked. Must
-            be *never*, *always*, *creation* or *update*.
-        """
-        self.fvalidators.append({
-            'validator': f, 'step': step, 'on': on
-        })
-        return self
-
-    async def default_get(self, schema, resource, **kwargs):
-        """Used if no *getter* has been defined. Can be overridden."""
-        if self.mapped_key:
-            return getattr(resource, self.mapped_key)
-        return None
-
-    async def default_set(self, schema, resource, data, sp, **kwargs):
-        """Used if no *setter* has been defined. Can be overridden."""
-        if self.mapped_key:
-            setattr(resource, self.mapped_key, data)
-        return None
-
-    async def get(self, schema, resource, **kwargs):
-        """
-        Returns the value of the field on the resource.
-
-        :arg ~aiohttp_json_api.schema.Schema schema:
-            The schema this field has been defined on.
-        """
-        f = self.fget or self.default_get
-        return await f(schema, resource, **kwargs)
-
-    async def set(self, schema, resource, data, sp, **kwargs):
-        """
-        Changes the value of the field on the resource.
-
-        :arg ~aiohttp_json_api.schema.Schema schema:
-            The schema this field has been defined on.
-        :arg data:
-            The (decoded and validated) new value of the field
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
-            A JSON pointer to the source of the original input data.
-        """
-        assert self.writable not in Event.NEVER
-        f = self.fset or self.default_set
-        return await f(schema, resource, data, sp, **kwargs)
 
     def encode(self, schema, data, **kwargs):
         """
@@ -229,7 +141,7 @@ class BaseField(object):
         """
         return data
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         """
         Validates the raw JSON API input for this field. This method is
         called before :meth:`decode`.
@@ -241,16 +153,9 @@ class BaseField(object):
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of *data*.
         """
-        for validator in self.fvalidators:
-            if validator['step'] is not Step.PRE_DECODE:
-                continue
-            if validator['on'] not in (Event.ALWAYS, context.event):
-                continue
+        pass
 
-            f = validator['validator']
-            f(schema, data, sp)
-
-    def validate_post_decode(self, schema, data, sp, context):
+    def post_validate(self, schema, data, sp, context):
         """
         Validates the decoded input *data* for this field. This method is
         called after :meth:`decode`.
@@ -262,107 +167,7 @@ class BaseField(object):
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of *data*.
         """
-        for validator in self.fvalidators:
-            if validator['step'] is not Step.POST_DECODE:
-                continue
-            if validator['on'] not in (Event.ALWAYS, context.event):
-                continue
-
-            f = validator['validator']
-            f(schema, data, sp)
-
-
-class Link(BaseField):
-    """
-    .. seealso::
-
-        http://jsonapi.org/format/#document-links
-
-    .. code-block:: python3
-
-        class Article(Schema):
-
-            self = Link(route="some_route_name")
-
-            author = ToOne()
-            author_related = Link(
-                route="another_route_name", link_of="author"
-            )
-
-    In the http://jsonapi.org specification, a link is always part of a
-    JSON API links object and is either a simple string or an object with
-    the members *href* and *meta*.
-
-    A link is only readable and *not* mapped to a property on the resource
-    object (You can however define a *getter*).
-
-    :arg str route:
-        A route name for the link
-    :arg str link_of:
-        If given, the link is part of the links object of the field with the
-        key *link_of* and appears otherwise in the resource object's links
-        objects. E.g.: ``link_of = "author"``.
-    :arg bool normalize:
-        If true, the *encode* method normalizes the link so that it is always
-        an object.
-    """
-
-    def __init__(self, route: str = '', *,
-                 link_of: str = '<resource>', name: str = '',
-                 fget: Coroutine = None, normalize: bool = True):
-        super(Link, self).__init__(name=name, writable=Event.NEVER, fget=fget)
-
-        self.normalize = bool(normalize)
-        self.route = route
-        self.link_of = link_of
-
-    async def default_get(self, schema, resource, **kwargs):
-        """Returns the formatted :attr:`href`."""
-        url = schema.app.router[self.route].url_for(
-            **schema.registry.ensure_identifier(resource, asdict=True)
-        )
-        return str(url)
-
-    def encode(self, schema, data, context=None, **kwargs):
-        """Normalizes the links object if wished."""
-        url = schema.app.router[self.route].url_for(
-            **schema.registry.ensure_identifier(data, asdict=True),
-            relation=self.link_of
-        )
-        if context is not None:
-            url = context.request.url.join(url)
-
-        result = str(url)
-        if not self.normalize:
-            return result
-        elif isinstance(result, str):
-            return {'href': result}
-        else:
-            # assert isinstance(data, collections.Mapping)
-            return result
-
-
-class LinksObjectMixin(object):
-    """
-    Mixin for JSON API documents that contain a JSON API links object.
-
-    The :meth:`BaseField.encode` receives an additional keyword argument *link*
-    with the encoded links.
-
-    :arg dict links:
-        A mapping of (transient) :class:`links <Link>`. Key is link name,
-        value is a link itself.
-    """
-
-    def __init__(self, links: Sequence[Link] = None):
-        self.links = {link.name: link for link in links} if links else {}
-
-    def add_link(self, link: Link):
-        """
-        Adds a new link to the links object.
-        """
-        self.links[link.name] = link
-        return self
+        pass
 
 
 class Attribute(BaseField):
@@ -404,20 +209,86 @@ class Attribute(BaseField):
 
     :arg bool meta:
         If true, the attribute is part of the resource's *meta* object.
-    :arg bool allow_none:
-        Allow to receive 'null' value
     :arg \*\*kwargs:
         The init arguments for the :class:`BaseField`.
     """
 
-    def __init__(self, *, meta: bool = False, allow_none: bool = False,
-                 **kwargs):
+    def __init__(self, *, meta: bool = False, **kwargs):
         super(Attribute, self).__init__(**kwargs)
         self.meta = bool(meta)
-        self.allow_none = allow_none
 
 
-class Relationship(BaseField, LinksObjectMixin):
+class Link(BaseField):
+    """
+    .. seealso::
+
+        http://jsonapi.org/format/#document-links
+
+    .. code-block:: python3
+
+        class Article(Schema):
+
+            self = Link(route="some_route_name")
+
+            author = ToOne()
+            author_related = Link(
+                route="another_route_name", link_of="author"
+            )
+
+    In the http://jsonapi.org specification, a link is always part of a
+    JSON API links object and is either a simple string or an object with
+    the members *href* and *meta*.
+
+    A link is only readable and *not* mapped to a property on the resource
+    object (You can however define a *getter*).
+
+    :arg str route:
+        A route name for the link
+    :arg str link_of:
+        If given, the link is part of the links object of the field with the
+        key *link_of* and appears otherwise in the resource object's links
+        objects. E.g.: ``link_of = "author"``.
+    :arg bool normalize:
+        If true, the *encode* method normalizes the link so that it is always
+        an object.
+    """
+
+    def __init__(self, route: str = '', *,
+                 link_of: str = '<resource>', name: str = '',
+                 normalize: bool = True):
+        super(Link, self).__init__(name=name, writable=Event.NEVER)
+
+        self.normalize = bool(normalize)
+        self.route = route
+        self.link_of = link_of
+
+    async def default_get(self, schema, resource, **kwargs):
+        """Returns the formatted :attr:`href`."""
+        url = schema.app.router[self.route].url_for(
+            **schema.registry.ensure_identifier(resource, asdict=True)
+        )
+        return str(url)
+
+    def encode(self, schema, data, context=None, **kwargs):
+        """Normalizes the links object if wished."""
+        url = schema.app.router[self.route].url_for(
+            **schema.registry.ensure_identifier(data, asdict=True),
+            relation=self.link_of
+        )
+        if context is not None:
+            url = context.request.url.join(url)
+
+        result = str(url)
+        if not self.normalize:
+            return result
+        elif isinstance(result, str):
+            return {'href': result}
+        else:
+            # assert isinstance(data, collections.Mapping)
+            return result
+
+
+class Relationship(BaseField):
     """
     .. seealso::
 
@@ -469,81 +340,32 @@ class Relationship(BaseField, LinksObjectMixin):
     def __init__(self, *, dereference: bool = True,
                  require_data: Event = Event.ALWAYS,
                  foreign_types: Sequence[str] = None,
-                 finclude: Coroutine = None,
-                 fquery: Coroutine = None,
                  links: Sequence[Link] = None,
                  **kwargs):
         BaseField.__init__(self, **kwargs)
-        LinksObjectMixin.__init__(self, links=links)
+        self.links = {link.name: link for link in links} if links else {}
 
         # NOTE: The related resources are loaded by the schema class for
         #       performance reasons (one big query vs many small ones).
         self.dereference = dereference
 
         self.foreign_types = frozenset(foreign_types or [])
-        self.finclude = finclude
-        self.fquery = fquery
 
         assert isinstance(require_data, Event)
         self.require_data = require_data
 
         # Add the default links.
-        self.add_link(
-            Link('jsonapi.relationships', name='self', link_of=self.name)
-        )
-        self.add_link(
-            Link('jsonapi.related', name='related', link_of=self.name)
-        )
+        self.links['self'] = Link('jsonapi.relationships',
+                                  name='self', link_of=self.name)
+        self.links['related'] = Link('jsonapi.related',
+                                     name='related', link_of=self.name)
 
-    def includer(self, f: Coroutine):
+    def add_link(self, link: Link):
         """
-        Descriptor to change the includer.
-
-        :seealso: :func:`~aiohttp_json_api.schema.decorators.includes`
+        Adds a new link to the links object.
         """
-        self.finclude = f
-        return f
-
-    async def default_include(self, schema, resources, context, **kwargs):
-        """Used if no *includer* has been defined. Can be overridden."""
-        if self.mapped_key:
-            compound_documents = []
-            for resource in resources:
-                compound_document = getattr(resource, self.mapped_key)
-                if compound_document:
-                    compound_documents.extend(compound_document)
-            return compound_documents
-        raise RuntimeError('No includer and mapped_key have been defined.')
-
-    async def include(self, schema, resources, context, **kwargs):
-        """
-        Returns the related resources.
-
-        :arg ~aiohttp_json_api.schema.Schema schema:
-            The schema this field has been defined on.
-        """
-        f = self.finclude or self.default_include
-        return await f(schema, resources, context, **kwargs)
-
-    def query_(self, f: Coroutine):
-        """
-        Descriptor to change the query function.
-
-        :seealso: :func:`~aiohttp_json_api.schema.decorators.queries`
-        """
-        self.fquery = f
+        self.links[link.name] = link
         return self
-
-    async def default_query(self, schema, resource, context, **kwargs):
-        """Used of no *query* function has been defined. Can be overridden."""
-        if self.mapped_key:
-            return getattr(resource, self.mapped_key)
-        raise RuntimeError('No query method and mapped_key have been defined.')
-
-    async def query(self, schema, resource, context, **kwargs):
-        """Queries the related resources."""
-        f = self.fquery or self.default_query
-        return await f(schema, resource, context, **kwargs)
 
     def validate_resource_identifier(self, schema, data, sp):
         """
@@ -586,13 +408,13 @@ class Relationship(BaseField, LinksObjectMixin):
 
         if not (data.keys() <= {'links', 'data', 'meta'}):
             unexpected = (data.keys() - {'links', 'data', 'meta'}).pop()
-            detail = 'Unexpected member: "{}".'.format(unexpected)
+            detail = "Unexpected member: '{}'.".format(unexpected)
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if (self.dereference or self.require_data) and 'data' not in data:
             detail = 'The "data" member is required.'
             raise InvalidValue(detail=detail, source_pointer=sp)
 
-    def validate_pre_decode(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp, context):
         self.validate_relationship_object(schema, data, sp)
-        super(Relationship, self).validate_pre_decode(schema, data, sp, context)
+        super(Relationship, self).pre_validate(schema, data, sp, context)

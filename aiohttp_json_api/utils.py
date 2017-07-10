@@ -2,6 +2,7 @@
 Utilities
 =========
 """
+import functools
 import json
 import typing
 from collections import OrderedDict, defaultdict
@@ -12,8 +13,9 @@ from aiohttp import web
 from boltons.iterutils import remap, first
 from boltons.typeutils import make_sentinel
 
-from .helpers import is_collection
 from .const import JSONAPI, JSONAPI_CONTENT_TYPE
+from .helpers import is_collection
+from .encoder import json_dumps
 from .errors import Error, ErrorList, ValidationError
 
 SENTINEL = make_sentinel()
@@ -31,7 +33,10 @@ def filter_empty_fields(data: typing.MutableMapping) -> typing.MutableMapping:
 def jsonapi_response(data=SENTINEL, *, text=None, body=None,
                      status=web.HTTPOk.status_code,
                      reason=None, headers=None,
-                     dumps=json.dumps):
+                     dumps=None):
+    if not callable(dumps):
+        dumps = json_dumps
+
     return web.json_response(
         data=data, text=text, body=body, status=status,
         reason=reason, headers=headers, content_type=JSONAPI_CONTENT_TYPE,
@@ -78,9 +83,9 @@ async def get_compound_documents(resources, context, **kwargs):
         if relation_name in relationships[schema.type]:
             return
 
-        relatives = await schema.fetch_include(relation_name,
-                                               collection, context,
-                                               rest_path=rest_path, **kwargs)
+        relatives = await schema.fetch_compound_documents(
+            relation_name, collection, context, rest_path=rest_path, **kwargs
+        )
 
         if any(relatives):
             for relative in relatives:
@@ -98,35 +103,26 @@ async def get_compound_documents(resources, context, **kwargs):
     return compound_documents, relationships
 
 
-async def encode_resource(resource, context):
+def serialize_resource(resource, context):
     registry = context.request.app[JSONAPI]['registry']
     schema = registry.get_schema(resource)
-    return await schema.encode_resource(
-        resource, is_data=True, context=context,
-    )
+    return schema.serialize_resource(resource, context=context)
 
 
-async def render_document(resources, compound_documents, context, *,
-                          pagination=None, links=None) -> typing.MutableMapping:
+def render_document(resources, compound_documents, context, *,
+                    pagination=None, links=None) -> typing.MutableMapping:
     document = {'links': {}, 'meta': {}}
     pagination = pagination or context.pagination
 
     if is_collection(resources):
-        document['data'] = []
-        for resource in resources:
-            document['data'].append(await encode_resource(resource, context))
+        document['data'] = [serialize_resource(r, context) for r in resources]
     else:
-        document['data'] = (
-            await encode_resource(resources, context)
-            if resources else None
-        )
+        document['data'] = \
+            serialize_resource(resources, context) if resources else None
 
     if context.include and compound_documents:
-        document['included'] = []
-        for resource in compound_documents.values():
-            document['included'].append(
-                await encode_resource(resource, context)
-            )
+        document['included'] = [serialize_resource(r, context)
+                                for r in compound_documents.values()]
 
     document['links']['self'] = str(context.request.url)
     if links is not None:
@@ -182,12 +178,12 @@ def error_to_response(request: web.Request,
     )
 
 
-async def validate_uri_resource_id(schema, resource_id, context):
+def validate_uri_resource_id(schema, resource_id, context):
     field = schema._id
     if field:
         try:
-            field.validate_pre_decode(schema, resource_id,
-                                      sp=None, context=context)
+            field.pre_validate(schema, resource_id,
+                               sp=None, context=context)
         except ValidationError as e:
             e.source_parameter = 'id'
             raise e

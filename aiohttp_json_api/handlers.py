@@ -51,9 +51,7 @@ async def get_collection(request: web.Request):
         compound_documents, relationships = \
             await get_compound_documents(resources.values(), context)
 
-    result = await render_document(resources.values(),
-                                   compound_documents,
-                                   context)
+    result = render_document(resources.values(), compound_documents, context)
 
     return jsonapi_response(result)
 
@@ -84,7 +82,7 @@ async def post_resource(request: web.Request):
         context=context
     )
 
-    result = await render_document(resource, None, context)
+    result = render_document(resource, None, context)
     location = request.url.join(
         request.app.router['jsonapi.resource'].url_for(
             **registry.ensure_identifier(resource, asdict=True)
@@ -109,7 +107,7 @@ async def get_resource(request: web.Request):
         raise HTTPNotFound()
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     resource = await schema.query_resource(id_=resource_id, context=context)
 
@@ -118,7 +116,7 @@ async def get_resource(request: web.Request):
         compound_documents, relationships = \
             await get_compound_documents(resource, context)
 
-    result = await render_document(resource, compound_documents, context)
+    result = render_document(resource, compound_documents, context)
 
     return jsonapi_response(result)
 
@@ -137,7 +135,7 @@ async def patch_resource(request: web.Request):
         raise HTTPNotFound()
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     data = await get_data_from_request(request)
     if not isinstance(data, collections.Mapping):
@@ -151,7 +149,7 @@ async def patch_resource(request: web.Request):
         context=context,
     )
 
-    result = await render_document(resource, None, context)
+    result = render_document(resource, None, context)
     return jsonapi_response(result)
 
 
@@ -168,7 +166,7 @@ async def delete_resource(request: web.Request):
         raise HTTPNotFound()
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     await schema.delete_resource(resource=resource_id, context=context)
     return web.HTTPNoContent()
@@ -186,7 +184,7 @@ async def get_relationship(request: web.Request):
     )
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     pagination = None
     if relation_field.to_many:
@@ -195,10 +193,9 @@ async def get_relationship(request: web.Request):
             pagination = pagination_type.from_request(request)
 
     resource = await schema.query_resource(id_=resource_id, context=context)
-    relation = await relation_field.query(schema, resource, context)
-    result = await schema.encode_relationship(
-        relation_name, relation, pagination=pagination
-    )
+    relation = await schema.query_relatives(relation_name, resource, context)
+    result = schema.serialize_relationship(relation_name, relation,
+                                           pagination=pagination)
     return jsonapi_response(result)
 
 
@@ -222,7 +219,7 @@ async def post_relationship(request: web.Request):
     pagination = None
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     if relation_field.to_many:
         pagination_type = relation_field.pagination
@@ -237,9 +234,8 @@ async def post_relationship(request: web.Request):
         data=data,
         sp=JSONPointer('')
     )
-    result = await schema.encode_relationship(
-        relation_name, resource, pagination=pagination
-    )
+    result = schema.serialize_relationship(relation_name, resource,
+                                           pagination=pagination)
     return jsonapi_response(result)
 
 
@@ -262,7 +258,7 @@ async def patch_relationship(request: web.Request):
     )
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     pagination = None
     if relation_field.to_many:
@@ -278,9 +274,8 @@ async def patch_relationship(request: web.Request):
         sp=JSONPointer('')
     )
 
-    result = await schema.encode_relationship(
-        relation_name, resource, pagination=pagination
-    )
+    result = schema.serialize_relationship(relation_name, resource,
+                                           pagination=pagination)
     return jsonapi_response(result)
 
 
@@ -299,7 +294,7 @@ async def delete_relationship(request: web.Request):
     relation_name = request.match_info['relation']
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     data = await get_data_from_request(request)
     await schema.remove_relationship(
@@ -332,30 +327,21 @@ async def get_related(request: web.Request):
     pagination = None
 
     resource_id = request.match_info.get('id')
-    await validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(schema, resource_id, context)
 
     if relation_field.to_many:
         pagination_type = relation_field.pagination
         if pagination_type:
             pagination = pagination_type.from_request(request)
 
-        relatives = await schema.query_relatives(
-            relation_name=relation_name,
-            resource=resource_id,
-            context=context
-        )
-    else:
-        relatives = await schema.query_relative(
-            relation_name=relation_name,
-            resource=resource_id,
-            context=context
-        )
+    relatives = await schema.query_relatives(relation_name, resource_id,
+                                             context)
 
     if context.include and relatives:
         compound_documents, relationships = \
             await get_compound_documents(relatives, context)
 
-    result = await render_document(relatives, compound_documents, context,
-                                   pagination=pagination)
+    result = render_document(relatives, compound_documents, context,
+                             pagination=pagination)
 
     return jsonapi_response(result)
