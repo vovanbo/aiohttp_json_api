@@ -17,13 +17,12 @@ from types import MappingProxyType
 import inflection
 import itertools
 from aiohttp import web
-from boltons.iterutils import first
 
 from . import abc
 from .base_fields import BaseField, Link, Attribute, Relationship
 from .decorators import Tag
 from .common import Event, Step
-from ..helpers import is_instance_or_subclass
+from ..helpers import is_instance_or_subclass, first
 from ..const import JSONAPI
 from ..errors import (
     ValidationError, InvalidValue, InvalidType, HTTPConflict,
@@ -324,8 +323,6 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         :arg resource:
             A resource object
-        :arg ~aiohttp.web.Request request:
-            The request context
         :rtype: str
         :returns:
             The id of the *resource*
@@ -674,9 +671,8 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                             field, field_data, field_sp, context
                         )
 
-                    result[field.key] = (
+                    result[field.key] = \
                         field.decode(self, field_data, field_sp), field_sp
-                    )
 
         if validate and Step.AFTER_DESERIALIZATION in validation_steps:
             self.validate_resource_after_deserialization(result, context)

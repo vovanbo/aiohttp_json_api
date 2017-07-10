@@ -2,19 +2,14 @@
 Utilities
 =========
 """
-import functools
-import json
 import typing
 from collections import OrderedDict, defaultdict
 from http import HTTPStatus
 
-import inflection
 from aiohttp import web
-from boltons.iterutils import remap, first
-from boltons.typeutils import make_sentinel
 
 from .const import JSONAPI, JSONAPI_CONTENT_TYPE
-from .helpers import is_collection
+from .helpers import is_collection, first, make_sentinel
 from .encoder import json_dumps
 from .errors import Error, ErrorList, ValidationError
 
@@ -135,16 +130,6 @@ def render_document(resources, compound_documents, context, *,
     document['jsonapi'] = context.request.app[JSONAPI]['jsonapi']
 
     return filter_empty_fields(document)
-
-
-async def get_data_from_request(request: web.Request):
-    data = await request.json()
-    return remap(
-        data,
-        lambda p, k, v: (
-            inflection.underscore(k) if isinstance(k, str) else k, v
-        )
-    )
 
 
 def error_to_response(request: web.Request,

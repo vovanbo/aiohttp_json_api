@@ -13,7 +13,6 @@ from .decorators import jsonapi_content
 from .errors import InvalidType, HTTPNotFound
 from .utils import (
     jsonapi_response,
-    get_data_from_request,
     render_document, get_compound_documents,
     validate_uri_resource_id
 )
@@ -71,7 +70,7 @@ async def post_resource(request: web.Request):
 
     registry = request.app[JSONAPI]['registry']
 
-    data = await get_data_from_request(request)
+    data = await request.json()
     if not isinstance(data, collections.Mapping):
         detail = 'Must be an object.'
         raise InvalidType(detail=detail, source_pointer='')
@@ -137,7 +136,7 @@ async def patch_resource(request: web.Request):
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(schema, resource_id, context)
 
-    data = await get_data_from_request(request)
+    data = await request.json()
     if not isinstance(data, collections.Mapping):
         detail = 'Must be an object.'
         raise InvalidType(detail=detail, source_pointer='')
@@ -226,7 +225,7 @@ async def post_relationship(request: web.Request):
         if pagination_type:
             pagination = pagination_type.from_request(request)
 
-    data = await get_data_from_request(request)
+    data = await request.json()
 
     resource = await schema.add_relationship(
         relation_name=relation_name,
@@ -266,7 +265,7 @@ async def patch_relationship(request: web.Request):
         if pagination_type:
             pagination = pagination_type.from_request(request)
 
-    data = await get_data_from_request(request)
+    data = await request.json()
     resource = await schema.update_relationship(
         relation_name=relation_name,
         resource=resource_id,
@@ -296,7 +295,7 @@ async def delete_relationship(request: web.Request):
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(schema, resource_id, context)
 
-    data = await get_data_from_request(request)
+    data = await request.json()
     await schema.remove_relationship(
         relation_name=relation_name,
         resource=resource_id,
