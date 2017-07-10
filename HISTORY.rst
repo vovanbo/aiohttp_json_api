@@ -2,6 +2,19 @@
 History
 =======
 
+0.10.0 (2017-07-10)
+-------------------
+
+* Mass refactoring of schema, fields, validation and decorators
+* Generic approach to setup Schema decorators is used (inspired by Marshmallow)
+* Fields are used only for encode/decode now (with pre/post validation). Additional validators for fields must be created on schema level
+* Custom JSON encoder with support JSONPointer serialization
+* Remove boltons from requirements
+* No more remap input data dictionary with key names to underscores conversion.
+* Add helpers "first" and "make_sentinel" (cherry-picked from boltons)
+* Fix enumeration (choices) support in String field
+
+
 0.9.3 (2017-07-06)
 ------------------
 
