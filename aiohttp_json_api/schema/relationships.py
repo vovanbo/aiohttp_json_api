@@ -39,7 +39,7 @@ class ToOne(Relationship):
         if 'data' in data and data['data'] is not None:
             self.validate_resource_identifier(schema, data['data'], sp / 'data')
 
-    def encode(self, schema, data, **kwargs) -> typing.MutableMapping:
+    def serialize(self, schema, data, **kwargs) -> typing.MutableMapping:
         """Composes the final relationships object."""
         document = {'links': kwargs.get('links', {})}
 
@@ -68,18 +68,9 @@ class ToMany(Relationship):
     Additionally to *to-one* relationships, *to-many* relationships must also
     support adding and removing relatives.
 
-    :arg callable fadd:
-        A method on a :class:`~aiohttp_json_api.schema.Schema`
-        which adds new resources
-        to the relationship ``fadd(self, resource, data, sp, **kwargs)``.
-    :arg callable fremove:
-        A method on a :class:`~aiohttp_json_api.schema.Schema`
-        which removes some resources
-        from the relationship ``fremove(self, resource, data, sp, **kwargs)``.
     :arg aiohttp_json_api.pagination.BasePagination pagination:
         The pagination helper *class* used to paginate the *to-many*
         relationship.
-
     """
     to_one = False
     to_many = True
@@ -88,7 +79,7 @@ class ToMany(Relationship):
         super(ToMany, self).__init__(**kwargs)
         self.pagination = pagination
 
-    def encode(self, schema, data, **kwargs) -> typing.MutableMapping:
+    def serialize(self, schema, data, **kwargs) -> typing.MutableMapping:
         """Composes the final JSON API relationships object.
 
         :arg ~aiohttp_json_api.pagination.BasePagination pagination:

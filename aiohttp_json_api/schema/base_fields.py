@@ -5,9 +5,9 @@ Base fields
 ===========
 
 This module contains the definition for all basic fields. A field describes
-how data should be encoded to JSON and decoded again and allows to define
-special methods for the different CRUD operations defined by the
-http://jsonapi.org specification.
+how data should be serialized to JSON and deserialized again
+and allows to define special methods for the different CRUD operations
+defined by the http://jsonapi.org specification.
 
 You should only work with the following fields directly:
 
@@ -34,26 +34,6 @@ You should only work with the following fields directly:
 
     Add support for nested fields (aka embedded documents).
 
-.. todo::
-
-    Fields are currently not bound to schema instances. It may be helpful
-    to do something like this in the future::
-
-        class BaseField(object):
-
-            #....
-
-            def __get__(self, obj, cls=None):
-                if obj is None:
-                    return self
-
-                class BoundField(object):
-                    def get(*args, **kwargs): return self.get(obj, *args, **kwargs)
-                    def set(*args, **kwargs): return self.set(obj, *args, **kwargs)
-                    def add(*args, **kwargs): return self.add(obj, *args, **kwargs)
-                    #...
-                    __call__ = get
-                return BoundField
 """
 
 from collections import Coroutine, Mapping
@@ -74,10 +54,11 @@ __all__ = (
 class BaseField(FieldABC):
     """
     This class describes the base for all fields defined on a schema and
-    knows how to encode, decode and update the field. A field is usually
-    directly mapped to a property (*mapped_key*) on the resource object, but
-    this mapping can be customized by implementing custom *getters* and
-    *setters*.
+    knows how to serialize, deserialize and validate the field.
+    A field is usually directly mapped to a property (*mapped_key*)
+    on the resource object, but this mapping can be customized
+    by implementing custom *getters* and *setters*
+    (via :mod:`~aiohttp_json_api.schema.decorators`).
 
     .. hint::
 
@@ -95,11 +76,13 @@ class BaseField(FieldABC):
     :arg bool allow_none:
         Allow to receive 'null' value
     :arg Event writable:
-        Can be either *never*, *always*, *creation* or *update* and
-        describes in which CRUD context the field is writable.
+        Can be any :class:`~aiohttp_json_api.schema.common.Event`
+        enumeration value and describes in which CRUD context the field
+        is writable.
     :arg Event required:
-        Can be either *never*, *always*, *creation* or *update* and
-        describes in which CRUD context the field is required as input.
+        Can be any :class:`~aiohttp_json_api.schema.common.Event`
+        enumeration value and describes in which CRUD context the field
+        is required as input.
     """
 
     def __init__(self, *, name: str = '', mapped_key: str = '',
@@ -127,24 +110,23 @@ class BaseField(FieldABC):
         assert isinstance(required, Event)
         self.required = required
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         """
-        Encodes the *data* returned from :meth:`get` so that it can be
-        serialized with :func:`json.dumps`. Can be overridden.
+        Serialize the passed *data*. Can be overridden.
         """
         return data
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         """
-        Decodes the raw *data* from the JSON API input document and returns it.
-        Can be overridden.
+        Deserialize the raw *data* from the JSON API input document
+        and returns it. Can be overridden.
         """
         return data
 
     def pre_validate(self, schema, data, sp, context):
         """
         Validates the raw JSON API input for this field. This method is
-        called before :meth:`decode`.
+        called before :meth:`deserialize`.
 
         :arg ~aiohttp_json_api.schema.Schema schema:
             The schema this field has been defined on.
@@ -158,7 +140,7 @@ class BaseField(FieldABC):
     def post_validate(self, schema, data, sp, context):
         """
         Validates the decoded input *data* for this field. This method is
-        called after :meth:`decode`.
+        called after :meth:`deserialize`.
 
         :arg ~aiohttp_json_api.schema.Schema schema:
             The schema this field has been defined on.
@@ -198,11 +180,11 @@ class Attribute(BaseField):
 
             title = Attribute()
 
-            @title.getter
+            @gets('title')
             def title(self, article):
                 return article.title
 
-            @title.setter
+            @sets('title')
             def title(self, article, new_title):
                 article.title = new_title
                 return None
@@ -249,7 +231,7 @@ class Link(BaseField):
         key *link_of* and appears otherwise in the resource object's links
         objects. E.g.: ``link_of = "author"``.
     :arg bool normalize:
-        If true, the *encode* method normalizes the link so that it is always
+        If true, the *serialize* method normalizes the link so that it is always
         an object.
     """
 
@@ -269,7 +251,7 @@ class Link(BaseField):
         )
         return str(url)
 
-    def encode(self, schema, data, context=None, **kwargs):
+    def serialize(self, schema, data, context=None, **kwargs):
         """Normalizes the links object if wished."""
         url = schema.app.router[self.route].url_for(
             **schema.registry.ensure_identifier(data, asdict=True),
@@ -294,7 +276,7 @@ class Relationship(BaseField):
 
         http://jsonapi.org/format/#document-resource-object-relationships
 
-    Additionaly to attributes and basic fields, we must know how to *include*
+    Additionally to attributes and basic fields, we must know how to *include*
     the related resources in the case of relationships. This class defines
     the common interface of *to-one* and *to-many* relationships (links object,
     meta object, *self* link, *related* link, validation, ...).
@@ -317,14 +299,6 @@ class Relationship(BaseField):
     :arg Sequence[str] foreign_types:
         A set with all foreign types. If given, this list is used to validate
         the input data. Leave it empty to allow all types.
-    :arg Coroutine finclude:
-        A method on a :class:`~aiohttp_json_api.schema.Schema`
-        which returns the related resources:
-        ``finclude(self, resource, **kwargs)``.
-    :arg Coroutine fquery:
-        A method on a :class:`~aiohttp_json_api.schema.Schema`
-        which returns the queries the related resources:
-        ``fquery(self, resource, **kwargs)``.
     """
 
     #: True, if this is to-one relationship::

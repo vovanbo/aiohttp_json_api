@@ -151,11 +151,10 @@ def validates(field_key,
             created_at = DateTime()
 
             @validates("created_at")
-            def validate_created_at(self, created_at, sp):
+            def validate_created_at(self, data, sp, context):
                 if created_at > datetime.utcnow():
                     detail = "Must be in the past."
                     raise InvalidValue(detail=detail, source_pointer=sp)
-                return None
 
     A field can have as many validators as you want. Note, that they are not
     necessarily called in the order of their definition.
@@ -163,7 +162,7 @@ def validates(field_key,
     :arg str field_key:
         The key of the field.
     :arg Step step:
-        Must be either *pre-decode* or *post-decode*.
+        Must be any Step enumeration value (e.g. Step.BEFORE_DESERIALIZATION)
     :arg Event on:
         Validator's Event
     """
@@ -180,10 +179,10 @@ def adds(field_key):
             comments = ToMany()
 
             @adds("comments")
-            def add_comments(self, article, comments, sp):
+            def add_comments(self, field, resource, data, sp,
+                             context=None, **kwargs):
                 for comment in comment:
                     comment.article_id = article.id
-                return None
 
     A relationship can have at most **one** adder.
 
@@ -202,10 +201,10 @@ def removes(field_key):
             comments = ToMany()
 
             @removes("comments")
-            def remove_comments(self, article, comments, sp=):
+            def remove_comments(self, field, resource, data, sp,
+                                context=None, **kwargs):
                 for comment in comment:
                     comment.article_id = None
-                return None
 
     A relationship can have at most **one** remover.
 
@@ -224,16 +223,18 @@ def includes(field_key):
             author = ToOne()
 
             @includes("author")
-            def include_author(self, article):
+            def include_author(self, field, resources, context, **kwargs):
                 return article.load_author()
 
     A field can have at most **one** includer.
 
     .. hint::
 
-        The includer should not make any database requests for a
-        better performance. The included relationships should be
-        loaded in the same request as the resource.
+        The includer should receive list of all resources related to request.
+        This able to make one request for all related includes at each step
+        of recursively fetched compound documents.
+        Look at :func:`~aiohttp_json_api.utils.get_compound_documents`
+        for more details about how it works.
 
     :arg str field_key:
         The name of the relationship.

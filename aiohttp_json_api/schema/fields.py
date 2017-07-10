@@ -90,12 +90,12 @@ class String(Attribute):
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         return self.choices[data] \
             if isinstance(self.choices, type(Enum)) \
             else data
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         result = self._trafaret.converter(data)
         if isinstance(result, Enum):
             result = result.name
@@ -115,10 +115,10 @@ class Integer(Attribute):
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         return self._trafaret.check(data)
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         return self._trafaret.check(data)
 
 
@@ -135,10 +135,10 @@ class Float(Attribute):
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         return self._trafaret.check(data)
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         return self._trafaret.check(data)
 
 
@@ -169,10 +169,10 @@ class Complex(Attribute):
             detail = "The imaginar part must be a number."
             raise InvalidValue(detail=detail, source_pointer=sp / "imag")
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         return complex(data["real"], data["imag"])
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         data = complex(data)
         return {"real": data.real, "imag": data.imag}
 
@@ -191,10 +191,10 @@ class Decimal(Attribute):
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         return self._trafaret.check(data)
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         return self._trafaret.check(data)
 
 
@@ -250,10 +250,10 @@ class Fraction(Attribute):
             detail = "Must be <= {}.".format(self.max)
             raise InvalidValue(detail=detail, source_pointer=sp)
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         return fractions.Fraction(int(data[0]), int(data[1]))
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         return {"numerator": data.numerator, "denominator": data.denominator}
 
 
@@ -274,10 +274,10 @@ class DateTime(Attribute):
         except t.DataError as error:
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         return self._trafaret.check(data)
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         value = self._trafaret.check(data)
         if isinstance(value, datetime.datetime):
             return value.isoformat()
@@ -319,10 +319,10 @@ class TimeDelta(Attribute):
             detail = "The timedelta must be <= {}.".format(self.max)
             raise InvalidValue(detail=detail, source_pointer=sp)
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         return datetime.timedelta(seconds=float(data))
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         return data.total_seconds()
 
 
@@ -352,10 +352,10 @@ class UUID(Attribute):
             detail = "Not a UUID{}.".format(self.version)
             raise InvalidValue(detail=detail, source_pointer=sp)
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         return uuid.UUID(hex=data)
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         if self.allow_none and data is None:
             return None
         return data.hex
@@ -375,7 +375,7 @@ class Boolean(Attribute):
         except t.DataError as error:
             raise InvalidType(detail=error.as_dict(), source_pointer=sp)
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         return self._trafaret.check(data)
 
 
@@ -392,10 +392,10 @@ class URI(Attribute):
             detail = "Not a valid URI."
             raise InvalidValue(detail=detail, source_pointer=sp)
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         return URL(data)
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         return str(data)
 
 
@@ -418,7 +418,7 @@ class Email(Attribute):
                 detail = "Not a valid Email address."
                 raise InvalidValue(detail=detail, source_pointer=sp)
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         return self._trafaret.check(data)
 
 
@@ -447,15 +447,15 @@ class Dict(Attribute):
         super(Dict, self).__init__(**kwargs)
         self.field = field
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         return {
-            key: self.field.decode(schema, value, sp / key)
+            key: self.field.deserialize(schema, value, sp / key)
             for key, value in data.items()
         }
 
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         return {
-            key: self.field.encode(schema, value)
+            key: self.field.serialize(schema, value)
             for key, value in data.items()
         }
 
@@ -483,14 +483,14 @@ class List(Attribute):
         super(List, self).__init__(**kwargs)
         self.field = field
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         return [
-            self.field.decode(schema, item, sp / i)
+            self.field.deserialize(schema, item, sp / i)
             for item, i in enumerate(data)
         ]
 
-    def encode(self, schema, data, **kwargs):
-        return [self.field.encode(schema, item) for item in data] \
+    def serialize(self, schema, data, **kwargs):
+        return [self.field.serialize(schema, item) for item in data] \
             if data \
             else []
 
