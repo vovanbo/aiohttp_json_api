@@ -1,7 +1,4 @@
-class FieldABC(object):
-    def validator(self, f, step, on):
-        raise NotImplementedError
-
+class FieldABC:
     def encode(self, schema, data, **kwargs):
         raise NotImplementedError
 
@@ -23,7 +20,31 @@ class SchemaABC(object):
     opts = None
     inflect = None
 
+    def default_getter(self, field, resource, **kwargs):
+        raise NotImplementedError
+
+    def default_setter(self, field, resource, data, sp, **kwargs):
+        raise NotImplementedError
+
+    async def default_include(self, field, resources, context, **kwargs):
+        raise NotImplementedError
+
+    async def default_query(self, field, resource, context, **kwargs):
+        raise NotImplementedError
+
+    async def default_add(self, field, resource, data, sp):
+        raise NotImplementedError
+
+    async def default_remove(self, field, resource, data, sp):
+        raise NotImplementedError
+
     def get_relationship_field(self, relation_name, source_parameter=None):
+        raise NotImplementedError
+
+    def get_value(self, field, resource, **kwargs):
+        raise NotImplementedError
+
+    def set_value(self, field, resource, data, sp, **kwargs):
         raise NotImplementedError
 
     def serialize_resource(self, resource, **kwargs):
@@ -32,14 +53,16 @@ class SchemaABC(object):
     def serialize_relationship(self, relation_name, resource, *, pagination=None):
         raise NotImplementedError
 
-    def validate_resource_pre_decode(self, data, sp, context, *,
-                                     expected_id=None):
+    def validate_resource_before_deserialization(self, data, sp, context, *,
+                                                 expected_id=None):
         raise NotImplementedError
 
-    def deserialize_resource(self, data, sp):
+    def validate_resource_after_deserialization(self, memo, context):
         raise NotImplementedError
 
-    def validate_resource_post_decode(self, memo, context):
+    def deserialize_resource(self, data, sp, *, context=None,
+                             expected_id=None, validate=True,
+                             validation_steps=()):
         raise NotImplementedError
 
     async def create_resource(self, data, sp, context, **kwargs):

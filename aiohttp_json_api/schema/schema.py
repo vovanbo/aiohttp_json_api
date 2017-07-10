@@ -22,7 +22,7 @@ from boltons.iterutils import first
 from . import abc
 from .base_fields import BaseField, Link, Attribute, Relationship
 from .decorators import Tag
-from .common import Event
+from .common import Event, Step
 from ..helpers import is_instance_or_subclass
 from ..const import JSONAPI
 from ..errors import (
@@ -114,14 +114,14 @@ class SchemaMeta(type):
 
             The JSON API typename
 
+        *   *_declared_fields*
+
+            Maps the key (schema property name) to the associated
+            :class:`BaseField`.
+
         *   *_fields_by_sp*
 
             Maps the source pointer of a field to the associated
-            :class:`BaseField`.
-
-        *   *_fields_by_key*
-
-            Maps the key (schema property name) to the associated
             :class:`BaseField`.
 
         *   *_attributes*
@@ -168,21 +168,14 @@ class SchemaMeta(type):
             prop.mapped_key = prop.mapped_key or key
             declared_fields[prop.key] = prop
 
-        # Apply the decorators.
-        # TODO: Use a more generic approach.
-        for key, prop in attrs.items():
-            if hasattr(prop, 'japi_validates'):
-                field = declared_fields[prop.japi_validates['field']]
-                field.validator(
-                    prop, step=prop.japi_validator['step'],
-                    on=prop.japi_validator['on']
-                )
-
         # Find nested fields (link_of, ...) and link them with
         # their parent.
         for key, field in declared_fields.items():
             if getattr(field, 'link_of', None):
-                declared_fields[field.link_of].add_link(field)
+                relationship = declared_fields[field.link_of]
+                assert isinstance(relationship, Relationship), \
+                    'Links can be added only for relationships.'
+                relationship.add_link(field)
 
         klass._id = declared_fields.pop('id', None)
 
@@ -264,6 +257,8 @@ class SchemaMeta(type):
         Add in the decorated processors
         By doing this after constructing the class, we let standard inheritance
         do all the hard work.
+
+        Almost the same as https://github.com/marshmallow-code/marshmallow/blob/dev/marshmallow/schema.py#L139-L174
         """
         mro = inspect.getmro(self)
         self._has_processors = False
@@ -355,9 +350,6 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                 source_parameter=source_parameter
             )
 
-    # Encoding
-    # --------
-
     def default_getter(self, field, resource, **kwargs):
         if field.mapped_key:
             return getattr(resource, field.mapped_key)
@@ -406,7 +398,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
     def _get_processors(self, tag: Tag, field: BaseField,
                         default: typing.Union[typing.Callable,
-                                              typing.Coroutine]):
+                                              typing.Coroutine] = None):
         if self._has_processors:
             processor_tag = tag, field.key
             processors = self.__processors__.get(processor_tag)
@@ -417,6 +409,10 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                         processor.__processing_kwargs__.get(processor_tag)
                     yield processor, processor_kwargs
                 return
+
+        if not callable(default):
+            return
+
         yield default, {}
 
     def get_value(self, field, resource, **kwargs):
@@ -440,14 +436,6 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         :arg resource:
             A resource object
-        :arg fieldset:
-            *None* or a list with all fields that must be included. All other
-            fields must not appear in the final document.
-        :arg str context:
-            Is either *data* or *included* and defines in which part of the
-            JSON API document the resource object is placed.
-        :arg list included:
-            A list with all included relationships.
         """
         context = kwargs['context']
         fieldset = context.fields.get(self.type)
@@ -474,6 +462,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                             link.name: link.encode(self, resource, **kwargs)
                             for link in field.links.values()
                         }
+                    # TODO: Validation steps for pre/post serialization
                     result[key][field.name] = \
                         field.encode(self, field_data, links=links, **kwargs)
 
@@ -523,7 +512,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
     # Validation (pre decode)
     # -----------------------
 
-    def _validate_field_pre_decode(self, field, data, sp, context):
+    def _pre_validate_field(self, field, data, sp, context):
         """
         Validates the input data for a field, **before** it is decoded. If the
         field has nested fields, the nested fields are validated first.
@@ -548,12 +537,22 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         if sp is not None:
             field.pre_validate(self, data, sp, context)
 
-    def validate_resource_pre_decode(self, data, sp, context, *,
-                                     expected_id=None):
+            # Run custom pre-validators for field
+            validators = self._get_processors(Tag.VALIDATE, field, None)
+            for validator, validator_kwargs in validators:
+                if validator_kwargs['step'] is not Step.BEFORE_DESERIALIZATION:
+                    continue
+                if validator_kwargs['on'] not in (Event.ALWAYS, context.event):
+                    continue
+
+                validator(self, field, data, sp, context=context)
+
+    def validate_resource_before_deserialization(self, data, sp, context, *,
+                                                 expected_id=None):
         """
         Validates a JSON API resource object received from an API client::
 
-            schema.validate_resource_pre_decode(
+            schema.validate_resource_before_deserialization(
                 data=request.json["data"], sp="/data"
             )
 
@@ -582,62 +581,56 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                          '("{}").'.format(data["id"], expected_id)
                 raise HTTPConflict(detail=detail, source_pointer=sp / 'id')
             else:
-                self._validate_field_pre_decode(
+                self._pre_validate_field(
                     self._id, data['id'], sp / 'id', context
                 )
 
-        # JSON API attributes object
-        attrs = data.get('attributes', {})
-        attrs_sp = sp / 'attributes'
+    def validate_resource_after_deserialization(self, data, context):
+        """
+        Validates the decoded *data* of JSON API resource object.
 
-        if not isinstance(attrs, Mapping):
-            detail = 'Must be an object.'
-            raise InvalidType(detail=detail, source_pointer=attrs_sp)
+        :arg ~collections.OrderedDict data:
+            The *memo* object returned from :meth:`deserialize_resource`.
+        :arg RequestContext context:
+            Request context instance
+        """
+        # NOTE: The fields in *data* are ordered, such that children are
+        #       listed before their parent.
+        for key, (field_data, field_sp) in data.items():
+            field = self._declared_fields[key]
+            field.post_validate(self, field_data, field_sp, context)
 
-        for field in self._attributes.values():
-            field_sp = attrs_sp / field.name if field.name in attrs else None
-            field_data = attrs.get(field.name)
-            self._validate_field_pre_decode(
-                field, field_data, field_sp, context
-            )
+            # Run custom post-validators for field
+            validators = self._get_processors(Tag.VALIDATE, field, None)
+            for validator, validator_kwargs in validators:
+                if validator_kwargs['step'] is not Step.AFTER_DESERIALIZATION:
+                    continue
+                if validator_kwargs['on'] not in (Event.ALWAYS, context.event):
+                    continue
 
-        # JSON API relationships object
-        rels = data.get('relationships', {})
-        rels_sp = sp / 'relationships'
+                validator(self, field, field_data, field_sp, context=context)
 
-        if not isinstance(rels, Mapping):
-            detail = 'Must be an object.'
-            raise InvalidType(detail=detail, source_pointer=rels_sp)
-
-        for field in self._relationships.values():
-            field_sp = rels_sp / field.name if field.name in rels else None
-            field_data = rels.get(field.name)
-            self._validate_field_pre_decode(
-                field, field_data, field_sp, context
-            )
-
-        # JSON API meta object
-        meta = data.get('meta', {})
-        meta_sp = sp / 'meta'
-
-        if not isinstance(meta, dict):
-            detail = 'Must be an object.'
-            raise InvalidType(detail=detail, source_pointer=meta_sp)
-
-        for field in self._meta.values():
-            field_sp = meta_sp / field.name if field.name in meta else None
-            field_data = meta.get(field.name)
-            self._validate_field_pre_decode(
-                field, field_data, field_sp, context
-            )
-
-    # Decoding
-    # --------
-
-    def deserialize_resource(self, data, sp):
+    def deserialize_resource(self, data, sp, *, context=None,
+                             expected_id=None, validate=True,
+                             validation_steps=(Step.BEFORE_DESERIALIZATION,
+                                               Step.AFTER_DESERIALIZATION)):
         """
         Decodes the JSON API resource object *data* and returns a dictionary
         which maps the key of a field to its decoded input data.
+
+        :arg data:
+            The received JSON API resource object
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
+            The JSON pointer to the source of *data*.
+        :arg RequestContext context:
+            Request context instance
+        :arg str expected_id:
+            If passed, then ID of resrouce will be compared with this value.
+            This is required in update methods
+        :arg bool validate:
+            Is validation required?
+        :arg tuple validation_steps:
+            Required validation steps
 
         :rtype: ~collections.OrderedDict
         :returns:
@@ -645,6 +638,11 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             ``(data, sp)`` which contains the input data and the source pointer
             to it.
         """
+        if validate and Step.BEFORE_DESERIALIZATION in validation_steps:
+            self.validate_resource_before_deserialization(
+                data, sp, context, expected_id=expected_id
+            )
+
         result = OrderedDict()
         fields_map = (
             ('attributes', self._attributes),
@@ -654,6 +652,10 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         for key, fields in fields_map:
             data_for_fields = data.get(key, {})
+
+            if validate and not isinstance(data_for_fields, Mapping):
+                detail = 'Must be an object.'
+                raise InvalidType(detail=detail, source_pointer=sp / key)
 
             for field in fields.values():
                 field_data = data_for_fields.get(field.name)
@@ -665,26 +667,21 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                     field_sp = sp / key / field.name \
                         if field.name in data_for_fields \
                         else None
+
+                    if validate and \
+                            Step.BEFORE_DESERIALIZATION in validation_steps:
+                        self._pre_validate_field(
+                            field, field_data, field_sp, context
+                        )
+
                     result[field.key] = (
                         field.decode(self, field_data, field_sp), field_sp
                     )
+
+        if validate and Step.AFTER_DESERIALIZATION in validation_steps:
+            self.validate_resource_after_deserialization(result, context)
+
         return result
-
-    # Validate (post decode)
-    # ----------------------
-
-    def validate_resource_post_decode(self, memo, context):
-        """
-        Validates the decoded *data* of JSON API resource object.
-
-        :arg ~collections.OrderedDict memo:
-            The *memo* object returned from :meth:`deserialize_resource`.
-        """
-        # NOTE: The fields in *memo* are ordered, such that children are
-        #       listed before their parent.
-        for key, (data, sp) in memo.items():
-            field = self._declared_fields[key]
-            field.post_validate(self, data, sp, context)
 
     # CRUD (resource)
     # ---------------
@@ -709,14 +706,13 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
         """
-        self.validate_resource_pre_decode(data, sp, context)
-        memo = self.deserialize_resource(data, sp)
-        self.validate_resource_post_decode(memo, context)
+        deserialized_data = self.deserialize_resource(data, sp,
+                                                      context=context)
 
         # Map the property names on the resource instance to its initial data.
         initial_data = {
             self._declared_fields[key].mapped_key: data
-            for key, (data, sp) in memo.items()
+            for key, (data, sp) in deserialized_data.items()
         }
         if 'id' in data:
             initial_data['id'] = data['id']
@@ -750,16 +746,14 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         else:
             resource_id = resource
 
-        self.validate_resource_pre_decode(
-            data, sp, context, expected_id=resource_id
-        )
-        memo = self.deserialize_resource(data, sp)
-        self.validate_resource_post_decode(memo, context)
+        deserialized_data = self.deserialize_resource(data, sp,
+                                                      context=context,
+                                                      expected_id=resource_id)
 
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
 
-        for key, (data, sp) in memo.items():
+        for key, (data, sp) in deserialized_data.items():
             field = self._declared_fields[key]
             self.set_value(field, resource, data, sp, **kwargs)
 
@@ -801,7 +795,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         """
         field = self.get_relationship_field(relation_name)
 
-        self._validate_field_pre_decode(field, data, sp, context)
+        self._pre_validate_field(field, data, sp, context)
         decoded = field.decode(self, data, sp, **kwargs)
 
         if not isinstance(resource, self.resource_class):
@@ -832,7 +826,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         field = self.get_relationship_field(relation_name)
         assert field.to_many
 
-        self._validate_field_pre_decode(field, data, sp, context)
+        self._pre_validate_field(field, data, sp, context)
         decoded = field.decode(self, data, sp, **kwargs)
 
         if not isinstance(resource, self.resource_class):
@@ -867,7 +861,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         field = self.get_relationship_field(relation_name)
         assert field.to_many
 
-        self._validate_field_pre_decode(field, data, sp, context)
+        self._pre_validate_field(field, data, sp, context)
         decoded = field.decode(self, data, sp, **kwargs)
 
         if not isinstance(resource, self.resource_class):
