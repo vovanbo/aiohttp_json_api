@@ -1,8 +1,8 @@
 class FieldABC:
-    def encode(self, schema, data, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         raise NotImplementedError
 
-    def decode(self, schema, data, sp, **kwargs):
+    def deserialize(self, schema, data, sp, **kwargs):
         raise NotImplementedError
 
     def pre_validate(self, schema, data, sp, context):

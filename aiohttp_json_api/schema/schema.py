@@ -293,7 +293,7 @@ class SchemaMeta(type):
 
 class Schema(abc.SchemaABC, metaclass=SchemaMeta):
     """
-    A schema defines how we can encode a resource and patch it. It also allows
+    A schema defines how we can serialize a resource and patch it. It also allows
     to patch a resource. All in all, it defines a **controller** for a *type*
     in the JSON API.
 
@@ -456,12 +456,12 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                     links = None
                     if isinstance(field, Relationship):
                         links = {
-                            link.name: link.encode(self, resource, **kwargs)
+                            link.name: link.serialize(self, resource, **kwargs)
                             for link in field.links.values()
                         }
                     # TODO: Validation steps for pre/post serialization
                     result[key][field.name] = \
-                        field.encode(self, field_data, links=links, **kwargs)
+                        field.serialize(self, field_data, links=links, **kwargs)
 
             # Filter out empty keys
             if not result.get(key):
@@ -504,15 +504,15 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         if field.to_one and pagination:
             kwargs['pagination'] = pagination
         field_data = self.get_value(field, resource, **kwargs)
-        return field.encode(self, field_data, **kwargs)
+        return field.serialize(self, field_data, **kwargs)
 
-    # Validation (pre decode)
+    # Validation (pre deserialize)
     # -----------------------
 
     def _pre_validate_field(self, field, data, sp, context):
         """
-        Validates the input data for a field, **before** it is decoded. If the
-        field has nested fields, the nested fields are validated first.
+        Validates the input data for a field, **before** it is deserialized.
+        If the field has nested fields, the nested fields are validated first.
 
         :arg BaseField field:
         :arg data:
@@ -792,7 +792,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         field = self.get_relationship_field(relation_name)
 
         self._pre_validate_field(field, data, sp, context)
-        decoded = field.decode(self, data, sp, **kwargs)
+        decoded = field.deserialize(self, data, sp, **kwargs)
 
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
@@ -823,7 +823,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         assert field.to_many
 
         self._pre_validate_field(field, data, sp, context)
-        decoded = field.decode(self, data, sp, **kwargs)
+        decoded = field.deserialize(self, data, sp, **kwargs)
 
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
@@ -858,7 +858,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         assert field.to_many
 
         self._pre_validate_field(field, data, sp, context)
-        decoded = field.decode(self, data, sp, **kwargs)
+        decoded = field.deserialize(self, data, sp, **kwargs)
 
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
