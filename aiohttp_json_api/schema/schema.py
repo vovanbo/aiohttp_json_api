@@ -29,6 +29,7 @@ from ..errors import (
     ValidationError, InvalidValue, InvalidType, HTTPConflict,
     HTTPBadRequest
 )
+from ..log import logger
 from ..jsonpointer import JSONPointer
 
 __all__ = (
@@ -176,12 +177,6 @@ class SchemaMeta(type):
                     prop, step=prop.japi_validator['step'],
                     on=prop.japi_validator['on']
                 )
-            elif hasattr(prop, 'japi_adder'):
-                field = declared_fields[prop.japi_adder['field']]
-                field.adder(prop)
-            elif hasattr(prop, 'japi_remover'):
-                field = declared_fields[prop.japi_remover['field']]
-                field.remover(prop)
 
         # Find nested fields (link_of, ...) and link them with
         # their parent.
@@ -341,7 +336,8 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             The id of the *resource*
         """
         if hasattr(resource, 'id'):
-            resource_id = resource.id() if callable(resource.id) else resource.id
+            resource_id = resource.id() if callable(
+                resource.id) else resource.id
         elif hasattr(resource, 'get_id'):
             resource_id = resource.get_id()
         elif 'id' in resource:
@@ -386,27 +382,54 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             return getattr(resource, field.mapped_key)
         raise RuntimeError('No query method and mapped_key have been defined.')
 
-    def get_value(self, field, resource, **kwargs):
-        getter = self.default_getter
-        getter_kwargs = {}
+    async def default_add(self, field, resource, data, sp):
+        logger.warning('You should override the adder.')
+
+        if not field.mapped_key:
+            raise RuntimeError('No adder and mapped_key have been defined.')
+
+        relatives = getattr(resource, field.mapped_key)
+        relatives.extend(data)
+
+    async def default_remove(self, field, resource, data, sp):
+        logger.warning('You should override the remover.')
+
+        if not field.mapped_key:
+            raise RuntimeError('No remover and mapped_key have been defined.')
+
+        relatives = getattr(resource, field.mapped_key)
+        for relative in data:
+            try:
+                relatives.remove(relative)
+            except ValueError:
+                pass
+
+    def _get_processors(self, tag: Tag, field: BaseField,
+                        default: typing.Union[typing.Callable,
+                                              typing.Coroutine] = None):
         if self._has_processors:
-            tag = Tag.GET, field.key
-            getters = self.__processors__.get(tag)
-            if getters:
-                getter = getattr(self, first(getters))
-                getter_kwargs = getter.__processing_kwargs__.get(tag)
+            processor_tag = tag, field.key
+            processors = self.__processors__.get(processor_tag)
+            if processors:
+                for processor_name in processors:
+                    processor = getattr(self, processor_name)
+                    processor_kwargs = \
+                        processor.__processing_kwargs__.get(processor_tag)
+                    yield processor, processor_kwargs
+                return
+        yield default, {}
+
+    def get_value(self, field, resource, **kwargs):
+        getter, getter_kwargs = first(
+            self._get_processors(Tag.GET, field, default=self.default_getter)
+        )
         return getter(field, resource, **getter_kwargs, **kwargs)
 
     def set_value(self, field, resource, data, sp, **kwargs):
         assert field.writable is not Event.NEVER
-        setter = self.default_setter
-        setter_kwargs = {}
-        if self._has_processors:
-            tag = Tag.SET, field.key
-            setters = self.__processors__.get(tag)
-            if setters:
-                setter = getattr(self, first(setters))
-                setter_kwargs = setter.__processing_kwargs__.get(tag)
+        setter, setter_kwargs = first(
+            self._get_processors(Tag.SET, field, default=self.default_setter)
+        )
         return setter(field, resource, data, sp, **setter_kwargs, **kwargs)
 
     def serialize_resource(self, resource, **kwargs) -> typing.MutableMapping:
@@ -540,6 +563,9 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             The JSON pointer to the source of *data*.
         :arg RequestContext context:
             Request context instance
+        :arg str expected_id:
+            If passed, then ID of resrouce will be compared with this value.
+            This is required in update methods
         """
         if not isinstance(data, Mapping):
             detail = 'Must be an object.'
@@ -812,7 +838,11 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
 
-        await field.add(self, resource, decoded, sp, **kwargs)
+        adder, adder_kwargs = first(
+            self._get_processors(Tag.ADD, field, default=self.default_add)
+        )
+        await adder(field, resource, decoded, sp,
+                    context=context, **adder_kwargs, **kwargs)
         return resource
 
     async def remove_relationship(self, relation_name, resource,
@@ -843,7 +873,12 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
 
-        await field.remove(self, resource, decoded, sp, **kwargs)
+        remover, remover_kwargs = first(
+            self._get_processors(Tag.REMOVE, field,
+                                 default=self.default_remove)
+        )
+        await remover(field, resource, decoded, sp,
+                      context=context, **remover_kwargs, **kwargs)
 
     # Querying
     # --------
@@ -897,14 +932,9 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         """
         field = self.get_relationship_field(relation_name)
 
-        query = self.default_query
-        query_kwargs = {}
-        if self._has_processors:
-            tag = Tag.QUERY, field.key
-            query_processors = self.__processors__.get(tag)
-            if query_processors:
-                query = getattr(self, first(query_processors))
-                query_kwargs = query.__processing_kwargs__.get(tag)
+        query, query_kwargs = first(
+            self._get_processors(Tag.QUERY, field, default=self.default_query)
+        )
         return await query(field, resource, context, **query_kwargs, **kwargs)
 
     async def fetch_compound_documents(self, relation_name, resources, context,
@@ -936,13 +966,9 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         """
         field = self.get_relationship_field(relation_name,
                                             source_parameter='include')
-        include = self.default_include
-        include_kwargs = {}
-        if self._has_processors:
-            tag = Tag.INCLUDE, field.key
-            include_processors = self.__processors__.get(tag)
-            if include_processors:
-                include = getattr(self, first(include_processors))
-                include_kwargs = include.__processing_kwargs__.get(tag)
+        include, include_kwargs = first(
+            self._get_processors(Tag.INCLUDE, field,
+                                 default=self.default_include)
+        )
         return await include(field, resources, context,
                              **include_kwargs, **kwargs)
