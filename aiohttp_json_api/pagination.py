@@ -44,10 +44,10 @@ import typing
 
 import yarl
 from aiohttp import web
-from boltons.typeutils import make_sentinel
 
 from .errors import HTTPBadRequest
 from .log import logger
+from .helpers import make_sentinel
 
 __all__ = (
     'DEFAULT_LIMIT',

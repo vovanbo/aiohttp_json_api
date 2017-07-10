@@ -41,7 +41,6 @@ Requirements
 
 * **Python 3.5** or newer
 * aiohttp_
-* boltons_
 * inflection_
 * jsonpointer_
 * dateutil_
@@ -74,7 +73,6 @@ This package was created with Cookiecutter_ and the
 .. _py-jsonapi: https://github.com/benediktschmitt/py-jsonapi
 .. _dev-schema: https://github.com/benediktschmitt/py-jsonapi/tree/dev-schema
 .. _`Benedikt Schmitt`: https://github.com/benediktschmitt
-.. _boltons: https://boltons.readthedocs.io/en/latest/
 .. _inflection: https://inflection.readthedocs.io/en/latest/
 .. _jsonpointer: https://python-json-pointer.readthedocs.io/en/latest/index.html
 .. _dateutil: https://dateutil.readthedocs.io/en/stable/

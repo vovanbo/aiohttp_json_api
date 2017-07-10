@@ -10,8 +10,6 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     import inspect
     from collections import MutableMapping, Sequence
 
-    from boltons.typeutils import issubclass
-
     from . import handlers as default_handlers
     from .const import JSONAPI
     from .context import RequestContext

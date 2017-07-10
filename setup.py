@@ -11,7 +11,6 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'aiohttp>=2.0.0',
-    'boltons>=17.1.0',
     'inflection>=0.3.1',
     'jsonpointer>=1.10',
     'python-dateutil>=2.6.0',

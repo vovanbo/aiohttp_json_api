@@ -5,7 +5,8 @@ Application registry
 import collections
 from typing import MutableMapping, Union
 
-from boltons.typeutils import make_sentinel
+from .helpers import make_sentinel
+
 
 ARG_DEFAULT = make_sentinel(var_name='ARG_DEFAULT')
 ResourceID = collections.namedtuple('ResourceID', ['type', 'id'])

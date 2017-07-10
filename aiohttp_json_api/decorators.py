@@ -5,11 +5,11 @@ Handlers decorators
 from functools import wraps
 
 from aiohttp import web
-from boltons.iterutils import first
 
+from .const import JSONAPI, JSONAPI_CONTENT_TYPE
 from .context import RequestContext
 from .errors import HTTPUnsupportedMediaType
-from .const import JSONAPI, JSONAPI_CONTENT_TYPE
+from .helpers import first
 
 
 def jsonapi_content(handler):
