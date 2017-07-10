@@ -4,6 +4,11 @@ aiohttp\_json\_api\.schema package
 Submodules
 ----------
 
+.. automodule:: aiohttp_json_api.schema.abc
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. automodule:: aiohttp_json_api.schema.base_fields
     :members:
     :undoc-members:

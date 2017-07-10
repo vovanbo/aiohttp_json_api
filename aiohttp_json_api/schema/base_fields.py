@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Base fields
 ===========
@@ -36,7 +34,7 @@ You should only work with the following fields directly:
 
 """
 
-from collections import Coroutine, Mapping
+from collections import Mapping
 from typing import Sequence
 
 from .abc import FieldABC
