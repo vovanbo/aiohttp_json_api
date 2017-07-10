@@ -5,7 +5,7 @@ Errors
 import json
 from http import HTTPStatus
 
-import inflection
+from .encoder import json_dumps
 
 __all__ = (
     'Error',
@@ -99,7 +99,7 @@ class Error(Exception):
         """
         Returns the :attr:`detail` attribute per default.
         """
-        return json.dumps(self.json, indent=4, sort_keys=True)
+        return json_dumps(self.json, indent=4, sort_keys=True)
 
     @property
     def json(self):
@@ -121,8 +121,7 @@ class Error(Exception):
         if self.source_pointer or self.source_parameter:
             d['source'] = dict()
             if self.source_pointer:
-                d['source']['pointer'] = \
-                    inflection.dasherize(self.source_pointer.path)
+                d['source']['pointer'] = self.source_pointer
             if self.source_parameter:
                 d['source']['parameter'] = self.source_parameter
         if self.meta:

@@ -72,7 +72,7 @@ class BasePagination:
         and if so, a new pagination instance with these parameters is returned
         and *None* otherwise.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def url(self) -> yarl.URL:
@@ -108,7 +108,7 @@ class BasePagination:
         *   *next*
             The link to the next page (only set, if a next page exists)
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def page_link(self, **kwargs) -> str:
         """
