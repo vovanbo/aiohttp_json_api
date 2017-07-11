@@ -141,15 +141,16 @@ async def patch_resource(request: web.Request):
         detail = 'Must be an object.'
         raise InvalidType(detail=detail, source_pointer='')
 
-    resource = await schema.update_resource(
-        resource=resource_id,
-        data=data.get('data', {}),
-        sp=JSONPointer('/data'),
-        context=context,
+    old_resource, new_resource = await schema.update_resource(
+        resource_id, data.get('data', {}), JSONPointer('/data'),
+        context=context
     )
 
-    result = render_document(resource, None, context)
-    return jsonapi_response(result)
+    if old_resource == new_resource:
+        return web.HTTPNoContent()
+    else:
+        result = render_document(new_resource, None, context)
+        return jsonapi_response(result)
 
 
 async def delete_resource(request: web.Request):
@@ -227,15 +228,17 @@ async def post_relationship(request: web.Request):
 
     data = await request.json()
 
-    resource = await schema.add_relationship(
-        relation_name=relation_name,
-        resource=resource_id,
-        data=data,
-        sp=JSONPointer('')
+    old_resource, new_resource = await schema.add_relationship(
+        relation_name, resource_id, data, JSONPointer(''), context
     )
-    result = schema.serialize_relationship(relation_name, resource,
-                                           pagination=pagination)
-    return jsonapi_response(result)
+
+    if old_resource == new_resource:
+        return web.HTTPNoContent()
+    else:
+        result = schema.serialize_relationship(
+            relation_name, new_resource, pagination=pagination
+        )
+        return jsonapi_response(result)
 
 
 @jsonapi_content
@@ -266,16 +269,16 @@ async def patch_relationship(request: web.Request):
             pagination = pagination_type.from_request(request)
 
     data = await request.json()
-    resource = await schema.update_relationship(
-        relation_name=relation_name,
-        resource=resource_id,
-        data=data,
-        sp=JSONPointer('')
+    old_resource, new_resource = await schema.update_relationship(
+        relation_name, resource_id, data, JSONPointer(''), context
     )
 
-    result = schema.serialize_relationship(relation_name, resource,
-                                           pagination=pagination)
-    return jsonapi_response(result)
+    if old_resource == new_resource:
+        return web.HTTPNoContent()
+    else:
+        result = schema.serialize_relationship(relation_name, new_resource,
+                                               pagination=pagination)
+        return jsonapi_response(result)
 
 
 async def delete_relationship(request: web.Request):
@@ -291,19 +294,29 @@ async def delete_relationship(request: web.Request):
         raise HTTPNotFound()
 
     relation_name = request.match_info['relation']
+    relation_field = schema.get_relationship_field(
+        relation_name, source_parameter='URI'
+    )
 
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(schema, resource_id, context)
 
+    pagination = None
+    if relation_field.to_many:
+        pagination_type = relation_field.pagination
+        if pagination_type:
+            pagination = pagination_type.from_request(request)
+
     data = await request.json()
-    await schema.remove_relationship(
-        relation_name=relation_name,
-        resource=resource_id,
-        data=data,
-        sp=JSONPointer(''),
-        context=context
+    old_resource, new_resource = await schema.remove_relationship(
+        relation_name, resource_id, data, JSONPointer(''), context
     )
-    return web.HTTPNoContent()
+    if old_resource == new_resource:
+        return web.HTTPNoContent()
+    else:
+        result = schema.serialize_relationship(relation_name, new_resource,
+                                               pagination=pagination)
+        return jsonapi_response(result)
 
 
 async def get_related(request: web.Request):
