@@ -2,6 +2,13 @@
 History
 =======
 
+0.11.1 (2017-07-11)
+-------------------
+
+* Fix bug with mutation not cloned resource in method for delete relationship
+* Require JSON API content type on delete relationships
+
+
 0.11.0 (2017-07-11)
 -------------------
 
