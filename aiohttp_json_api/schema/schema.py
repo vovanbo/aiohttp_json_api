@@ -876,7 +876,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         remover, remover_kwargs = first(
             self._get_processors(Tag.REMOVE, field, self.default_remove)
         )
-        await remover(field, resource, decoded, sp,
+        await remover(field, updated_resource, decoded, sp,
                       context=context, **remover_kwargs, **kwargs)
         return resource, updated_resource
 

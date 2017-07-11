@@ -281,6 +281,7 @@ async def patch_relationship(request: web.Request):
         return jsonapi_response(result)
 
 
+@jsonapi_content
 async def delete_relationship(request: web.Request):
     """
     Uses the :meth:`~aiohttp_json_api.schema.Schema.delete_relationship`
