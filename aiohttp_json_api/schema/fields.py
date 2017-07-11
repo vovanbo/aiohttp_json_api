@@ -92,7 +92,8 @@ class String(Attribute):
 
     def deserialize(self, schema, data, sp, **kwargs):
         return self.choices[data] \
-            if isinstance(self.choices, type(Enum)) \
+            if isinstance(self.choices, type(Enum)) and \
+               data in self.choices.__members__ \
             else data
 
     def serialize(self, schema, data, **kwargs):
