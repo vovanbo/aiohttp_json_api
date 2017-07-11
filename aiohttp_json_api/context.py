@@ -31,11 +31,14 @@ class RequestContext:
     def __init__(self, request: web.Request):
         self._pagination = None
         self.request = request
-        self.event = Event[self.request.method]
         self.filters = self.parse_request_filters(request)
         self.fields = self.parse_request_fields(request)
         self.include = self.parse_request_includes(request)
         self.sorting = self.parse_request_sorting(request)
+        if self.request.method in Event.__members__:
+            self.event = Event[self.request.method]
+        else:
+            self.event = None
 
     @property
     def schema(self) -> Optional[Schema]:
