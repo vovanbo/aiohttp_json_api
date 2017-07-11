@@ -2,6 +2,14 @@
 History
 =======
 
+0.11.0 (2017-07-11)
+-------------------
+
+* Method for update return original and updated resource as result. Updated resource is created via deepcopy. It will be useful to determine returned HTTP status
+* Fix bug with enumeration (choices) in String field
+* Fix bug with context event setup for OPTIONS, HEAD and another request methods not used in JSON API
+
+
 0.10.0 (2017-07-10)
 -------------------
 
