@@ -2,6 +2,13 @@
 History
 =======
 
+0.12.0 (2017-07-12)
+-------------------
+
+* Base Registry class from UserDict, so Registry is a dict with ensure_identifier method.
+* More strict typing checks on setup.
+
+
 0.11.1 (2017-07-11)
 -------------------
 
