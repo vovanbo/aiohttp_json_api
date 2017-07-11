@@ -72,9 +72,7 @@ async def get_compound_documents(resources, context, **kwargs):
         relation_name, *rest_path = pths
 
         # Use schema of first collection's element to fetch
-        schema = registry.get_schema(
-            registry.ensure_identifier(first(collection)).type
-        )
+        schema = registry[registry.ensure_identifier(first(collection)).type]
         if relation_name in relationships[schema.type]:
             return
 
@@ -100,7 +98,7 @@ async def get_compound_documents(resources, context, **kwargs):
 
 def serialize_resource(resource, context):
     registry = context.request.app[JSONAPI]['registry']
-    schema = registry.get_schema(resource)
+    schema = registry[resource]
     return schema.serialize_resource(resource, context=context)
 
 

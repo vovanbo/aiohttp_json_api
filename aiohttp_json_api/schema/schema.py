@@ -329,8 +329,8 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             The id of the *resource*
         """
         if hasattr(resource, 'id'):
-            resource_id = resource.id() if callable(
-                resource.id) else resource.id
+            resource_id = \
+                resource.id() if callable(resource.id) else resource.id
         elif hasattr(resource, 'get_id'):
             resource_id = resource.get_id()
         elif 'id' in resource:

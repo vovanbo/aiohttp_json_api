@@ -43,10 +43,7 @@ class RequestContext:
     @property
     def schema(self) -> Optional[Schema]:
         registry = self.request.app[JSONAPI]['registry']
-        try:
-            return registry.get_schema(self.request.match_info.get('type'))
-        except KeyError:
-            return None
+        return registry.get(self.request.match_info.get('type'), None)
 
     @property
     def pagination(self):
