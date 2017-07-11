@@ -3,53 +3,22 @@ Application registry
 ====================
 """
 import collections
-from typing import MutableMapping, Union
+import inspect
+from typing import Dict, Union
 
-from .helpers import make_sentinel
-
-
-ARG_DEFAULT = make_sentinel(var_name='ARG_DEFAULT')
 ResourceID = collections.namedtuple('ResourceID', ['type', 'id'])
+ResourceIdentifier = Union[ResourceID, Dict[str, str]]
 
 
-class Registry:
-    __slots__ = ('schema_by_type', 'schema_by_resource')
+class Registry(collections.UserDict):
+    __slots__ = ('data',)
 
-    def __init__(self, *, schema_by_type: MutableMapping,
-                 schema_by_resource: MutableMapping):
-        assert isinstance(schema_by_type, MutableMapping)
-        assert isinstance(schema_by_resource, MutableMapping)
-
-        self.schema_by_type = schema_by_type
-        self.schema_by_resource = schema_by_resource
-
-    def get_schema(self, obj, default=ARG_DEFAULT):
-        """
-        Returns the :class:`~aiohttp_json_api.schema.Schema`
-        associated with *obj*. *obj* must be either a typename,
-        a resource class or resource object.
-
-        :param obj:
-            A typename, resource object or a resource class
-        :param default:
-            Returned if no schema for *obj* is found.
-        :raises KeyError:
-            If no schema for *o* is found and no *default* value is given.
-        """
-        schema = (
-            self.schema_by_resource.get(type(obj)) or
-            self.schema_by_resource.get(obj) or
-            self.schema_by_type.get(obj)
+    def __getitem__(self, key):
+        return super(Registry, self).__getitem__(
+            key if isinstance(key, str) or inspect.isclass(key) else type(key)
         )
 
-        if schema is not None:
-            return schema
-        if default != ARG_DEFAULT:
-            return default
-        raise KeyError()
-
-    def ensure_identifier(self, obj, asdict=False) -> \
-        Union[ResourceID, MutableMapping[str, str]]:
+    def ensure_identifier(self, obj, asdict=False) -> ResourceIdentifier:
         """
         Returns the identifier object (:class:`ResourceID`) for the *resource*:
 
@@ -71,7 +40,7 @@ class Registry:
         elif isinstance(obj, collections.Mapping):
             result = ResourceID(str(obj['type']), str(obj['id']))
         else:
-            schema = self.get_schema(obj)
+            schema = self[type(obj)]
             result = ResourceID(schema.type, str(schema._get_id(obj)))
 
         return result._asdict() if asdict and result else result

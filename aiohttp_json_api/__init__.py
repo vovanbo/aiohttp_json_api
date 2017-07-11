@@ -18,42 +18,48 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     from .registry import Registry
     from .schema import Schema
 
-    schema_by_type = {}
-    schema_by_resource = {}
-
-    for schema_cls in schemas:
-        assert issubclass(schema_cls, Schema), \
-            'Schema class is required. Got: {}'.format(schema_cls)
-
-        schema = schema_cls(app)
-        schema_by_type[schema.type] = schema
-        if schema.resource_class is None:
-            logger.warning(
-                'The schema "%s" is not bound to a resource class.',
-                schema.type
-            )
-        else:
-            schema_by_resource[schema.resource_class] = schema
-
-    if context_class is not None:
-        assert issubclass(context_class, RequestContext), \
-            'Subclass of RequestContext is required. ' \
-            'Got: {}'.format(context_class)
-
     if registry_class is not None:
         assert issubclass(registry_class, Registry), \
             'Subclass of Registry is required. Got: {}'.format(registry_class)
     else:
         registry_class = Registry
 
+    if context_class is not None:
+        assert issubclass(context_class, RequestContext), \
+            'Subclass of RequestContext is required. ' \
+            'Got: {}'.format(context_class)
+    else:
+        context_class = RequestContext
+
+    app_registry = registry_class()
+
+    for schema_cls in schemas:
+        assert inspect.isclass(schema_cls), \
+            'Class (not instance) of schema is required.'
+        assert issubclass(schema_cls, Schema), \
+            'Subclass of Schema is required. Got: {}'.format(schema_cls)
+
+        schema = schema_cls(app)
+        assert isinstance(schema.type, str), 'Schema type must be a string.'
+
+        app_registry[schema.type] = schema
+        if schema.resource_class is None:
+            logger.warning(
+                'The schema "%s" is not bound to a resource class.',
+                schema.type
+            )
+        else:
+            assert inspect.isclass(schema.resource_class), \
+                'Class (not instance) of resource is required.'
+            app_registry[schema.resource_class] = schema
+
     app[JSONAPI] = {
-        'context_class': context_class or RequestContext,
+        'context_class': context_class,
         'jsonapi': {
             'version': version,
             'meta': meta
         },
-        'registry': registry_class(schema_by_type=schema_by_type,
-                                   schema_by_resource=schema_by_resource),
+        'registry': app_registry,
         'log_errors': log_errors
     }
 
