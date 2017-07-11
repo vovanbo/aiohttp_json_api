@@ -8,6 +8,7 @@ This module contains the base schema which implements the encoding, decoding,
 validation and update operations based on
 :class:`fields <aiohttp_json_api.schema.base_fields.BaseField>`.
 """
+import copy
 import inspect
 import typing
 from collections import OrderedDict, Mapping, defaultdict
@@ -672,7 +673,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                         )
 
                     result[field.key] = \
-                        field.decode(self, field_data, field_sp), field_sp
+                        field.deserialize(self, field_data, field_sp), field_sp
 
         if validate and Step.AFTER_DESERIALIZATION in validation_steps:
             self.validate_resource_after_deserialization(result, context)
@@ -736,6 +737,8 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             The JSON API resource object with the update information
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
+        :arg RequestContext context:
+            Request context instance
         """
         if isinstance(resource, self.resource_class):
             resource_id = self._get_id(resource)
@@ -747,13 +750,15 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                                                       expected_id=resource_id)
 
         if not isinstance(resource, self.resource_class):
-            resource = await self.query_resource(resource, context, **kwargs)
+            resource = \
+                await self.query_resource(resource, context, **kwargs)
 
+        updated_resource = copy.deepcopy(resource)
         for key, (data, sp) in deserialized_data.items():
             field = self._declared_fields[key]
-            self.set_value(field, resource, data, sp, **kwargs)
+            self.set_value(field, updated_resource, data, sp, **kwargs)
 
-        return resource
+        return resource, updated_resource
 
     async def delete_resource(self, resource, context, **kwargs):
         """
@@ -765,6 +770,8 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         :arg resource:
             The id of the resource or the resource instance
+        :arg RequestContext context:
+            Request context instance
         """
         raise NotImplementedError
 
@@ -797,8 +804,9 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
 
-        self.set_value(field, resource, decoded, sp, **kwargs)
-        return resource
+        updated_resource = copy.deepcopy(resource)
+        self.set_value(field, updated_resource, decoded, sp, **kwargs)
+        return resource, updated_resource
 
     async def add_relationship(self, relation_name, resource,
                                data, sp, context, **kwargs):
@@ -828,12 +836,13 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
 
+        updated_resource = copy.deepcopy(resource)
         adder, adder_kwargs = first(
             self._get_processors(Tag.ADD, field, self.default_add)
         )
-        await adder(field, resource, decoded, sp,
+        await adder(field, updated_resource, decoded, sp,
                     context=context, **adder_kwargs, **kwargs)
-        return resource
+        return resource, updated_resource
 
     async def remove_relationship(self, relation_name, resource,
                                   data, sp, context, **kwargs):
@@ -863,11 +872,13 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         if not isinstance(resource, self.resource_class):
             resource = await self.query_resource(resource, context, **kwargs)
 
+        updated_resource = copy.deepcopy(resource)
         remover, remover_kwargs = first(
             self._get_processors(Tag.REMOVE, field, self.default_remove)
         )
         await remover(field, resource, decoded, sp,
                       context=context, **remover_kwargs, **kwargs)
+        return resource, updated_resource
 
     # Querying
     # --------
