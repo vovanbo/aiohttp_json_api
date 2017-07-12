@@ -2,6 +2,12 @@
 History
 =======
 
+0.13.0 (2017-07-12)
+-------------------
+
+* Revert back to asynchronous setters, because it's used in update relationships and it might want to query DB, for example
+
+
 0.12.0 (2017-07-12)
 -------------------
 

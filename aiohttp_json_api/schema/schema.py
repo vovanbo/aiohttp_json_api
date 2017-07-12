@@ -353,7 +353,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             return getattr(resource, field.mapped_key)
         return None
 
-    def default_setter(self, field, resource, data, sp, **kwargs):
+    async def default_setter(self, field, resource, data, sp, **kwargs):
         if field.mapped_key:
             setattr(resource, field.mapped_key, data)
 
@@ -419,12 +419,14 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         )
         return getter(field, resource, **getter_kwargs, **kwargs)
 
-    def set_value(self, field, resource, data, sp, **kwargs):
+    async def set_value(self, field, resource, data, sp, **kwargs):
         assert field.writable is not Event.NEVER
         setter, setter_kwargs = first(
             self._get_processors(Tag.SET, field, self.default_setter)
         )
-        return setter(field, resource, data, sp, **setter_kwargs, **kwargs)
+        return await setter(
+            field, resource, data, sp, **setter_kwargs, **kwargs
+        )
 
     def serialize_resource(self, resource, **kwargs) -> typing.MutableMapping:
         """
@@ -756,7 +758,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         updated_resource = copy.deepcopy(resource)
         for key, (data, sp) in deserialized_data.items():
             field = self._declared_fields[key]
-            self.set_value(field, updated_resource, data, sp, **kwargs)
+            await self.set_value(field, updated_resource, data, sp, **kwargs)
 
         return resource, updated_resource
 
@@ -805,7 +807,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             resource = await self.query_resource(resource, context, **kwargs)
 
         updated_resource = copy.deepcopy(resource)
-        self.set_value(field, updated_resource, decoded, sp, **kwargs)
+        await self.set_value(field, updated_resource, decoded, sp, **kwargs)
         return resource, updated_resource
 
     async def add_relationship(self, relation_name, resource,
