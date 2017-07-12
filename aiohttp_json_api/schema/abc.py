@@ -29,7 +29,7 @@ class SchemaABC(object):
     def default_getter(self, field, resource, **kwargs):
         raise NotImplementedError
 
-    def default_setter(self, field, resource, data, sp, **kwargs):
+    async def default_setter(self, field, resource, data, sp, **kwargs):
         raise NotImplementedError
 
     async def default_include(self, field, resources, context, **kwargs):
@@ -50,7 +50,7 @@ class SchemaABC(object):
     def get_value(self, field, resource, **kwargs):
         raise NotImplementedError
 
-    def set_value(self, field, resource, data, sp, **kwargs):
+    async def set_value(self, field, resource, data, sp, **kwargs):
         raise NotImplementedError
 
     def serialize_resource(self, resource, **kwargs):
