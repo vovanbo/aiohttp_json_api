@@ -7,6 +7,64 @@ __version__ = '0.13.0'
 def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
                   meta=None, context_class=None, registry_class=None,
                   custom_handlers=None, log_errors=True):
+    """
+    Setup JSON API in aiohttp application
+
+    :param ~aiohttp.web.Application app:
+        Application instance
+    :param ~typing.Sequence[Schema] schemas:
+        List of schema classes to register in JSON API
+    :param str base_path:
+        Prefix of JSON API routes paths
+    :param str version:
+        JSON API version (used in ``jsonapi`` key of document)
+    :param dict meta:
+        Meta information will added to response (``meta`` key of document)
+    :param context_class:
+        Override of RequestContext class
+        (must be subclass of :class:`~aiohttp_json_api.context.RequestContext`)
+    :param registry_class:
+        Override of Registry class
+        (must be subclass of :class:`~aiohttp_json_api.registry.Registry`)
+    :param custom_handlers:
+        Sequence or mapping with overrides of default JSON API handlers.
+
+        Default handlers is:
+
+        =====================  ======  =========================================  ======================================================
+        Resource name          Method  Route                                      Handler
+        =====================  ======  =========================================  ======================================================
+        jsonapi.collection     GET     ``/{type}``                                :func:`~aiohttp_json_api.handlers.get_collection`
+        jsonapi.collection     POST    ``/{type}``                                :func:`~aiohttp_json_api.handlers.post_resource`
+        jsonapi.resource       GET     ``/{type}/{id}``                           :func:`~aiohttp_json_api.handlers.get_resource`
+        jsonapi.resource       PATCH   ``/{type}/{id}``                           :func:`~aiohttp_json_api.handlers.patch_resource`
+        jsonapi.resource       DELETE  ``/{type}/{id}``                           :func:`~aiohttp_json_api.handlers.delete_resource`
+        jsonapi.relationships  GET     ``/{type}/{id}/relationships/{relation}``  :func:`~aiohttp_json_api.handlers.get_relationship`
+        jsonapi.relationships  POST    ``/{type}/{id}/relationships/{relation}``  :func:`~aiohttp_json_api.handlers.post_relationship`
+        jsonapi.relationships  PATCH   ``/{type}/{id}/relationships/{relation}``  :func:`~aiohttp_json_api.handlers.patch_relationship`
+        jsonapi.relationships  DELETE  ``/{type}/{id}/relationships/{relation}``  :func:`~aiohttp_json_api.handlers.delete_relationship`
+        jsonapi.related        GET     ``/{type}/{id}/{relation}``                :func:`~aiohttp_json_api.handlers.get_related`
+        =====================  ======  =========================================  ======================================================
+
+        If your custom handlers named in conform with convention
+        of this application, then pass it as sequence::
+
+            custom_handlers=(get_collection, patch_resource)
+
+        If you have custom name of these handlers, then pass it as mapping::
+
+            custom_handlers={
+                'get_collection': some_handler_for_get_collection,
+                'patch_resource': another_handler_to_patch_resource
+            }
+
+    :param bool log_errors:
+        Log errors handled by
+        :func:`~aiohttp_json_api.middleware.jsonapi_middleware`
+    :return:
+        aiohttp Application instance with configured JSON API
+    :rtype: ~aiohttp.web.Application
+    """
     import inspect
     from collections import MutableMapping, Sequence
 
