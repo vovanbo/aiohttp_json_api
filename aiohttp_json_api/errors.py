@@ -150,7 +150,7 @@ class ErrorList(Exception):
         return len(self.errors)
 
     def __str__(self):
-        return json.dumps(self.json, indent=4, sort_keys=True)
+        return json_dumps(self.json, indent=4, sort_keys=True)
 
     @property
     def status_code(self):
