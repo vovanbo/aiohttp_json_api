@@ -133,7 +133,8 @@ def render_document(resources, compound_documents, context, *,
 def error_to_response(request: web.Request,
                       error: typing.Union[Error, ErrorList]):
     """
-    Converts an :class:`Error` to a :class:`~aiohttp.web.Response`.
+    Converts an :class:`Error` or :class:`ErrorList`
+    to a :class:`~aiohttp.web.Response`.
 
     :arg ~aiohttp.web.Request request:
         The web request instance.
