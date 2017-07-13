@@ -2,6 +2,15 @@
 History
 =======
 
+0.14.0 (2017-07-13)
+-------------------
+
+* Customisable JSON API handlers support
+* DRY in handlers
+* Move context builder from middleware to jsonapi_handler decorator
+* Request context receive optional resource_type now
+
+
 0.13.0 (2017-07-12)
 -------------------
 
