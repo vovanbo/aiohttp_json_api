@@ -28,8 +28,9 @@ class SortDirection(Enum):
 
 
 class RequestContext:
-    def __init__(self, request: web.Request):
+    def __init__(self, request: web.Request, resource_type: str = None):
         self._pagination = None
+        self._resource_type = resource_type
         self.request = request
         self.filters = self.parse_request_filters(request)
         self.fields = self.parse_request_fields(request)
@@ -43,7 +44,7 @@ class RequestContext:
     @property
     def schema(self) -> Optional[Schema]:
         registry = self.request.app[JSONAPI]['registry']
-        return registry.get(self.request.match_info.get('type'), None)
+        return registry.get(self._resource_type, None)
 
     @property
     def pagination(self):
