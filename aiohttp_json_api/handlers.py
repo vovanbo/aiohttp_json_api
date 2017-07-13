@@ -7,10 +7,10 @@ from http import HTTPStatus
 
 from aiohttp import web, hdrs
 
+from .const import JSONAPI_CONTENT_TYPE
 from .jsonpointer import JSONPointer
-from .const import JSONAPI
-from .decorators import jsonapi_content
-from .errors import InvalidType, HTTPNotFound
+from .decorators import jsonapi_handler
+from .errors import InvalidType
 from .utils import (
     jsonapi_response,
     render_document, get_compound_documents,
@@ -31,18 +31,14 @@ __all__ = (
 )
 
 
-async def get_collection(request: web.Request):
+@jsonapi_handler
+async def get_collection(request: web.Request, context, schema):
     """
     Uses the :meth:`~aiohttp_json_api.schema.Schema.query_collection`
     method of the schema to query the resources in the collection.
 
     :seealso: http://jsonapi.org/format/#fetching
     """
-    context = request[JSONAPI]
-    schema = context.schema
-    if schema is None:
-        raise HTTPNotFound()
-
     resources = await schema.query_collection(context=context)
 
     compound_documents = None
@@ -55,21 +51,14 @@ async def get_collection(request: web.Request):
     return jsonapi_response(result)
 
 
-@jsonapi_content
-async def post_resource(request: web.Request):
+@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
+async def post_resource(request: web.Request, context, schema):
     """
     Uses the :meth:`~aiohttp_json_api.schema.Schema.create_resource`
     method of the schema to create a new resource.
 
     :seealso: http://jsonapi.org/format/#crud-creating
     """
-    context = request[JSONAPI]
-    schema = context.schema
-    if schema is None:
-        raise HTTPNotFound()
-
-    registry = request.app[JSONAPI]['registry']
-
     data = await request.json()
     if not isinstance(data, collections.Mapping):
         detail = 'Must be an object.'
@@ -82,9 +71,10 @@ async def post_resource(request: web.Request):
     )
 
     result = render_document(resource, None, context)
+
     location = request.url.join(
         request.app.router['jsonapi.resource'].url_for(
-            **registry.ensure_identifier(resource, asdict=True)
+            **schema.registry.ensure_identifier(resource, asdict=True)
         )
     )
 
@@ -93,18 +83,14 @@ async def post_resource(request: web.Request):
                             headers={hdrs.LOCATION: str(location)})
 
 
-async def get_resource(request: web.Request):
+@jsonapi_handler
+async def get_resource(request: web.Request, context, schema):
     """
     Uses the :meth:`~aiohttp_json_api.schema.Schema.query_resource`
     method of the schema to query the requested resource.
 
     :seealso: http://jsonapi.org/format/#fetching-resources
     """
-    context = request[JSONAPI]
-    schema = context.schema
-    if schema is None:
-        raise HTTPNotFound()
-
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(schema, resource_id, context)
 
@@ -120,19 +106,14 @@ async def get_resource(request: web.Request):
     return jsonapi_response(result)
 
 
-@jsonapi_content
-async def patch_resource(request: web.Request):
+@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
+async def patch_resource(request: web.Request, context, schema):
     """
     Uses the :meth:`~aiohttp_json_api.schema.Schema.update_resource`
     method of the schema to update a resource.
 
     :seealso: http://jsonapi.org/format/#crud-updating
     """
-    context = request[JSONAPI]
-    schema = context.schema
-    if schema is None:
-        raise HTTPNotFound()
-
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(schema, resource_id, context)
 
@@ -153,18 +134,14 @@ async def patch_resource(request: web.Request):
         return jsonapi_response(result)
 
 
-async def delete_resource(request: web.Request):
+@jsonapi_handler
+async def delete_resource(request: web.Request, context, schema):
     """
     Uses the :meth:`~aiohttp_json_api.schema.Schema.delete_resource`
     method of the schema to delete a resource.
 
     :seealso: http://jsonapi.org/format/#crud-deleting
     """
-    context = request[JSONAPI]
-    schema = context.schema
-    if schema is None:
-        raise HTTPNotFound()
-
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(schema, resource_id, context)
 
@@ -172,12 +149,8 @@ async def delete_resource(request: web.Request):
     return web.HTTPNoContent()
 
 
-async def get_relationship(request: web.Request):
-    context = request[JSONAPI]
-    schema = context.schema
-    if schema is None:
-        raise HTTPNotFound()
-
+@jsonapi_handler
+async def get_relationship(request: web.Request, context, schema):
     relation_name = request.match_info['relation']
     relation_field = schema.get_relationship_field(
         relation_name, source_parameter='URI'
@@ -199,19 +172,14 @@ async def get_relationship(request: web.Request):
     return jsonapi_response(result)
 
 
-@jsonapi_content
-async def post_relationship(request: web.Request):
+@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
+async def post_relationship(request: web.Request, context, schema):
     """
     Uses the :meth:`~aiohttp_json_api.schema.Schema.add_relationship`
     method of the schemato add new relationships.
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
     """
-    context = request[JSONAPI]
-    schema = context.schema
-    if schema is None:
-        raise HTTPNotFound()
-
     relation_name = request.match_info['relation']
     relation_field = schema.get_relationship_field(
         relation_name, source_parameter='URI'
@@ -241,19 +209,14 @@ async def post_relationship(request: web.Request):
         return jsonapi_response(result)
 
 
-@jsonapi_content
-async def patch_relationship(request: web.Request):
+@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
+async def patch_relationship(request: web.Request, context, schema):
     """
     Uses the :meth:`~aiohttp_json_api.schema.Schema.update_relationship`
     method of the schema to update the relationship.
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
     """
-    context = request[JSONAPI]
-    schema = context.schema
-    if schema is None:
-        raise HTTPNotFound()
-
     relation_name = request.match_info['relation']
     relation_field = schema.get_relationship_field(
         relation_name, source_parameter='URI'
@@ -281,19 +244,14 @@ async def patch_relationship(request: web.Request):
         return jsonapi_response(result)
 
 
-@jsonapi_content
-async def delete_relationship(request: web.Request):
+@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
+async def delete_relationship(request: web.Request, context, schema):
     """
     Uses the :meth:`~aiohttp_json_api.schema.Schema.delete_relationship`
     method of the schema to update the relationship.
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
     """
-    context = request[JSONAPI]
-    schema = context.schema
-    if schema is None:
-        raise HTTPNotFound()
-
     relation_name = request.match_info['relation']
     relation_field = schema.get_relationship_field(
         relation_name, source_parameter='URI'
@@ -320,18 +278,14 @@ async def delete_relationship(request: web.Request):
         return jsonapi_response(result)
 
 
-async def get_related(request: web.Request):
+@jsonapi_handler
+async def get_related(request: web.Request, context, schema):
     """
     Uses the :meth:`~aiohttp_json_api.schema.Schema.query_relative`
     method of the schema to query the related resource.
 
     :seealso: http://jsonapi.org/format/#fetching
     """
-    context = request[JSONAPI]
-    schema = context.schema
-    if schema is None:
-        raise HTTPNotFound()
-
     relation_name = request.match_info['relation']
     relation_field = schema.get_relationship_field(
         relation_name, source_parameter='URI'
