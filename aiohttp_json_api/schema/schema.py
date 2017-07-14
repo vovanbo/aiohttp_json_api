@@ -669,9 +669,10 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                         continue
 
                 if field.key:
-                    field_sp = sp / key / field.name \
-                        if field.name in data_for_fields \
-                        else None
+                    # field_sp = sp / key / field.name \
+                    #     if field.name in data_for_fields \
+                    #     else None
+                    field_sp = sp / key / field.name
 
                     if validate and \
                             Step.BEFORE_DESERIALIZATION in validation_steps:
