@@ -88,7 +88,12 @@ class String(Attribute):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
-            raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
+            detail = error.as_dict()
+            if self.choices is not None:
+                detail += ' ({})'.format(
+                    ', '.join(self.choices.__members__.keys())
+                )
+            raise InvalidValue(detail=detail, source_pointer=sp)
 
     def deserialize(self, schema, data, sp, **kwargs):
         return self.choices[data] \
