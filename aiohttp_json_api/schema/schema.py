@@ -531,7 +531,12 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         required = field.required in (Event.ALWAYS, context.event)
         if required and data is None:
-            detail = "The field '{}' is required.".format(field.name)
+            if isinstance(field, Attribute):
+                detail = "Attribute '{}' is required.".format(field.name)
+            elif isinstance(field, Relationship):
+                detail = "Relationship '{}' is required.".format(field.name)
+            else:
+                detail = "The field '{}' is required.".format(field.name)
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if sp is not None:
