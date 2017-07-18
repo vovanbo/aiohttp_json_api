@@ -38,12 +38,11 @@ All helpers have a similar interface. Here is an example for the
     'total-resources': 106
     }
 """
-
-import re
 import typing
 
 import yarl
 from aiohttp import web
+import trafaret as t
 
 from .errors import HTTPBadRequest
 from .log import logger
@@ -64,15 +63,6 @@ DEFAULT_LIMIT = 25
 class BasePagination:
     def __init__(self, request: web.Request):
         self.request = request
-
-    @classmethod
-    def from_request(cls, request: web.Request, **kwargs) -> 'BasePagination':
-        """
-        Checks if the needed pagination parameters are present in the request
-        and if so, a new pagination instance with these parameters is returned
-        and *None* otherwise.
-        """
-        raise NotImplementedError
 
     @property
     def url(self) -> yarl.URL:
@@ -152,53 +142,30 @@ class LimitOffset(BasePagination):
     :arg int total_resources:
         The total number of resources in the collection.
     """
-    def __init__(self, request: web.Request, total_resources: int = 0,
-                 offset: int = 0, limit: int = DEFAULT_LIMIT):
+    def __init__(self, request: web.Request, total_resources: int = 0):
         super(LimitOffset, self).__init__(request)
         self.total_resources = total_resources
-        self.offset = offset
-        self.limit = limit
 
-    @classmethod
-    def from_request(cls, request: web.Request,
-                     total_resources: int = 0,
-                     default_limit: int = DEFAULT_LIMIT,
-                     **kwargs) -> 'LimitOffset':
-        """
-        Extracts the current pagination values (*limit* and *offset*) from the
-        request's query parameters.
-
-        :arg ~aiohttp.web.Request request:
-        :arg int total_resources:
-            The total number of resources in the collection.
-        :arg int default_limit:
-            If the request's query string does not contain a limit,
-            we will use this one as fallback value.
-        """
-        limit = request.query.get('page[limit]')
-        if limit is not None and (not limit.isdigit() or int(limit) <= 0):
+        self.limit = request.query.get('page[limit]', DEFAULT_LIMIT)
+        try:
+            self.limit = t.Int(gt=0).check(self.limit)
+        except t.DataError:
             raise HTTPBadRequest(
                 detail='The limit must be an integer > 0.',
                 source_parameter='page[limit]'
             )
-        if limit is None:
-            limit = default_limit
 
-        offset = request.query.get('page[offset]')
-        if offset is not None and (not offset.isdigit() or int(offset) < 0):
+        self.offset = request.query.get('page[offset]', 0)
+        try:
+            self.offset = t.Int(gte=0).check(self.offset)
+        except t.DataError:
             raise HTTPBadRequest(
                 detail='The offset must be an integer >= 0.',
                 source_parameter='page[offset]'
             )
-        if offset is None:
-            offset = 0
 
-        if offset % limit != 0:
+        if self.offset % self.limit != 0:
             logger.warning('The offset is not dividable by the limit.')
-        return cls(request=request,
-                   limit=limit,
-                   offset=offset,
-                   total_resources=total_resources)
 
     def links(self) -> typing.MutableMapping:
         d = {
@@ -255,50 +222,27 @@ class NumberSize(BasePagination):
     :arg int total_resources:
         The total number of resources in the collection.
     """
-    def __init__(self, request: web.Request, total_resources, number, size):
+    def __init__(self, request: web.Request, total_resources):
         super(NumberSize, self).__init__(request)
         self.total_resources = total_resources
-        self.number = number
-        self.size = size
 
-    @classmethod
-    def from_request(cls, request: web.Request,
-                     total_resources: int = 0,
-                     default_size: int = DEFAULT_LIMIT,
-                     **kwargs) -> 'NumberSize':
-        """
-        Extracts the current pagination values (*size* and *number*) from the
-        request's query parameters.
-
-        :arg ~aiohttp.web.Request request:
-        :arg int total_resources:
-            The total number of resources in the collection.
-        :arg int default_size:
-            If the request's query string does not contain the page size
-            parameter, we will use this one as fallback.
-        """
-        number = request.query.get('page[number]')
-        if number is not None and (not number.isdigit() or int(number) < 0):
+        self.number = request.query.get('page[number]', 0)
+        try:
+            self.number = t.Int(gte=0).check(self.number)
+        except t.DataError:
             raise HTTPBadRequest(
                 detail='The number must an integer >= 0.',
                 source_parameter='page[number]'
             )
-        number = int(number) if number else 0
 
-        size = request.query.get('page[size]')
-        if size is not None and (not size.isdigit() or int(size) <= 0):
+        self.size = request.query.get('page[size]', DEFAULT_LIMIT)
+        try:
+            self.size = t.Int(gt=0).check(self.size)
+        except t.DataError:
             raise HTTPBadRequest(
                 detail='The size must be an integer > 0.',
                 source_parameter='page[size]'
             )
-        if size is None:
-            size = default_size
-        size = int(size) if size else 0
-
-        return cls(request=request,
-                   number=number,
-                   size=size,
-                   total_resources=total_resources)
 
     @property
     def limit(self) -> int:
@@ -363,63 +307,48 @@ class Cursor(BasePagination):
         /api/Article/?sort=date_added&page[limit]=5&page[cursor]=19395939020
 
     :arg ~aiohttp.web.Request request:
-    :arg int limit:
-        The number of resources on a page
-    :arg cursor:
-        The cursor to the current page
     :arg prev_cursor:
         The cursor to the previous page
     :arg next_cursor:
         The cursor to the next page
+    :arg str cursor_regex:
+        The cursor in the query string must match this regular expression.
+        If it doesn't, an exception is raised.
     """
     # The cursor to the first page
     FIRST = make_sentinel(var_name='jsonapi:first')
     # The cursor to the last page
     LAST = make_sentinel(var_name='jsonapi:last')
 
-    def __init__(self, request: web.Request, cursor, prev_cursor=None,
-                 next_cursor=None, limit: int = DEFAULT_LIMIT):
+    def __init__(self, request: web.Request, prev_cursor=None,
+                 next_cursor=None, cursor_regex: str = None):
         super(Cursor, self).__init__(request)
-        self.cursor = make_sentinel(var_name=str(cursor))
+
+        self.cursor = request.query.get('page[cursor]', self.FIRST)
+        if isinstance(self.cursor, str):
+            if cursor_regex is not None:
+                try:
+                    self.cursor = t.Regexp(cursor_regex).check(self.cursor)
+                except t.DataError:
+                    raise HTTPBadRequest(
+                        detail='The cursor is invalid.',
+                        source_parameter='page[cursor]'
+                    )
+            self.cursor = make_sentinel(var_name=str(self.cursor))
+
         self.prev_cursor = \
             make_sentinel(var_name=str(prev_cursor)) if prev_cursor else None
         self.next_cursor = \
             make_sentinel(var_name=str(next_cursor)) if next_cursor else None
-        self.limit = limit
 
-    @classmethod
-    def from_request(cls, request: web.Request,
-                     default_limit: int = DEFAULT_LIMIT,
-                     cursor_re: str = None) -> 'Cursor':
-        """
-        Extracts the current pagination values (*limit* and *cursor*) from the
-        request's query parameters.
-
-        :arg ~aiohttp.web.Request request:
-        :arg int default_limit:
-             If the request’s query string does not contain a limit,
-             we will use this one as fallback value.
-        :arg str cursor_re:
-            The cursor in the query string must match this regular expression.
-            If it doesn't, an exception is raised.
-        """
-        cursor = request.query.get('page[cursor]', cls.FIRST)
-        if cursor is not None and \
-            cursor_re and not re.fullmatch(cursor_re, cursor):
-            raise HTTPBadRequest(
-                detail='The cursor is invalid.',
-                source_parameter='page[cursor]'
-            )
-
-        limit = request.query.get('page[limit]')
-        if limit is not None and ((not limit.isdigit()) or int(limit) <= 0):
+        self.limit = request.query.get('page[limit]', DEFAULT_LIMIT)
+        try:
+            self.limit = t.Int(gt=0).check(self.limit)
+        except t.DataError:
             raise HTTPBadRequest(
                 detail='The limit must be an integer > 0.',
                 source_parameter='page[limit]'
             )
-        if limit is None:
-            limit = default_limit
-        return cls(request, limit, cursor)
 
     def links(self, prev_cursor=None,
               next_cursor=None) -> typing.MutableMapping:
