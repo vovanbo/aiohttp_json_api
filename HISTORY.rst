@@ -2,6 +2,14 @@
 History
 =======
 
+0.15.0 (2017-07-18)
+-------------------
+
+* Pagination is initialized from request by default. Remove separate class method of BasePagination to initialize pagination instance
+* Improve value validation error for absent fields
+* Improve validation error of string field with choices
+
+
 0.14.0 (2017-07-13)
 -------------------
 
