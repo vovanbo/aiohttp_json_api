@@ -163,7 +163,7 @@ async def get_relationship(request: web.Request, context, schema):
     if relation_field.to_many:
         pagination_type = relation_field.pagination
         if pagination_type:
-            pagination = pagination_type.from_request(request)
+            pagination = pagination_type(request)
 
     resource = await schema.query_resource(id_=resource_id, context=context)
     relation = await schema.query_relatives(relation_name, resource, context)
@@ -192,7 +192,7 @@ async def post_relationship(request: web.Request, context, schema):
     if relation_field.to_many:
         pagination_type = relation_field.pagination
         if pagination_type:
-            pagination = pagination_type.from_request(request)
+            pagination = pagination_type(request)
 
     data = await request.json()
 
@@ -229,7 +229,7 @@ async def patch_relationship(request: web.Request, context, schema):
     if relation_field.to_many:
         pagination_type = relation_field.pagination
         if pagination_type:
-            pagination = pagination_type.from_request(request)
+            pagination = pagination_type(request)
 
     data = await request.json()
     old_resource, new_resource = await schema.update_relationship(
@@ -264,7 +264,7 @@ async def delete_relationship(request: web.Request, context, schema):
     if relation_field.to_many:
         pagination_type = relation_field.pagination
         if pagination_type:
-            pagination = pagination_type.from_request(request)
+            pagination = pagination_type(request)
 
     data = await request.json()
     old_resource, new_resource = await schema.remove_relationship(
@@ -299,7 +299,7 @@ async def get_related(request: web.Request, context, schema):
     if relation_field.to_many:
         pagination_type = relation_field.pagination
         if pagination_type:
-            pagination = pagination_type.from_request(request)
+            pagination = pagination_type(request)
 
     relatives = await schema.query_relatives(relation_name, resource_id,
                                              context)

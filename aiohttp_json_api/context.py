@@ -54,7 +54,7 @@ class RequestContext:
         if self.schema is not None:
             pagination_type = self.schema.opts.get('pagination')
             if pagination_type:
-                self._pagination = pagination_type.from_request(self.request)
+                self._pagination = pagination_type(self.request)
                 return self._pagination
 
         return None
