@@ -2,6 +2,12 @@
 History
 =======
 
+0.15.1 (2017-07-19)
+-------------------
+
+* Rename resource ID parameter of query_resource schema' method.
+
+
 0.15.0 (2017-07-18)
 -------------------
 
