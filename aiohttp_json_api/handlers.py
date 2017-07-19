@@ -94,7 +94,7 @@ async def get_resource(request: web.Request, context, schema):
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(schema, resource_id, context)
 
-    resource = await schema.query_resource(id_=resource_id, context=context)
+    resource = await schema.query_resource(resource_id, context)
 
     compound_documents = None
     if context.include and resource:
@@ -165,7 +165,7 @@ async def get_relationship(request: web.Request, context, schema):
         if pagination_type:
             pagination = pagination_type(request)
 
-    resource = await schema.query_resource(id_=resource_id, context=context)
+    resource = await schema.query_resource(resource_id, context)
     relation = await schema.query_relatives(relation_name, resource, context)
     result = schema.serialize_relationship(relation_name, relation,
                                            pagination=pagination)

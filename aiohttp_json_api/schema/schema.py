@@ -905,7 +905,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         """
         raise NotImplementedError
 
-    async def query_resource(self, id_, context, **kwargs):
+    async def query_resource(self, resource_id, context, **kwargs):
         """
         .. seealso::
 
@@ -913,7 +913,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         Fetches the resource with the id *id_*. **Must be overridden.**
 
-        :arg str id_:
+        :arg str resource_id:
             The id of the requested resource.
         :arg list include:
             The list of relationships which will be included into the
