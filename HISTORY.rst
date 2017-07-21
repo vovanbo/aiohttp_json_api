@@ -2,6 +2,12 @@
 History
 =======
 
+0.15.2 (2017-07-21)
+-------------------
+
+* Initialize default relationships links in meta-class, to avoid bug with empty names of relationships fields
+
+
 0.15.1 (2017-07-19)
 -------------------
 
