@@ -326,12 +326,6 @@ class Relationship(BaseField):
         assert isinstance(require_data, Event)
         self.require_data = require_data
 
-        # Add the default links.
-        self.links['self'] = Link('jsonapi.relationships',
-                                  name='self', link_of=self.name)
-        self.links['related'] = Link('jsonapi.related',
-                                     name='related', link_of=self.name)
-
     def add_link(self, link: Link):
         """
         Adds a new link to the links object.
