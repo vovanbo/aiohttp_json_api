@@ -193,6 +193,15 @@ class SchemaMeta(type):
             for key, field in declared_fields.items()
             if isinstance(field, Relationship)
         )
+        for relationship in relationships.values():
+            # Add the default links.
+            relationship.links.update({
+                'self': Link('jsonapi.relationships',
+                             name='self', link_of=relationship.name),
+                'related': Link('jsonapi.related',
+                                name='related', link_of=relationship.name)
+
+            })
         mcs._assign_sp(
             relationships.values(), JSONPointer('/relationships')
         )
