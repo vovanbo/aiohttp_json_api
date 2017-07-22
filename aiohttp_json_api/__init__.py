@@ -110,6 +110,10 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
             assert inspect.isclass(schema.resource_class), \
                 'Class (not instance) of resource is required.'
             app_registry[schema.resource_class] = schema
+        logger.debug('Registered %s with resource class %s and type "%s"',
+                     schema_cls.__name__,
+                     schema.resource_class.__name__,
+                     schema.type)
 
     app[JSONAPI] = {
         'context_class': context_class,
@@ -152,10 +156,24 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     }
     if custom_handlers is not None:
         if isinstance(custom_handlers, MutableMapping):
-            handlers.update(custom_handlers)
+            for handler, custom_handler in custom_handlers.items():
+                if handler in handlers \
+                    and inspect.iscoroutinefunction(custom_handler):
+                    logger.debug('Handler %s is overrided '
+                                 'with coroutine "%s" (%s)',
+                                 handler,
+                                 custom_handler.__name__,
+                                 inspect.getmodule(custom_handler))
+                    handlers[handler] = custom_handler
         elif isinstance(custom_handlers, Sequence):
             for custom_handler in custom_handlers:
-                if inspect.iscoroutinefunction(custom_handler):
+                if inspect.iscoroutinefunction(custom_handler) and \
+                        custom_handler.__name__ in handlers:
+                    logger.debug('Handler %s is overrided '
+                                 'with coroutine "%s" (%s)',
+                                 custom_handler.__name__,
+                                 custom_handler.__name__,
+                                 inspect.getmodule(custom_handler))
                     handlers[custom_handler.__name__] = custom_handler
 
     collection_resource.add_route('GET', handlers['get_collection'])
@@ -169,7 +187,7 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     relationships_resource.add_route('DELETE', handlers['delete_relationship'])
     related_resource.add_route('GET', handlers['get_related'])
 
-    logger.debug('Registered JSON API related resources list:')
+    logger.debug('Registered JSON API resources list:')
     for resource in filter(lambda r: r.name.startswith('jsonapi'),
                            app.router.resources()):
         logger.debug('%s -> %s',
