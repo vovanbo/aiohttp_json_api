@@ -2,6 +2,14 @@
 History
 =======
 
+0.16.0 (2017-07-22)
+-------------------
+
+* Strict member names and type checking to conform JSON API requirements (routes and schema level). See also: http://jsonapi.org/format/#document-member-names
+* Strict check for overrides of handlers
+* Improve debug logging
+
+
 0.15.2 (2017-07-21)
 -------------------
 
