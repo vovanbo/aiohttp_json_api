@@ -69,7 +69,7 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     from collections import MutableMapping, Sequence
 
     from . import handlers as default_handlers
-    from .const import JSONAPI
+    from .const import JSONAPI, ALLOWED_MEMBER_NAME_RULE
     from .context import RequestContext
     from .log import logger
     from .middleware import jsonapi_middleware
@@ -121,20 +121,26 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
         'log_errors': log_errors
     }
 
+    type_part = '{type:' + ALLOWED_MEMBER_NAME_RULE + '}'
+    relation_part = '{relation:' + ALLOWED_MEMBER_NAME_RULE + '}'
     collection_resource = app.router.add_resource(
-        '{}/{{type}}'.format(base_path),
+        '{base}/{type}'.format(base=base_path, type=type_part),
         name='jsonapi.collection'
     )
     resource_resource = app.router.add_resource(
-        '{}/{{type}}/{{id}}'.format(base_path),
+        '{base}/{type}/{{id}}'.format(base=base_path, type=type_part),
         name='jsonapi.resource'
     )
     relationships_resource = app.router.add_resource(
-        '{}/{{type}}/{{id}}/relationships/{{relation}}'.format(base_path),
+        '{base}/{type}/{{id}}/relationships/{relation}'.format(
+            base=base_path, type=type_part, relation=relation_part
+        ),
         name='jsonapi.relationships'
     )
     related_resource = app.router.add_resource(
-        '{}/{{type}}/{{id}}/{{relation}}'.format(base_path),
+        '{base}/{type}/{{id}}/{relation}'.format(
+            base=base_path, type=type_part, relation=relation_part
+        ),
         name='jsonapi.related'
     )
 
