@@ -24,7 +24,7 @@ from .base_fields import BaseField, Link, Attribute, Relationship
 from .decorators import Tag
 from .common import Event, Step
 from ..helpers import is_instance_or_subclass, first
-from ..const import JSONAPI
+from ..const import JSONAPI, ALLOWED_MEMBER_NAME_REGEX
 from ..errors import (
     ValidationError, InvalidValue, InvalidType, HTTPConflict,
     HTTPBadRequest
@@ -165,6 +165,10 @@ class SchemaMeta(type):
             prop.name = \
                 prop.name or (klass.inflect(key)
                               if callable(klass.inflect) else key)
+            if not ALLOWED_MEMBER_NAME_REGEX.fullmatch(prop.name):
+                raise ValueError(
+                    'Field name "{}" is not allowed.'.format(prop.name)
+                )
             prop.mapped_key = prop.mapped_key or key
             declared_fields[prop.key] = prop
 
@@ -244,6 +248,9 @@ class SchemaMeta(type):
             )
         if not attrs.get('type'):
             klass.type = name
+
+        if not ALLOWED_MEMBER_NAME_REGEX.fullmatch(klass.type):
+            raise ValueError('Type "{}" is not allowed.'.format(klass.type))
 
         klass._declared_fields = MappingProxyType(declared_fields)
         return klass
