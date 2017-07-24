@@ -2,6 +2,12 @@
 History
 =======
 
+0.16.1 (2017-07-24)
+-------------------
+
+* Pass context to value setter in update methods
+
+
 0.16.0 (2017-07-22)
 -------------------
 
