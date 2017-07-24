@@ -629,7 +629,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                 if validator_kwargs['on'] not in (Event.ALWAYS, context.event):
                     continue
 
-                validator(self, field, field_data, field_sp, context=context)
+                validator(field, field_data, field_sp, context=context)
 
     def deserialize_resource(self, data, sp, *, context=None,
                              expected_id=None, validate=True,
