@@ -780,7 +780,8 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         updated_resource = copy.deepcopy(resource)
         for key, (data, sp) in deserialized_data.items():
             field = self._declared_fields[key]
-            await self.set_value(field, updated_resource, data, sp, **kwargs)
+            await self.set_value(field, updated_resource, data, sp,
+                                 context=context, **kwargs)
 
         return resource, updated_resource
 
@@ -829,7 +830,8 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             resource = await self.query_resource(resource, context, **kwargs)
 
         updated_resource = copy.deepcopy(resource)
-        await self.set_value(field, updated_resource, decoded, sp, **kwargs)
+        await self.set_value(field, updated_resource, decoded, sp,
+                             context=context, **kwargs)
         return resource, updated_resource
 
     async def add_relationship(self, relation_name, resource,
