@@ -498,25 +498,6 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
     def serialize_relationship(self, relation_name, resource,
                                *, pagination=None):
-        """
-        .. seealso::
-
-            http://jsonapi.org/format/#document-resource-object-relationships
-
-        Creates the JSON API relationship object of the relationship *relname*.
-
-        :arg str relation_name:
-            The name of the relationship
-        :arg resource:
-            A resource object
-        :arg ~aiohttp_json_api.pagination.BasePagination pagination:
-            Describes the pagination in case of a *to-many* relationship.
-
-        :rtype: dict
-        :returns:
-            The JSON API relationship object for the relationship
-            *relation_name* of the *resource*
-        """
         field = self.get_relationship_field(relation_name)
 
         kwargs = dict()
@@ -570,34 +551,17 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
     def validate_resource_before_deserialization(self, data, sp, context, *,
                                                  expected_id=None):
-        """
-        Validates a JSON API resource object received from an API client::
-
-            schema.validate_resource_before_deserialization(
-                data=request.json["data"], sp="/data"
-            )
-
-        :arg data:
-            The received JSON API resource object
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
-            The JSON pointer to the source of *data*.
-        :arg RequestContext context:
-            Request context instance
-        :arg str expected_id:
-            If passed, then ID of resrouce will be compared with this value.
-            This is required in update methods
-        """
         if not isinstance(data, Mapping):
             detail = 'Must be an object.'
             raise InvalidType(detail=detail, source_pointer=sp)
 
         # JSON API id
         if (expected_id or context.event is Event.UPDATE) and 'id' not in data:
-            detail = 'The "id" member is missing.'
+            detail = "The 'id' member is missing."
             raise InvalidValue(detail=detail, source_pointer=sp / 'id')
 
         if expected_id:
-            if data['id'] != expected_id:
+            if str(data['id']) != str(expected_id):
                 detail = 'The id "{}" does not match the endpoint ' \
                          '("{}").'.format(data["id"], expected_id)
                 raise HTTPConflict(detail=detail, source_pointer=sp / 'id')
@@ -607,14 +571,6 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                 )
 
     def validate_resource_after_deserialization(self, data, context):
-        """
-        Validates the decoded *data* of JSON API resource object.
-
-        :arg ~collections.OrderedDict data:
-            The *memo* object returned from :meth:`deserialize_resource`.
-        :arg RequestContext context:
-            Request context instance
-        """
         # NOTE: The fields in *data* are ordered, such that children are
         #       listed before their parent.
         for key, (field_data, field_sp) in data.items():
@@ -631,34 +587,10 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
                 validator(field, field_data, field_sp, context=context)
 
-    def deserialize_resource(self, data, sp, *, context=None,
+    def deserialize_resource(self, data, sp, context, *,
                              expected_id=None, validate=True,
                              validation_steps=(Step.BEFORE_DESERIALIZATION,
                                                Step.AFTER_DESERIALIZATION)):
-        """
-        Decodes the JSON API resource object *data* and returns a dictionary
-        which maps the key of a field to its decoded input data.
-
-        :arg data:
-            The received JSON API resource object
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
-            The JSON pointer to the source of *data*.
-        :arg RequestContext context:
-            Request context instance
-        :arg str expected_id:
-            If passed, then ID of resrouce will be compared with this value.
-            This is required in update methods
-        :arg bool validate:
-            Is validation required?
-        :arg tuple validation_steps:
-            Required validation steps
-
-        :rtype: ~collections.OrderedDict
-        :returns:
-            An ordered dictionary which maps a fields key to a two tuple
-            ``(data, sp)`` which contains the input data and the source pointer
-            to it.
-        """
         if validate and Step.BEFORE_DESERIALIZATION in validation_steps:
             self.validate_resource_before_deserialization(
                 data, sp, context, expected_id=expected_id
@@ -704,78 +636,29 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         return result
 
-    # CRUD (resource)
-    # ---------------
-
-    async def create_resource(self, data, sp, context, **kwargs):
-        """
-        .. seealso::
-
-            http://jsonapi.org/format/#crud-creating
-
-        Creates a new resource instance and returns it. **You should overridde
-        this method.**
-
-        The default implementation passes the attributes, (dereferenced)
-        relationships and meta data from the JSON API resource object
-        *data* to the constructor of the resource class. If the primary
-        key is *writable* on creation and a member of *data*, it is also
-        passed to the constructor.
-
-        :arg dict data:
-            The JSON API resource object with the initial data.
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
-            The JSON pointer to the source of *data*.
-        """
-        deserialized_data = self.deserialize_resource(data, sp,
-                                                      context=context)
-
+    def map_data_to_schema(self, data) -> typing.Dict:
         # Map the property names on the resource instance to its initial data.
-        initial_data = {
-            self._declared_fields[key].mapped_key: data
-            for key, (data, sp) in deserialized_data.items()
+        result = {
+            self._declared_fields[key].mapped_key: field_data
+            for key, (field_data, sp) in data.items()
         }
         if 'id' in data:
-            initial_data['id'] = data['id']
+            result['id'] = data['id']
+        return result
 
-        # Create a new object by calling the constructor.
-        # resource = self.resource_class(**initial_data)
-        return initial_data
+    async def fetch_resource(self, resource_id, context, **kwargs):
+        raise NotImplementedError
 
-    async def update_resource(self, resource, data, sp, context, **kwargs):
-        """
-        .. seealso::
+    async def create_resource(self, data, sp, context, **kwargs):
+        return self.map_data_to_schema(
+            self.deserialize_resource(data, sp, context)
+        )
 
-            http://jsonapi.org/format/#crud-updating
-
-        Updates an existing *resource*. **You should overridde this method** in
-        order to save the changes in the database.
-
-        The default implementation uses the
-        :class:`~aiohttp_json_api.schema.base_fields.BaseField`
-        descriptors to update the resource.
-
-        :arg resource:
-            The id of the resource or the resource instance
-        :arg dict data:
-            The JSON API resource object with the update information
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
-            The JSON pointer to the source of *data*.
-        :arg RequestContext context:
-            Request context instance
-        """
-        if isinstance(resource, self.resource_class):
-            resource_id = self._get_id(resource)
-        else:
-            resource_id = resource
-
-        deserialized_data = self.deserialize_resource(data, sp,
-                                                      context=context,
+    async def update_resource(self, resource_id, data, sp, context, **kwargs):
+        deserialized_data = self.deserialize_resource(data, sp, context,
                                                       expected_id=resource_id)
 
-        if not isinstance(resource, self.resource_class):
-            resource = \
-                await self.query_resource(resource, context, **kwargs)
+        resource = await self.fetch_resource(resource_id, context, **kwargs)
 
         updated_resource = copy.deepcopy(resource)
         for key, (data, sp) in deserialized_data.items():
@@ -785,82 +668,29 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         return resource, updated_resource
 
-    async def delete_resource(self, resource, context, **kwargs):
-        """
-        .. seealso::
-
-            http://jsonapi.org/format/#crud-deleting
-
-        Deletes the *resource*. **You must overridde this method.**
-
-        :arg resource:
-            The id of the resource or the resource instance
-        :arg RequestContext context:
-            Request context instance
-        """
-        raise NotImplementedError
-
-    # CRUD (relationships)
-    # --------------------
-
-    async def update_relationship(self, relation_name, resource,
+    async def update_relationship(self, relation_name, resource_id,
                                   data, sp, context, **kwargs):
-        """
-        .. seealso::
-
-            http://jsonapi.org/format/#crud-updating-relationships
-
-        Updates the relationship with the JSON API name *relation_name*.
-
-        :arg str relation_name:
-            The name of the relationship.
-        :arg resource:
-            The id of the resource or the resource instance.
-        :arg str data:
-            The JSON API relationship object with the update information.
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
-            The JSON pointer to the source of *data*.
-        """
         field = self.get_relationship_field(relation_name)
 
         self._pre_validate_field(field, data, sp, context)
         decoded = field.deserialize(self, data, sp, **kwargs)
 
-        if not isinstance(resource, self.resource_class):
-            resource = await self.query_resource(resource, context, **kwargs)
+        resource = await self.fetch_resource(resource_id, context, **kwargs)
 
         updated_resource = copy.deepcopy(resource)
         await self.set_value(field, updated_resource, decoded, sp,
                              context=context, **kwargs)
         return resource, updated_resource
 
-    async def add_relationship(self, relation_name, resource,
+    async def add_relationship(self, relation_name, resource_id,
                                data, sp, context, **kwargs):
-        """
-        .. seealso::
-
-            http://jsonapi.org/format/#crud-updating-to-many-relationships
-
-        Adds the members specified in the JSON API relationship object *data*
-        to the relationship, unless the relationships already exist.
-
-        :arg str relation_name:
-            The name of the relationship.
-        :arg resource:
-            The id of the resource or the resource instance.
-        :arg str data:
-            The JSON API relationship object with the update information.
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
-            The JSON pointer to the source of *data*.
-        """
         field = self.get_relationship_field(relation_name)
         assert field.to_many
 
         self._pre_validate_field(field, data, sp, context)
         decoded = field.deserialize(self, data, sp, **kwargs)
 
-        if not isinstance(resource, self.resource_class):
-            resource = await self.query_resource(resource, context, **kwargs)
+        resource = await self.fetch_resource(resource_id, context, **kwargs)
 
         updated_resource = copy.deepcopy(resource)
         adder, adder_kwargs = first(
@@ -870,33 +700,15 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                     context=context, **adder_kwargs, **kwargs)
         return resource, updated_resource
 
-    async def remove_relationship(self, relation_name, resource,
+    async def remove_relationship(self, relation_name, resource_id,
                                   data, sp, context, **kwargs):
-        """
-        .. seealso::
-
-            http://jsonapi.org/format/#crud-updating-to-many-relationships
-
-        Deletes the members specified in the JSON API relationship object *data*
-        from the relationship.
-
-        :arg str relation_name:
-            The name of the relationship.
-        :arg resource:
-            The id of the resource or the resource instance.
-        :arg str data:
-            The JSON API relationship object with the update information.
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
-            The JSON pointer to the source of *data*.
-        """
         field = self.get_relationship_field(relation_name)
         assert field.to_many
 
         self._pre_validate_field(field, data, sp, context)
         decoded = field.deserialize(self, data, sp, **kwargs)
 
-        if not isinstance(resource, self.resource_class):
-            resource = await self.query_resource(resource, context, **kwargs)
+        resource = await self.fetch_resource(resource_id, context, **kwargs)
 
         updated_resource = copy.deepcopy(resource)
         remover, remover_kwargs = first(
@@ -906,90 +718,19 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                       context=context, **remover_kwargs, **kwargs)
         return resource, updated_resource
 
-    # Querying
-    # --------
-
-    async def query_collection(self, context, **kwargs):
-        """
-        .. seealso::
-
-            http://jsonapi.org/format/#fetching
-
-        Fetches a subset of the collection represented by this schema.
-        **Must be overridden.**
-
-        :arg ~aiohttp_json_api.context.RequestContext context:
-            Request context object.
-        """
-        raise NotImplementedError
-
-    async def query_resource(self, resource_id, context, **kwargs):
-        """
-        .. seealso::
-
-            http://jsonapi.org/format/#fetching
-
-        Fetches the resource with the id *id_*. **Must be overridden.**
-
-        :arg str resource_id:
-            The id of the requested resource.
-        :arg list include:
-            The list of relationships which will be included into the
-            response. See also: :attr:`jsonapi.request.Request.japi_include`.
-        :raises ~aiohttp_json_api.errors.ResourceNotFound:
-            If there is no resource with the given *id_*.
-        """
-        raise NotImplementedError
-
-    async def query_relatives(self, relation_name, resource, context, **kwargs):
-        """
-        Controller for the *related* endpoint of the to-many relationship with
-        then name *relname*.
-
-        Because a to-many relationship represents a collection, this method
-        accepts the same parameters as :meth:`query_collection`.
-
-        Returns the related resource or ``None``.
-
-        :arg str relation_name:
-            The name of a relationship.
-        :arg str resource_id:
-            The id of the resource or the resource instance.
-        """
+    async def query_relatives(self, relation_name, resource_id, context,
+                              **kwargs):
         field = self.get_relationship_field(relation_name)
 
+        resource = await self.fetch_resource(resource_id, context, **kwargs)
         query, query_kwargs = first(
             self._get_processors(Tag.QUERY, field, self.default_query)
         )
-        return await query(field, resource, context, **query_kwargs, **kwargs)
+        return await query(field, resource, context,
+                           **query_kwargs, **kwargs)
 
     async def fetch_compound_documents(self, relation_name, resources, context,
                                        **kwargs):
-        """
-        .. seealso::
-
-            http://jsonapi.org/format/#fetching-includes
-
-        Fetches the related resources. The default method uses the
-        :meth:`~aiohttp_json_api.schema.base_fields.Relationship.include`
-        method of the *Relationship* fields. **Can be overridden.**
-
-        :arg str relation_name:
-            The name of the relationship.
-        :arg resources:
-            A list of resources.
-        :arg RequestContext context:
-            Request context instance.
-        :arg list rest_path:
-            The name of the relationships of the returned relatives, which
-            will also be included.
-        :rtype: list
-        :returns:
-            A list with the related resources. The list is empty or has
-            exactly one element in the case of *to-one* relationships.
-            If *to-many* relationships are paginated, the relatives from the
-            first page should be returned.
-        """
         field = self.get_relationship_field(relation_name,
                                             source_parameter='include')
         include, include_kwargs = first(
