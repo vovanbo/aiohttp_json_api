@@ -2,6 +2,17 @@
 History
 =======
 
+0.17.0 (2017-07-28)
+-------------------
+
+* Normalize resource_id parameter usage in all mutation methods.
+* Add fetch_resource schema coroutine to receive resource instance by ID.
+* Add separate method for mapping deserialized data to schema.
+* Context is required parameter for deserialization schema method.
+* Move docs to ABC schema.
+* Properly handle allow_none parameter for UUID field
+
+
 0.16.2 (2017-07-24)
 -------------------
 
