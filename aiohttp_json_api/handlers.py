@@ -145,7 +145,7 @@ async def delete_resource(request: web.Request, context, schema):
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(schema, resource_id, context)
 
-    await schema.delete_resource(resource=resource_id, context=context)
+    await schema.delete_resource(resource_id, context)
     return web.HTTPNoContent()
 
 
