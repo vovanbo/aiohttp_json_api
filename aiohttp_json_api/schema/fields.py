@@ -343,6 +343,9 @@ class UUID(Attribute):
         self.version = version
 
     def pre_validate(self, schema, data, sp, context):
+        if self.allow_none and data is None:
+            return
+
         if not isinstance(data, str):
             detail = "The UUID must be a hexadecimal string."
             raise InvalidType(detail=detail, source_pointer=sp)
@@ -359,6 +362,8 @@ class UUID(Attribute):
             raise InvalidValue(detail=detail, source_pointer=sp)
 
     def deserialize(self, schema, data, sp, **kwargs):
+        if self.allow_none and data is None:
+            return None
         return uuid.UUID(hex=data)
 
     def serialize(self, schema, data, **kwargs):
