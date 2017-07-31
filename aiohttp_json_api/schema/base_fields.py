@@ -313,6 +313,7 @@ class Relationship(BaseField):
                  require_data: Event = Event.ALWAYS,
                  foreign_types: Sequence[str] = None,
                  links: Sequence[Link] = None,
+                 id_field: Attribute = None,
                  **kwargs):
         BaseField.__init__(self, **kwargs)
         self.links = {link.name: link for link in links} if links else {}
@@ -325,6 +326,7 @@ class Relationship(BaseField):
 
         assert isinstance(require_data, Event)
         self.require_data = require_data
+        self.id_field = id_field
 
     def add_link(self, link: Link):
         """
@@ -353,6 +355,9 @@ class Relationship(BaseField):
         if self.foreign_types and not data['type'] in self.foreign_types:
             detail = 'Unexpected type: "{}".'.format(data["type"])
             raise InvalidValue(detail=detail, source_pointer=sp / 'type')
+
+        if self.id_field is not None:
+            self.id_field.pre_validate(self, data['id'], sp / 'id', None)
 
     def validate_relationship_object(self, schema, data, sp):
         """
