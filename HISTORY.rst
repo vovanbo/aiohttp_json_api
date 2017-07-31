@@ -2,6 +2,12 @@
 History
 =======
 
+0.17.1 (2017-07-31)
+-------------------
+
+* Add support for validation of Relationships ID field
+
+
 0.17.0 (2017-07-28)
 -------------------
 
