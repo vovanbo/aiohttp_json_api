@@ -14,7 +14,7 @@ requirements = [
     'inflection>=0.3.1',
     'jsonpointer>=1.10',
     'python-dateutil>=2.6.0',
-    'trafaret>=0.10.2',
+    'trafaret>=0.11.0',
 ]
 
 test_requirements = [
@@ -23,7 +23,7 @@ test_requirements = [
 
 setup(
     name='aiohttp_json_api',
-    version='0.18.0',
+    version='0.18.1',
     description="JSON API driven by aiohttp",
     long_description=readme + '\n\n' + history,
     author="Vladimir Bolshakov",
