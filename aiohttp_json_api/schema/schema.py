@@ -11,7 +11,7 @@ validation and update operations based on
 import copy
 import inspect
 import typing
-from collections import OrderedDict, Mapping, defaultdict
+from collections import OrderedDict, defaultdict, MutableMapping
 from functools import partial
 from types import MappingProxyType
 
@@ -23,7 +23,7 @@ from . import abc
 from .base_fields import BaseField, Link, Attribute, Relationship
 from .decorators import Tag
 from .common import Event, Step
-from ..helpers import is_instance_or_subclass, first
+from ..helpers import is_instance_or_subclass, first, make_sentinel
 from ..const import JSONAPI, ALLOWED_MEMBER_NAME_REGEX
 from ..errors import (
     ValidationError, InvalidValue, InvalidType, HTTPConflict,
@@ -36,6 +36,8 @@ __all__ = (
     'SchemaMeta',
     'Schema'
 )
+
+MISSING = make_sentinel()
 
 
 def _get_fields(attrs, field_class, pop=False):
@@ -522,12 +524,11 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             was no input data for this field.
         """
         writable = field.writable in (Event.ALWAYS, context.event)
-        if not writable and sp is not None:
+        if data is not MISSING and not writable:
             detail = "The field '{}' is readonly.".format(field.name)
             raise ValidationError(detail=detail, source_pointer=sp)
 
-        required = field.required in (Event.ALWAYS, context.event)
-        if required and data is None:
+        if data is MISSING and field.required in (Event.ALWAYS, context.event):
             if isinstance(field, Attribute):
                 detail = "Attribute '{}' is required.".format(field.name)
             elif isinstance(field, Relationship):
@@ -536,7 +537,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                 detail = "The field '{}' is required.".format(field.name)
             raise InvalidValue(detail=detail, source_pointer=sp)
 
-        if sp is not None:
+        if data is not MISSING:
             field.pre_validate(self, data, sp, context)
 
             # Run custom pre-validators for field
@@ -551,7 +552,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
     def validate_resource_before_deserialization(self, data, sp, context, *,
                                                  expected_id=None):
-        if not isinstance(data, Mapping):
+        if not isinstance(data, MutableMapping):
             detail = 'Must be an object.'
             raise InvalidType(detail=detail, source_pointer=sp)
 
@@ -562,8 +563,8 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         if expected_id:
             if str(data['id']) != str(expected_id):
-                detail = 'The id "{}" does not match the endpoint ' \
-                         '("{}").'.format(data["id"], expected_id)
+                detail = "The id '{}' does not match the endpoint " \
+                         "('{}').".format(data["id"], expected_id)
                 raise HTTPConflict(detail=detail, source_pointer=sp / 'id')
             else:
                 self._pre_validate_field(
@@ -606,20 +607,14 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         for key, fields in fields_map:
             data_for_fields = data.get(key, {})
 
-            if validate and not isinstance(data_for_fields, Mapping):
+            if validate and not isinstance(data_for_fields, MutableMapping):
                 detail = 'Must be an object.'
                 raise InvalidType(detail=detail, source_pointer=sp / key)
 
             for field in fields.values():
-                field_data = data_for_fields.get(field.name)
-                if field_data is None and field.required is Event.NEVER:
-                    if not field.allow_none:
-                        continue
+                field_data = data_for_fields.get(field.name, MISSING)
 
                 if field.key:
-                    # field_sp = sp / key / field.name \
-                    #     if field.name in data_for_fields \
-                    #     else None
                     field_sp = sp / key / field.name
 
                     if validate and \
@@ -628,8 +623,11 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                             field, field_data, field_sp, context
                         )
 
-                    result[field.key] = \
-                        field.deserialize(self, field_data, field_sp), field_sp
+                    if field_data is not MISSING:
+                        result[field.key] = (
+                            field.deserialize(self, field_data, field_sp),
+                            field_sp
+                        )
 
         if validate and Step.AFTER_DESERIALIZATION in validation_steps:
             self.validate_resource_after_deserialization(result, context)
