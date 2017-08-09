@@ -2,6 +2,12 @@
 History
 =======
 
+0.18.0 (2017-08-09)
+-------------------
+
+* Properly handle missing values in deserialization and validation
+
+
 0.17.1 (2017-07-31)
 -------------------
 
