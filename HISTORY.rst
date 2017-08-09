@@ -2,6 +2,13 @@
 History
 =======
 
+0.18.1 (2017-08-09)
+-------------------
+
+* Migrate to trafaret >= 0.11.0
+* Fix requirement of trafaret to version greater than 0.11.0
+
+
 0.18.0 (2017-08-09)
 -------------------
 

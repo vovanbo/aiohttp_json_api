@@ -71,8 +71,12 @@ class String(Attribute):
     def __init__(self, *, allow_blank=False, regex=None, choices=None,
                  min_length=None, max_length=None, **kwargs):
         super(String, self).__init__(**kwargs)
-        self._trafaret = t.String(allow_blank=allow_blank, regex=regex,
-                                  min_length=min_length, max_length=max_length)
+        if regex is not None:
+            self._trafaret = t.Regexp(regex)
+        else:
+            self._trafaret = t.String(allow_blank=allow_blank,
+                                      min_length=min_length,
+                                      max_length=max_length)
         self.choices = None
         if choices and is_collection(choices):
             if isinstance(choices, type(Enum)):
@@ -82,7 +86,7 @@ class String(Attribute):
                 self._trafaret &= t.Enum(*choices)
 
         if self.allow_none:
-            self._trafaret = self._trafaret | t.Null()
+            self._trafaret |= t.Null()
 
     def pre_validate(self, schema, data, sp, context):
         try:
@@ -102,9 +106,10 @@ class String(Attribute):
             else data
 
     def serialize(self, schema, data, **kwargs):
-        result = self._trafaret.converter(data)
-        if isinstance(result, Enum):
-            result = result.name
+        if isinstance(data, Enum):
+            result = self._trafaret.check(data.name)
+        else:
+            result = self._trafaret.check(data)
         return result
 
 
@@ -113,7 +118,7 @@ class Integer(Attribute):
         super(Integer, self).__init__(**kwargs)
         self._trafaret = t.Int(gte=gte, lte=lte, gt=gt, lt=lt)
         if self.allow_none:
-            self._trafaret = self._trafaret | t.Null()
+            self._trafaret |= t.Null()
 
     def pre_validate(self, schema, data, sp, context):
         try:
@@ -133,7 +138,7 @@ class Float(Attribute):
         super(Float, self).__init__(**kwargs)
         self._trafaret = t.Float(gte=gte, lte=lte, gt=gt, lt=lt)
         if self.allow_none:
-            self._trafaret = self._trafaret | t.Null()
+            self._trafaret |= t.Null()
 
     def pre_validate(self, schema, data, sp, context):
         try:
@@ -189,7 +194,7 @@ class Decimal(Attribute):
         super(Decimal, self).__init__(**kwargs)
         self._trafaret = DecimalTrafaret(gte=gte, lte=lte, gt=gt, lt=lt) >> str
         if self.allow_none:
-            self._trafaret = self._trafaret | t.Null()
+            self._trafaret |= t.Null()
 
     def pre_validate(self, schema, data, sp, context):
         try:
@@ -272,7 +277,7 @@ class DateTime(Attribute):
         super(DateTime, self).__init__(**kwargs)
         self._trafaret = rfc_3339.DateTime(allow_blank=allow_blank)
         if self.allow_none:
-            self._trafaret = self._trafaret | t.Null()
+            self._trafaret |= t.Null()
 
     def pre_validate(self, schema, data, sp, context):
         try:
@@ -378,7 +383,7 @@ class Boolean(Attribute):
         super(Boolean, self).__init__(**kwargs)
         self._trafaret = t.Bool()
         if self.allow_none:
-            self._trafaret = self._trafaret | t.Null()
+            self._trafaret |= t.Null()
 
     def pre_validate(self, schema, data, sp, context):
         try:
@@ -414,9 +419,9 @@ class Email(Attribute):
     """Checks if a string is syntactically correct Email address."""
     def __init__(self, **kwargs):
         super(Email, self).__init__(**kwargs)
-        self._trafaret = t.Email()
+        self._trafaret = t.Email
         if self.allow_none:
-            self._trafaret = self._trafaret | t.Null()
+            self._trafaret |= t.Null
 
     def pre_validate(self, schema, data, sp, context):
         try:
