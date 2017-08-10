@@ -2,6 +2,12 @@
 History
 =======
 
+0.19.1 (2017-08-10)
+-------------------
+
+* Improve serialization result default keys creation
+
+
 0.19.0 (2017-08-10)
 -------------------
 
