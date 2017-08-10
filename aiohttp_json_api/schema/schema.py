@@ -471,14 +471,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         ))
 
         for key, schema_fields in fields_map:
-            fields = schema_fields.values()
-
-            if fields:
-                result[key] = OrderedDict()
-            else:
-                continue
-
-            for field in fields:
+            for field in schema_fields.values():
                 if fieldset is None or field.name in fieldset:
                     field_data = self.get_value(field, resource, **kwargs)
                     links = None
@@ -488,10 +481,12 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                             for link in field.links.values()
                         }
                     # TODO: Validation steps for pre/post serialization
+                    result.setdefault(key, OrderedDict())
                     result[key][field.name] = \
                         field.serialize(self, field_data, links=links, **kwargs)
 
-        if result.get('links') and 'self' not in result['links']:
+        result.setdefault('links', OrderedDict())
+        if 'self' not in result['links']:
             self_url = self.app.router['jsonapi.resource'].url_for(
                 **self.registry.ensure_identifier(resource, asdict=True)
             )
