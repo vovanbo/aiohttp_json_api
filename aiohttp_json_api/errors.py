@@ -56,9 +56,7 @@ class Error(Exception):
     All other exceptions will be replaced by an HTTPInternalServerError
     exception.
 
-    :arg int http_status:
-        The HTTP status code applicable to this problem.
-    :arg str id:
+    :arg str id_:
         A unique identifier for this particular occurrence of the problem.
     :arg str about:
         A link that leeds to further details about this particular occurrence
@@ -153,16 +151,16 @@ class ErrorList(Exception):
         return json_dumps(self.json, indent=4, sort_keys=True)
 
     @property
-    def status_code(self):
+    def status(self):
         """
         The most specific http status code, which matches all exceptions.
         """
         if not self.errors:
             return None
         elif len(self.errors) == 1:
-            return self.errors[0].status_code
-        elif any(400 <= err.status_code.value < 500 for err in self.errors):
-            return HTTPStatus.BAD_REQUEST
+            return self.errors[0].status
+        elif any(400 <= err.status < 500 for err in self.errors):
+            return max(e.status for e in self.errors)
         else:
             return HTTPStatus.INTERNAL_SERVER_ERROR
 
