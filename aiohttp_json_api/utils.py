@@ -152,7 +152,7 @@ def error_to_response(request: web.Request,
         status = error.status
     elif isinstance(error, ErrorList):
         document['errors'] = error.json
-        status = max(e.status for e in error.errors)
+        status = error.status
 
     document['jsonapi'] = request.app[JSONAPI]['jsonapi']
 
