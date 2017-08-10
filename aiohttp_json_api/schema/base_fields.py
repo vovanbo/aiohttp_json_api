@@ -242,13 +242,6 @@ class Link(BaseField):
         self.route = route
         self.link_of = link_of
 
-    async def default_get(self, schema, resource, **kwargs):
-        """Returns the formatted :attr:`href`."""
-        url = schema.app.router[self.route].url_for(
-            **schema.registry.ensure_identifier(resource, asdict=True)
-        )
-        return str(url)
-
     def serialize(self, schema, data, context=None, **kwargs):
         """Normalizes the links object if wished."""
         url = schema.app.router[self.route].url_for(
