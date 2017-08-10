@@ -2,6 +2,15 @@
 History
 =======
 
+0.19.0 (2017-08-10)
+-------------------
+
+* Refactor schema serializer to fix bug with no resource link in result
+* Clean-up validation of expected ID in pre-validaiton of resource
+* Use status property of ErrorList in error middleware to return HTTP status
+* Remove default getter from Link field, because it doesn't used anymore
+
+
 0.18.1 (2017-08-09)
 -------------------
 
