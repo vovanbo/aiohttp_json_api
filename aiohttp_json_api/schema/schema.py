@@ -565,14 +565,14 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             raise InvalidValue(detail=detail, source_pointer=sp / 'id')
 
         if expected_id:
-            if str(data['id']) != str(expected_id):
-                detail = "The id '{}' does not match the endpoint " \
-                         "('{}').".format(data["id"], expected_id)
-                raise HTTPConflict(detail=detail, source_pointer=sp / 'id')
-            else:
+            if str(data['id']) == str(expected_id):
                 self._pre_validate_field(
                     self._id, data['id'], sp / 'id', context
                 )
+            else:
+                detail = "The id '{}' does not match " \
+                         "the endpoint id '{}'.".format(data['id'], expected_id)
+                raise HTTPConflict(detail=detail, source_pointer=sp / 'id')
 
     def validate_resource_after_deserialization(self, data, context):
         # NOTE: The fields in *data* are ordered, such that children are
