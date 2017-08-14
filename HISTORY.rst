@@ -2,6 +2,14 @@
 History
 =======
 
+0.20.0 (2017-08-14)
+-------------------
+
+* Asynchronous validators support
+* Routes namespace can be customized
+* Relative links support
+
+
 0.19.1 (2017-08-10)
 -------------------
 
