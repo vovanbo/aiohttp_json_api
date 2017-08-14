@@ -5,7 +5,8 @@ __version__ = '0.19.1'
 
 def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
                   meta=None, context_class=None, registry_class=None,
-                  custom_handlers=None, log_errors=True):
+                  custom_handlers=None, log_errors=True,
+                  routes_namespace=None):
     """
     Setup JSON API in aiohttp application
 
@@ -43,6 +44,8 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     :param bool log_errors:
         Log errors handled by
         :func:`~aiohttp_json_api.middleware.jsonapi_middleware`
+    :param str routes_namespace:
+        Namespace of JSON API application routes
     :return:
         aiohttp Application instance with configured JSON API
     :rtype: ~aiohttp.web.Application
@@ -57,6 +60,10 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     from .middleware import jsonapi_middleware
     from .registry import Registry
     from .schema import Schema
+
+    routes_namespace = routes_namespace \
+        if isinstance(routes_namespace, str) and len(routes_namespace) > 0 \
+        else JSONAPI
 
     if registry_class is not None:
         assert issubclass(registry_class, Registry), \
@@ -104,30 +111,31 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
             'meta': meta
         },
         'registry': app_registry,
-        'log_errors': log_errors
+        'log_errors': log_errors,
+        'routes_namespace': routes_namespace
     }
 
     type_part = '{type:' + ALLOWED_MEMBER_NAME_RULE + '}'
     relation_part = '{relation:' + ALLOWED_MEMBER_NAME_RULE + '}'
     collection_resource = app.router.add_resource(
         '{base}/{type}'.format(base=base_path, type=type_part),
-        name='jsonapi.collection'
+        name='{}.collection'.format(routes_namespace)
     )
     resource_resource = app.router.add_resource(
         '{base}/{type}/{{id}}'.format(base=base_path, type=type_part),
-        name='jsonapi.resource'
+        name='{}.resource'.format(routes_namespace)
     )
     relationships_resource = app.router.add_resource(
         '{base}/{type}/{{id}}/relationships/{relation}'.format(
             base=base_path, type=type_part, relation=relation_part
         ),
-        name='jsonapi.relationships'
+        name='{}.relationships'.format(routes_namespace)
     )
     related_resource = app.router.add_resource(
         '{base}/{type}/{{id}}/{relation}'.format(
             base=base_path, type=type_part, relation=relation_part
         ),
-        name='jsonapi.related'
+        name='{}.related'.format(routes_namespace)
     )
 
     handlers = {
@@ -170,7 +178,7 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     related_resource.add_route('GET', handlers['get_related'])
 
     logger.debug('Registered JSON API resources list:')
-    for resource in filter(lambda r: r.name.startswith('jsonapi'),
+    for resource in filter(lambda r: r.name.startswith(routes_namespace),
                            app.router.resources()):
         logger.debug('%s -> %s',
                      [r.method for r in resource], resource.get_info())

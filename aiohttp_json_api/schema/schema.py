@@ -23,7 +23,9 @@ from . import abc
 from .base_fields import BaseField, Link, Attribute, Relationship
 from .decorators import Tag
 from .common import Event, Step
-from ..helpers import is_instance_or_subclass, first, make_sentinel
+from ..helpers import (
+    is_instance_or_subclass, first, make_sentinel, get_router_resource
+)
 from ..const import JSONAPI, ALLOWED_MEMBER_NAME_REGEX
 from ..errors import (
     ValidationError, InvalidValue, InvalidType, HTTPConflict,
@@ -199,6 +201,8 @@ class SchemaMeta(type):
             for key, field in declared_fields.items()
             if isinstance(field, Relationship)
         )
+        # TODO: Move default links to class initializer
+        # It will allow to use custom namespace for Links
         for relationship in relationships.values():
             # Add the default links.
             relationship.links.update({
@@ -488,7 +492,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         result.setdefault('links', OrderedDict())
         if 'self' not in result['links']:
-            self_url = self.app.router['jsonapi.resource'].url_for(
+            self_url = get_router_resource(self.app, 'resource').url_for(
                 **self.registry.ensure_identifier(resource, asdict=True)
             )
             if context.request is not None:

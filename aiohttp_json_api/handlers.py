@@ -11,6 +11,7 @@ from .const import JSONAPI_CONTENT_TYPE
 from .jsonpointer import JSONPointer
 from .decorators import jsonapi_handler
 from .errors import InvalidType
+from .helpers import get_router_resource
 from .utils import (
     jsonapi_response,
     render_document, get_compound_documents,
@@ -73,7 +74,7 @@ async def post_resource(request: web.Request, context, schema):
     result = render_document(resource, None, context)
 
     location = request.url.join(
-        request.app.router['jsonapi.resource'].url_for(
+        get_router_resource(request.app, 'resource').url_for(
             **schema.registry.ensure_identifier(resource, asdict=True)
         )
     )
