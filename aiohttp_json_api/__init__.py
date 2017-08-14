@@ -10,23 +10,6 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     """
     Setup JSON API in aiohttp application
 
-    Default setup of resources, routes and handlers:
-
-    =====================  ======  =========================================  ======================================================
-    Resource name          Method  Route                                      Handler
-    =====================  ======  =========================================  ======================================================
-    jsonapi.collection     GET     ``/{type}``                                :func:`~aiohttp_json_api.handlers.get_collection`
-    jsonapi.collection     POST    ``/{type}``                                :func:`~aiohttp_json_api.handlers.post_resource`
-    jsonapi.resource       GET     ``/{type}/{id}``                           :func:`~aiohttp_json_api.handlers.get_resource`
-    jsonapi.resource       PATCH   ``/{type}/{id}``                           :func:`~aiohttp_json_api.handlers.patch_resource`
-    jsonapi.resource       DELETE  ``/{type}/{id}``                           :func:`~aiohttp_json_api.handlers.delete_resource`
-    jsonapi.relationships  GET     ``/{type}/{id}/relationships/{relation}``  :func:`~aiohttp_json_api.handlers.get_relationship`
-    jsonapi.relationships  POST    ``/{type}/{id}/relationships/{relation}``  :func:`~aiohttp_json_api.handlers.post_relationship`
-    jsonapi.relationships  PATCH   ``/{type}/{id}/relationships/{relation}``  :func:`~aiohttp_json_api.handlers.patch_relationship`
-    jsonapi.relationships  DELETE  ``/{type}/{id}/relationships/{relation}``  :func:`~aiohttp_json_api.handlers.delete_relationship`
-    jsonapi.related        GET     ``/{type}/{id}/{relation}``                :func:`~aiohttp_json_api.handlers.get_related`
-    =====================  ======  =========================================  ======================================================
-
     :param ~aiohttp.web.Application app:
         Application instance
     :param ~typing.Sequence[Schema] schemas:
