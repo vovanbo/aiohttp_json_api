@@ -378,7 +378,10 @@ class UUID(Attribute):
 
 
 class Boolean(Attribute):
-    """Ensures that the input is a :class:`bool`."""
+    """
+    Ensures that the input is a :class:`bool`.
+    """
+
     def __init__(self, **kwargs):
         super(Boolean, self).__init__(**kwargs)
         self._trafaret = t.Bool()

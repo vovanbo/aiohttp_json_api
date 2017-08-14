@@ -1,7 +1,5 @@
-"""
-Common constants
-================
-"""
+"""Common constants."""
+
 import re
 
 JSONAPI = 'jsonapi'

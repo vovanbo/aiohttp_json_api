@@ -319,6 +319,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
     If you want, you can implement your own request handlers and only use
     the schema for validation and serialization.
     """
+
     inflect = partial(inflection.dasherize)
 
     def __init__(self, app: web.Application = None):
