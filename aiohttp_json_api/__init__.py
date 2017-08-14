@@ -139,32 +139,33 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     )
 
     handlers = {
-        i[0]: i[1]
-        for i in inspect.getmembers(default_handlers,
-                                    inspect.iscoroutinefunction)
-        if i[0] in default_handlers.__all__
+        name: handler
+        for name, handler in inspect.getmembers(default_handlers,
+                                                inspect.iscoroutinefunction)
+        if name in default_handlers.__all__
     }
     if custom_handlers is not None:
         if isinstance(custom_handlers, MutableMapping):
-            for handler, custom_handler in custom_handlers.items():
-                if handler in handlers \
-                    and inspect.iscoroutinefunction(custom_handler):
-                    logger.debug('Handler %s is overrided '
-                                 'with coroutine "%s" (%s)',
-                                 handler,
-                                 custom_handler.__name__,
-                                 inspect.getmodule(custom_handler))
-                    handlers[handler] = custom_handler
+            custom_handlers_iter = custom_handlers.items()
         elif isinstance(custom_handlers, Sequence):
-            for custom_handler in custom_handlers:
-                if inspect.iscoroutinefunction(custom_handler) and \
-                        custom_handler.__name__ in handlers:
-                    logger.debug('Handler %s is overrided '
-                                 'with coroutine "%s" (%s)',
-                                 custom_handler.__name__,
-                                 custom_handler.__name__,
-                                 inspect.getmodule(custom_handler))
-                    handlers[custom_handler.__name__] = custom_handler
+            custom_handlers_iter = ((c.__name__, c) for c in custom_handlers)
+        else:
+            raise ValueError('Wrong value of "custom_handlers" parameter. '
+                             'Mapping or sequence is expected.')
+
+        for name, custom_handler in custom_handlers_iter:
+            handler_name = custom_handler.__name__
+            if name not in handlers:
+                logger.warning('Custom handler %s is ignored.', name)
+                continue
+            if not inspect.iscoroutinefunction(custom_handler):
+                logger.error('"%s" is not a coroutine function.', handler_name)
+                continue
+
+            handlers[name] = custom_handler
+            logger.debug('Default handler "%s" is replaced '
+                         'with coroutine "%s" (%s)',
+                         name, handler_name, inspect.getmodule(custom_handler))
 
     collection_resource.add_route('GET', handlers['get_collection'])
     collection_resource.add_route('POST', handlers['post_resource'])
