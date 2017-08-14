@@ -1,7 +1,4 @@
-"""
-Request context
-===============
-"""
+"""Request context."""
 
 import json
 import re
