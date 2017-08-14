@@ -212,9 +212,7 @@ class SchemaMeta(type):
                                 name='related', link_of=relationship.name)
 
             })
-        mcs._assign_sp(
-            relationships.values(), JSONPointer('/relationships')
-        )
+        mcs._assign_sp(relationships.values(), JSONPointer('/relationships'))
         klass._relationships = MappingProxyType(relationships)
 
         links = OrderedDict(
@@ -316,9 +314,9 @@ class SchemaMeta(type):
 
 class Schema(abc.SchemaABC, metaclass=SchemaMeta):
     """
-    A schema defines how we can serialize a resource and patch it. It also allows
-    to patch a resource. All in all, it defines a **controller** for a *type*
-    in the JSON API.
+    A schema defines how we can serialize a resource and patch it.
+    It also allows to patch a resource. All in all, it defines
+    a **controller** for a *type* in the JSON API.
 
     If you want, you can implement your own request handlers and only use
     the schema for validation and serialization.
