@@ -83,7 +83,7 @@ class BaseField(FieldABC):
         is required as input.
     """
 
-    def __init__(self, *, name: str = '', mapped_key: str = '',
+    def __init__(self, *, name: str = None, mapped_key: str = None,
                  allow_none: bool = False,
                  writable: Event = Event.ALWAYS,
                  required: Event = Event.NEVER):
@@ -233,12 +233,12 @@ class Link(BaseField):
         an object.
     """
 
-    def __init__(self, route: str = '', *,
-                 link_of: str = '<resource>', name: str = '',
-                 normalize: bool = True):
+    def __init__(self, route: str, link_of: str, *, name: str = None,
+                 normalize: bool = True, absolute: bool = True):
         super(Link, self).__init__(name=name, writable=Event.NEVER)
 
         self.normalize = bool(normalize)
+        self.absolute = absolute
         self.route = route
         self.link_of = link_of
 
@@ -248,7 +248,7 @@ class Link(BaseField):
             **schema.registry.ensure_identifier(data, asdict=True),
             relation=self.link_of
         )
-        if context is not None:
+        if context is not None and self.absolute:
             url = context.request.url.join(url)
 
         result = str(url)
