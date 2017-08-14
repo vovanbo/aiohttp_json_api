@@ -5,6 +5,9 @@ Helpers
 import inspect
 from collections import Mapping, Iterable
 
+from aiohttp import web
+from .const import JSONAPI
+
 
 def is_generator(obj):
     """Return True if ``obj`` is a generator
@@ -121,3 +124,9 @@ def make_sentinel(name='_MISSING', var_name=None):
         __bool__ = __nonzero__
 
     return Sentinel()
+
+
+def get_router_resource(app: web.Application, resource: str):
+    return app.router[
+        '{}.{}'.format(app[JSONAPI]['routes_namespace'], resource)
+    ]

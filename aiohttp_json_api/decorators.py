@@ -19,8 +19,10 @@ def jsonapi_handler(handler=None, resource_type=None, content_type=None):
     @wraps(handler)
     async def wrapper(request: web.Request):
         route_name = request.match_info.route.name
-        assert route_name and route_name.startswith('jsonapi.'), \
-            'Request route must be named and use namespace "jsonapi.*"'
+        namespace = request.app[JSONAPI]['routes_namespace']
+        assert route_name and route_name.startswith('{}.'.format(namespace)), \
+            'Request route must be named ' \
+            'and use namespace "{}.*"'.format(namespace)
 
         context_class = request.app[JSONAPI]['context_class']
         type_ = resource_type or request.match_info.get('type', None)
