@@ -97,8 +97,8 @@ class SchemaABC(object):
         raise NotImplementedError
 
     @abstractmethod
-    def validate_resource_before_deserialization(self, data, sp, context, *,
-                                                 expected_id=None):
+    async def validate_resource_before_deserialization(self, data, sp, context,
+                                                       *, expected_id=None):
         """
         Validates a JSON API resource object received from an API client::
 
@@ -119,7 +119,7 @@ class SchemaABC(object):
         raise NotImplementedError
 
     @abstractmethod
-    def validate_resource_after_deserialization(self, data, context):
+    async def validate_resource_after_deserialization(self, data, context):
         """
         Validates the decoded *data* of JSON API resource object.
 
@@ -131,9 +131,9 @@ class SchemaABC(object):
         raise NotImplementedError
 
     @abstractmethod
-    def deserialize_resource(self, data, sp, context, *,
-                             expected_id=None, validate=True,
-                             validation_steps=()):
+    async def deserialize_resource(self, data, sp, context, *,
+                                   expected_id=None, validate=True,
+                                   validation_steps=None):
         """
         Decodes the JSON API resource object *data* and returns a dictionary
         which maps the key of a field to its decoded input data.

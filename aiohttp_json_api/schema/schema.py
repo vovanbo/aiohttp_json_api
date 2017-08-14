@@ -509,7 +509,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
     # Validation (pre deserialize)
     # -----------------------
 
-    def _pre_validate_field(self, field, data, sp, context):
+    async def _pre_validate_field(self, field, data, sp, context):
         """
         Validates the input data for a field, **before** it is deserialized.
         If the field has nested fields, the nested fields are validated first.
@@ -536,7 +536,10 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if data is not MISSING:
-            field.pre_validate(self, data, sp, context)
+            if inspect.iscoroutinefunction(field.pre_validate):
+                await field.pre_validate(self, data, sp, context)
+            else:
+                field.pre_validate(self, data, sp, context)
 
             # Run custom pre-validators for field
             validators = self._get_processors(Tag.VALIDATE, field, None)
@@ -546,10 +549,13 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                 if validator_kwargs['on'] not in (Event.ALWAYS, context.event):
                     continue
 
-                validator(self, field, data, sp, context=context)
+                if inspect.iscoroutinefunction(validator):
+                    await validator(self, field, data, sp, context=context)
+                else:
+                    validator(self, field, data, sp, context=context)
 
-    def validate_resource_before_deserialization(self, data, sp, context, *,
-                                                 expected_id=None):
+    async def validate_resource_before_deserialization(self, data, sp, context,
+                                                       *, expected_id=None):
         if not isinstance(data, MutableMapping):
             detail = 'Must be an object.'
             raise InvalidType(detail=detail, source_pointer=sp)
@@ -561,15 +567,16 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         if expected_id:
             if str(data['id']) == str(expected_id):
-                self._pre_validate_field(
+                await self._pre_validate_field(
                     self._id, data['id'], sp / 'id', context
                 )
             else:
                 detail = "The id '{}' does not match " \
-                         "the endpoint id '{}'.".format(data['id'], expected_id)
+                         "the endpoint id '{}'.".format(data['id'],
+                                                        expected_id)
                 raise HTTPConflict(detail=detail, source_pointer=sp / 'id')
 
-    def validate_resource_after_deserialization(self, data, context):
+    async def validate_resource_after_deserialization(self, data, context):
         # NOTE: The fields in *data* are ordered, such that children are
         #       listed before their parent.
         for key, (field_data, field_sp) in data.items():
@@ -584,14 +591,21 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                 if validator_kwargs['on'] not in (Event.ALWAYS, context.event):
                     continue
 
-                validator(field, field_data, field_sp, context=context)
+                if inspect.iscoroutinefunction(validator):
+                    await validator(field, field_data, field_sp,
+                                    context=context)
+                else:
+                    validator(field, field_data, field_sp, context=context)
 
-    def deserialize_resource(self, data, sp, context, *,
-                             expected_id=None, validate=True,
-                             validation_steps=(Step.BEFORE_DESERIALIZATION,
-                                               Step.AFTER_DESERIALIZATION)):
+    async def deserialize_resource(self, data, sp, context, *,
+                                   expected_id=None, validate=True,
+                                   validation_steps=None):
+        if validation_steps is None:
+            validation_steps = (Step.BEFORE_DESERIALIZATION,
+                                Step.AFTER_DESERIALIZATION)
+
         if validate and Step.BEFORE_DESERIALIZATION in validation_steps:
-            self.validate_resource_before_deserialization(
+            await self.validate_resource_before_deserialization(
                 data, sp, context, expected_id=expected_id
             )
 
@@ -617,7 +631,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
                     if validate and \
                             Step.BEFORE_DESERIALIZATION in validation_steps:
-                        self._pre_validate_field(
+                        await self._pre_validate_field(
                             field, field_data, field_sp, context
                         )
 
@@ -628,7 +642,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                         )
 
         if validate and Step.AFTER_DESERIALIZATION in validation_steps:
-            self.validate_resource_after_deserialization(result, context)
+            await self.validate_resource_after_deserialization(result, context)
 
         return result
 
@@ -647,12 +661,13 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
     async def create_resource(self, data, sp, context, **kwargs):
         return self.map_data_to_schema(
-            self.deserialize_resource(data, sp, context)
+            await self.deserialize_resource(data, sp, context)
         )
 
     async def update_resource(self, resource_id, data, sp, context, **kwargs):
-        deserialized_data = self.deserialize_resource(data, sp, context,
-                                                      expected_id=resource_id)
+        deserialized_data = \
+            await self.deserialize_resource(data, sp, context,
+                                            expected_id=resource_id)
 
         resource = await self.fetch_resource(resource_id, context, **kwargs)
 
@@ -668,7 +683,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                                   data, sp, context, **kwargs):
         field = self.get_relationship_field(relation_name)
 
-        self._pre_validate_field(field, data, sp, context)
+        await self._pre_validate_field(field, data, sp, context)
         decoded = field.deserialize(self, data, sp, **kwargs)
 
         resource = await self.fetch_resource(resource_id, context, **kwargs)
@@ -683,7 +698,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         field = self.get_relationship_field(relation_name)
         assert field.to_many
 
-        self._pre_validate_field(field, data, sp, context)
+        await self._pre_validate_field(field, data, sp, context)
         decoded = field.deserialize(self, data, sp, **kwargs)
 
         resource = await self.fetch_resource(resource_id, context, **kwargs)
@@ -701,7 +716,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         field = self.get_relationship_field(relation_name)
         assert field.to_many
 
-        self._pre_validate_field(field, data, sp, context)
+        await self._pre_validate_field(field, data, sp, context)
         decoded = field.deserialize(self, data, sp, **kwargs)
 
         resource = await self.fetch_resource(resource_id, context, **kwargs)
