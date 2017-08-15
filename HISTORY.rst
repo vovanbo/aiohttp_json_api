@@ -2,6 +2,12 @@
 History
 =======
 
+0.20.1 (2017-08-15)
+-------------------
+
+* Add support for load only fields (like a Marshmallow)
+
+
 0.20.0 (2017-08-14)
 -------------------
 
