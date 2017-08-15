@@ -475,6 +475,10 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         for key, schema_fields in fields_map:
             for field in schema_fields.values():
+                # Ignore 'load_only' field during serialization
+                if getattr(field, 'load_only', False):
+                    continue
+
                 if fieldset is None or field.name in fieldset:
                     field_data = self.get_value(field, resource, **kwargs)
                     links = None

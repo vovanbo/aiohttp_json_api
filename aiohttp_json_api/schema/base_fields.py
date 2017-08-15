@@ -189,13 +189,17 @@ class Attribute(BaseField):
 
     :arg bool meta:
         If true, the attribute is part of the resource's *meta* object.
+    :arg bool load_only:
+        If `True` skip this field during serialization, otherwise
+        its value will be present in the serialized data.
     :arg \*\*kwargs:
         The init arguments for the :class:`BaseField`.
     """
 
-    def __init__(self, *, meta: bool = False, **kwargs):
+    def __init__(self, *, meta: bool = False, load_only=False, **kwargs):
         super(Attribute, self).__init__(**kwargs)
         self.meta = bool(meta)
+        self.load_only = load_only
 
 
 class Link(BaseField):
