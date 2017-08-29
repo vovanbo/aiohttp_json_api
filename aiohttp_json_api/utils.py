@@ -148,11 +148,10 @@ def error_to_response(request: web.Request,
 
 
 def validate_uri_resource_id(schema, resource_id, context):
-    field = schema._id
-    if field:
+    field = getattr(schema, '_id', None)
+    if field is not None:
         try:
-            field.pre_validate(schema, resource_id,
-                               sp=None, context=context)
+            field.pre_validate(schema, resource_id, sp=None, context=context)
         except ValidationError as e:
             e.source_parameter = 'id'
             raise e
