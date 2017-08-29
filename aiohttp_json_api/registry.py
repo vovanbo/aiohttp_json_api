@@ -34,8 +34,7 @@ class Registry(collections.UserDict):
         :arg bool asdict:
             Return ResourceID as dictionary if true
         """
-        if isinstance(obj, collections.Sequence):
-            assert len(obj) == 2
+        if isinstance(obj, collections.Sequence) and len(obj) == 2:
             result = ResourceID(str(obj[0]), str(obj[1]))
         elif isinstance(obj, collections.Mapping):
             result = ResourceID(str(obj['type']), str(obj['id']))
