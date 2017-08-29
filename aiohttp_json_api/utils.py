@@ -135,22 +135,15 @@ def error_to_response(request: web.Request,
 
     :rtype: ~aiohttp.web.Response
     """
-    assert isinstance(error, (Error, ErrorList))
-
-    document = {}
-    status = HTTPStatus.INTERNAL_SERVER_ERROR
-    if isinstance(error, Error):
-        document['errors'] = [error.json]
-        status = error.status
-    elif isinstance(error, ErrorList):
-        document['errors'] = error.json
-        status = error.status
-
-    document['jsonapi'] = request.app[JSONAPI]['jsonapi']
+    if not isinstance(error, (Error, ErrorList)):
+        raise TypeError('Error or ErrorList instance is required.')
 
     return jsonapi_response(
-        filter_empty_fields(document),
-        status=status.value
+        {
+            'errors': [error.json] if isinstance(error, Error) else error.json,
+            'jsonapi': request.app[JSONAPI]['jsonapi']
+        },
+        status=error.status
     )
 
 
