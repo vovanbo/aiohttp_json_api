@@ -4,7 +4,6 @@ Utilities
 """
 import typing
 from collections import OrderedDict, defaultdict
-from http import HTTPStatus
 
 from aiohttp import web
 
@@ -12,16 +11,6 @@ from .const import JSONAPI, JSONAPI_CONTENT_TYPE
 from .helpers import SENTINEL, is_collection, first
 from .encoder import json_dumps
 from .errors import Error, ErrorList, ValidationError
-
-
-
-def filter_empty_fields(data: typing.MutableMapping) -> typing.MutableMapping:
-    required = ('errors',) if data.get('errors') else ('data',)
-    return {
-        key: value
-        for key, value in data.items()
-        if key in required or value
-    }
 
 
 def jsonapi_response(data=SENTINEL, *, text=None, body=None,
@@ -101,32 +90,36 @@ def serialize_resource(resource, context):
     return schema.serialize_resource(resource, context=context)
 
 
-def render_document(resources, compound_documents, context, *,
+def render_document(data, included, context, *,
                     pagination=None, links=None) -> typing.MutableMapping:
-    document = {'links': {}, 'meta': {}}
-    pagination = pagination or context.pagination
+    document = OrderedDict()
 
-    if is_collection(resources):
-        document['data'] = [serialize_resource(r, context) for r in resources]
+    if is_collection(data):
+        document['data'] = [serialize_resource(r, context) for r in data]
     else:
         document['data'] = \
-            serialize_resource(resources, context) if resources else None
+            serialize_resource(data, context) if data else None
 
-    if context.include and compound_documents:
+    if context.include and included:
         document['included'] = [serialize_resource(r, context)
-                                for r in compound_documents.values()]
+                                for r in included.values()]
 
+    document.setdefault('links', OrderedDict())
     document['links']['self'] = str(context.request.url)
     if links is not None:
         document['links'].update(links)
 
+    pagination = pagination or context.pagination
     if pagination is not None:
         document['links'].update(pagination.links())
+        document.setdefault('meta', OrderedDict())
         document['meta'].update(pagination.meta())
 
-    document['jsonapi'] = context.request.app[JSONAPI]['jsonapi']
+    jsonapi_info = context.request.app[JSONAPI]['jsonapi']
+    if jsonapi_info:
+        document['jsonapi'] = jsonapi_info
 
-    return filter_empty_fields(document)
+    return document
 
 
 def error_to_response(request: web.Request,
