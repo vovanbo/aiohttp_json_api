@@ -39,7 +39,7 @@ class Registry(collections.UserDict):
         elif isinstance(obj, collections.Mapping):
             result = ResourceID(str(obj['type']), str(obj['id']))
         else:
-            schema = self[type(obj)]
-            result = ResourceID(schema.type, str(schema._get_id(obj)))
+            schema = self.data[type(obj)]
+            result = ResourceID(schema.type, schema.get_object_id(obj))
 
         return result._asdict() if asdict and result else result

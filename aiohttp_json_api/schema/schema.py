@@ -10,36 +10,34 @@ validation and update operations based on
 """
 import copy
 import inspect
+import itertools
 import typing
 from collections import OrderedDict, defaultdict, MutableMapping
 from functools import partial
 from types import MappingProxyType
 
 import inflection
-import itertools
 from aiohttp import web
 
 from . import abc
 from .base_fields import BaseField, Link, Attribute, Relationship
-from .decorators import Tag
 from .common import Event, Step
-from ..helpers import (
-    is_instance_or_subclass, first, make_sentinel, get_router_resource
-)
+from .decorators import Tag
 from ..const import JSONAPI, ALLOWED_MEMBER_NAME_REGEX
 from ..errors import (
     ValidationError, InvalidValue, InvalidType, HTTPConflict,
     HTTPBadRequest
 )
-from ..log import logger
+from ..helpers import (
+    MISSING, is_instance_or_subclass, first, get_router_resource
+)
 from ..jsonpointer import JSONPointer
+from ..log import logger
 
 __all__ = (
     'SchemaMeta',
     'Schema'
 )
-
-MISSING = make_sentinel()
 
 
 def _get_fields(attrs, field_class, pop=False):
@@ -333,9 +331,8 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
     def registry(self):
         return self.app[JSONAPI]['registry']
 
-    # ID
-    # --
-    def _get_id(self, resource):
+    @staticmethod
+    def get_object_id(resource) -> str:
         """
         **Can be overridden**.
 
@@ -470,7 +467,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         result = OrderedDict((
             ('type', self.type),
-            ('id', self._get_id(resource)),
+            ('id', self.get_object_id(resource)),
         ))
 
         for key, schema_fields in fields_map:

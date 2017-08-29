@@ -130,3 +130,7 @@ def get_router_resource(app: web.Application, resource: str):
     return app.router[
         '{}.{}'.format(app[JSONAPI]['routes_namespace'], resource)
     ]
+
+
+SENTINEL = make_sentinel(var_name='SENTINEL')
+MISSING = make_sentinel()
