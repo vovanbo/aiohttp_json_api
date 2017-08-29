@@ -9,8 +9,6 @@ from collections import OrderedDict, Mapping
 from aiohttp_json_api.helpers import is_collection
 from .base_fields import Relationship
 from ..errors import InvalidType
-from ..log import logger
-from ..utils import filter_empty_fields
 
 __all__ = (
     'ToOne',
@@ -41,20 +39,24 @@ class ToOne(Relationship):
 
     def serialize(self, schema, data, **kwargs) -> typing.MutableMapping:
         """Composes the final relationships object."""
-        document = {'links': kwargs.get('links', {})}
+        document = OrderedDict()
 
         if data is None:
             document['data'] = data
-        # JSON API resource linkage or JSON API relationships object
         elif isinstance(data, Mapping):
+            # JSON API resource linkage or JSON API relationships object
             if 'type' in data and 'id' in data:
                 document['data'] = data
-        # the related resource instance
         else:
+            # the related resource instance
             document['data'] = \
                 schema.registry.ensure_identifier(data, asdict=True)
 
-        return filter_empty_fields(document)
+        links = kwargs.get('links')
+        if links is not None:
+            document['links'] = links
+
+        return document
 
 
 class ToMany(Relationship):
@@ -86,10 +88,7 @@ class ToMany(Relationship):
             If not *None*, the links and meta members of the pagination
             helper are added to the final JSON API relationship object.
         """
-        document = {
-            'links': kwargs.get('links', {}),
-            'meta': {}
-        }
+        document = OrderedDict()
 
         if is_collection(data):
             document['data'] = [
@@ -97,12 +96,17 @@ class ToMany(Relationship):
                 for item in data
             ]
 
+        links = kwargs.get('links')
+        if links is not None:
+            document['links'] = links
+
         pagination = kwargs.get('pagination')
-        if pagination:
+        if pagination is not None:
             document['links'].update(pagination.links())
+            document.setdefault('meta', OrderedDict())
             document['meta'].update(pagination.meta())
 
-        return filter_empty_fields(document)
+        return document
 
     def validate_relationship_object(self, schema, data, sp):
         """
