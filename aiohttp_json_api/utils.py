@@ -9,11 +9,10 @@ from http import HTTPStatus
 from aiohttp import web
 
 from .const import JSONAPI, JSONAPI_CONTENT_TYPE
-from .helpers import is_collection, first, make_sentinel
+from .helpers import SENTINEL, is_collection, first
 from .encoder import json_dumps
 from .errors import Error, ErrorList, ValidationError
 
-SENTINEL = make_sentinel()
 
 
 def filter_empty_fields(data: typing.MutableMapping) -> typing.MutableMapping:
