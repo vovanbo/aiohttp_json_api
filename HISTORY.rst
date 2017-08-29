@@ -2,6 +2,15 @@
 History
 =======
 
+0.20.2 (2017-08-30)
+-------------------
+
+* Avoid assertion in Registry ensure identifier method
+* Make Schema getter of object id static
+* Avoid to filter out empty fields of rendered documents (less memory and faster)
+* Get id field of schema more safely in URI resource ID validator
+
+
 0.20.1 (2017-08-15)
 -------------------
 
