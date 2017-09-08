@@ -5,7 +5,7 @@ cryptography==2.0.3
 flake8==3.4.1
 flake8_docstrings==1.1.0
 punch.py==1.4.0
-pytest==3.2.1
+pytest==3.2.2
 pyyaml==3.12
 sphinx==1.6.2
 sphinx-autodoc-typehints==1.2.3
