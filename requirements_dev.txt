@@ -11,5 +11,5 @@ sphinx==1.6.2
 sphinx-autodoc-typehints==1.2.3
 tox==2.8.1
 twine==1.9.1
-wheel==0.29.0
+wheel==0.30.0
 watchdog==0.8.3
