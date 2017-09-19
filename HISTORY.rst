@@ -2,6 +2,13 @@
 History
 =======
 
+0.21.0 (2017-09-19)
+-------------------
+
+* Add support for field names conversion passed to "include" request context
+* Update development requirements
+
+
 0.20.2 (2017-08-30)
 -------------------
 
