@@ -2,6 +2,12 @@
 History
 =======
 
+0.21.1 (2017-09-19)
+-------------------
+
+* Fix bug with non-underscored relation name in relationship handlers
+
+
 0.21.0 (2017-09-19)
 -------------------
 

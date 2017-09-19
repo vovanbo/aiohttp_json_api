@@ -359,7 +359,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
     def get_relationship_field(self, relation_name, source_parameter=None):
         try:
-            return self._relationships[relation_name]
+            return self._relationships[inflection.underscore(relation_name)]
         except KeyError:
             raise HTTPBadRequest(
                 detail="Wrong relationship name '{}'.".format(relation_name),
