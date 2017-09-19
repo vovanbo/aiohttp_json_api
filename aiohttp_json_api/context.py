@@ -6,6 +6,7 @@ from collections import OrderedDict
 from enum import Enum
 from typing import Optional, Tuple, MutableMapping, Any, Union
 
+import inflection
 from aiohttp import web
 
 from .const import JSONAPI
@@ -165,7 +166,8 @@ class RequestContext:
         return fields
 
     @staticmethod
-    def parse_request_includes(request: web.Request) -> Tuple[Tuple[str], ...]:
+    def parse_request_includes(request: web.Request) -> \
+        Tuple[Tuple[str, ...], ...]:
         """
         Returns the names of the relationships, which should be included into
         the response.
@@ -174,15 +176,16 @@ class RequestContext:
 
             >>> from aiohttp_json_api.context import RequestContext
             >>> from aiohttp.test_utils import make_mocked_request
-            >>> request = make_mocked_request('GET', '/api/Post?include=author,comments.author')
+            >>> request = make_mocked_request('GET', '/api/Post?include=author,comments.author,some-field.nested')
             >>> RequestContext.parse_request_includes(request)
-            (('author',), ('comments', 'author'))
+            (('author',), ('comments', 'author'), ('some_field', 'nested'))
 
         :seealso: http://jsonapi.org/format/#fetching-includes
         """
         include = request.query.get('include', '')
         return tuple(
-            tuple(path.split('.')) for path in include.split(',') if path
+            tuple(inflection.underscore(p) for p in path.split('.'))
+            for path in include.split(',') if path
         )
 
     @staticmethod
