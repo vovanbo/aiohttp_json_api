@@ -26,19 +26,3 @@ sphinx-autodoc-typehints = "*"
 tox = "*"
 twine = "*"
 watchdog = "*"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
