@@ -2,6 +2,12 @@
 History
 =======
 
+0.22.0 (2017-09-22)
+-------------------
+
+* Remove recursive fetching of compound documents. Replace it with simple loop.
+
+
 0.21.2 (2017-09-22)
 -------------------
 

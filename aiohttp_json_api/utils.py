@@ -50,34 +50,28 @@ async def get_compound_documents(resources, context, **kwargs):
     relationships = defaultdict(set)
     compound_documents = OrderedDict()
 
-    async def fetch_recursively(collection, pths):
-        """
-        Fetches the relationship path *path* recursively.
-        """
-        if not pths or not collection:
-            return
-
-        relation_name, *rest_path = pths
-
-        # Use schema of first collection's element to fetch
-        schema = registry[registry.ensure_identifier(first(collection)).type]
-        if tuple(pths) in relationships[schema.type]:
-            return
-
-        relatives = await schema.fetch_compound_documents(
-            relation_name, collection, context, rest_path=rest_path, **kwargs)
-
-        for relative in relatives:
-            compound_documents.setdefault(registry.ensure_identifier(relative),
-                                          relative)
-
-        relationships[schema.type].add(tuple(pths))
-        if relatives:
-            await fetch_recursively(relatives, rest_path)
-
     collection = resources if is_collection(resources) else (resources,)
     for path in context.include:
-        await fetch_recursively(collection, path)
+        if path and collection:
+            rest_path = path
+            nested_collection = collection
+            while rest_path and nested_collection:
+                schema = registry[first(nested_collection)]
+
+                if rest_path in relationships[schema.type]:
+                    return
+
+                nested_collection = await schema.fetch_compound_documents(
+                    rest_path[0], nested_collection, context,
+                    rest_path=rest_path[1:]
+                )
+
+                for relative in nested_collection:
+                    compound_documents.setdefault(relative.resource_id,
+                                                  relative)
+
+                relationships[schema.type].add(rest_path)
+                rest_path = rest_path[1:]
 
     return compound_documents, relationships
 
