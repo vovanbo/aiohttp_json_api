@@ -1,0 +1,44 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+
+aiohttp = ">=2.0.0"
+inflection = ">=0.3.1"
+jsonpointer = ">=1.10"
+python-dateutil = ">=2.6.0"
+trafaret = ">=0.11.0"
+
+[dev-packages]
+e1839a8 = {path = ".", editable = true}
+alabaster = "*"
+coverage = "*"
+cryptography = "*"
+flake8 = "*"
+flake8-docstrings = "*"
+"punch.py" = "*"
+pytest = "*"
+PyYAML = "*"
+Sphinx = "<=1.6.2"
+sphinx-autodoc-typehints = "*"
+tox = "*"
+twine = "*"
+watchdog = "*"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
