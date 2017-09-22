@@ -61,20 +61,18 @@ async def get_compound_documents(resources, context, **kwargs):
 
         # Use schema of first collection's element to fetch
         schema = registry[registry.ensure_identifier(first(collection)).type]
-        if relation_name in relationships[schema.type]:
+        if tuple(pths) in relationships[schema.type]:
             return
 
         relatives = await schema.fetch_compound_documents(
-            relation_name, collection, context, rest_path=rest_path, **kwargs
-        )
+            relation_name, collection, context, rest_path=rest_path, **kwargs)
 
-        if any(relatives):
-            for relative in relatives:
-                relative_id = registry.ensure_identifier(relative)
-                if relative_id not in compound_documents:
-                    compound_documents[relative_id] = relative
+        for relative in relatives:
+            compound_documents.setdefault(registry.ensure_identifier(relative),
+                                          relative)
 
-            relationships[schema.type].add(relation_name)
+        relationships[schema.type].add(tuple(pths))
+        if relatives:
             await fetch_recursively(relatives, rest_path)
 
     collection = resources if is_collection(resources) else (resources,)

@@ -2,6 +2,12 @@
 History
 =======
 
+0.21.2 (2017-09-22)
+-------------------
+
+* Fix bug with fetching compound documents when query parameter "include" contains the same relation twice and more.
+
+
 0.21.1 (2017-09-19)
 -------------------
 
