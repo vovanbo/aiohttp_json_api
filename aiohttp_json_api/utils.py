@@ -59,11 +59,11 @@ async def get_compound_documents(resources, context, **kwargs):
                 schema = registry[first(nested_collection)]
 
                 if rest_path in relationships[schema.type]:
-                    return
+                    break
 
                 nested_collection = await schema.fetch_compound_documents(
-                    rest_path[0], nested_collection, context,
-                    rest_path=rest_path[1:]
+                    relation_name=rest_path[0], resources=nested_collection,
+                    context=context, rest_path=rest_path[1:]
                 )
 
                 for relative in nested_collection:

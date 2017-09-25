@@ -2,6 +2,12 @@
 History
 =======
 
+0.22.1 (2017-09-25)
+-------------------
+
+* Fix bug with wrong exit from compound documents fetch utility ("return" instead of "break")
+
+
 0.22.0 (2017-09-22)
 -------------------
 
