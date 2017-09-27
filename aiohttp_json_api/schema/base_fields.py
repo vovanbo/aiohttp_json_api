@@ -200,6 +200,7 @@ class Attribute(BaseField):
         super(Attribute, self).__init__(**kwargs)
         self.meta = bool(meta)
         self.load_only = load_only
+        self._trafaret = None
 
 
 class Link(BaseField):

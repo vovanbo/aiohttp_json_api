@@ -270,7 +270,7 @@ class Fraction(Attribute):
 
 class DateTime(Attribute):
     """
-    Stores a :class:`datetime.datetime` in ISO-8601 as recommeded in
+    Stores a :class:`datetime.datetime` in ISO-8601 as recommended in
     http://jsonapi.org/recommendations/#date-and-time-fields.
     """
     def __init__(self, *, allow_blank: bool = False, **kwargs):
@@ -501,17 +501,30 @@ class List(Attribute):
     def __init__(self, field, **kwargs):
         super(List, self).__init__(**kwargs)
         self.field = field
+        self._trafaret = t.List(field._trafaret)
+        if self.allow_none:
+            self._trafaret |= t.Null
+
+    def pre_validate(self, schema, data, sp, context):
+        try:
+            self._trafaret.check(data)
+        except t.DataError as error:
+            raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
 
     def deserialize(self, schema, data, sp, **kwargs):
+        if self.allow_none and data is None:
+            return None
+
         return [
             self.field.deserialize(schema, item, sp / i)
             for item, i in enumerate(data)
         ]
 
     def serialize(self, schema, data, **kwargs):
-        return [self.field.serialize(schema, item) for item in data] \
-            if data \
-            else []
+        if self.allow_none and data is None:
+            return None
+
+        return [self.field.serialize(schema, item) for item in data]
 
 
 # Some aliases.
