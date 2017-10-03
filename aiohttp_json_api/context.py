@@ -38,6 +38,14 @@ class RequestContext:
             self.event = Event[self.request.method]
         else:
             self.event = None
+        logger.debug('Request context info:\n'
+                     'Filters: %s\n'
+                     'Fields: %s\n'
+                     'Includes: %s\n'
+                     'Sorting: %s\n'
+                     'Event: %s',
+                     self.filters, self.fields, self.include, self.sorting,
+                     self.event)
 
     @property
     def schema(self) -> Optional[Schema]:
