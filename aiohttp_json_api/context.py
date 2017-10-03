@@ -2,12 +2,13 @@
 
 import json
 import re
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 from enum import Enum
 from typing import Optional, Tuple, MutableMapping, Any, Union
 
 import inflection
 from aiohttp import web
+from multidict import MultiDict
 
 from .const import JSONAPI
 from .errors import HTTPBadRequest
@@ -16,8 +17,11 @@ from .schema import Schema
 from .schema.common import Event
 
 FILTER_KEY = re.compile(r"filter\[(?P<field>\w[-\w_]*)\]")
-FILTER_VALUE = re.compile(r"(?P<name>[a-z]+):(?P<rule>.*)")
+FILTER_VALUE = re.compile(r"(?P<name>[a-z]+):(?P<value>.*)")
 FIELDS_RE = re.compile(r"fields\[(?P<name>\w[-\w_]*)\]")
+
+
+FilterRule = namedtuple('FilterRule', ('name', 'value'))
 
 
 class SortDirection(Enum):
@@ -113,7 +117,7 @@ class RequestContext:
         :raises HTTPBadRequest:
             If a filtername contains other characters than *[a-z]*.
         """
-        filters = OrderedDict()
+        filters = MultiDict()
         for key, value in request.query.items():
             key_match = re.fullmatch(FILTER_KEY, key)
             value_match = re.fullmatch(FILTER_VALUE, value)
@@ -132,17 +136,17 @@ class RequestContext:
             elif key_match and value_match:
                 field = key_match.group('field')
                 name = value_match.group('name')
-                rule = value_match.group('rule')
+                value = value_match.group('value')
                 try:
-                    rule = json.loads(rule)
+                    value = json.loads(value)
                 except Exception as err:
                     logger.debug(err, exc_info=False)
                     raise HTTPBadRequest(
-                        detail="The rule '{}' "
-                               "is not JSON serializable".format(rule),
+                        detail="The value '{}' "
+                               "is not JSON serializable".format(value),
                         source_parameter=key
                     )
-                filters[(field, name)] = rule
+                filters.add(field, FilterRule(name=name, value=value))
         return filters
 
     @staticmethod
