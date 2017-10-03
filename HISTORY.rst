@@ -2,6 +2,13 @@
 History
 =======
 
+0.23.0 (2017-10-03)
+-------------------
+
+* Use MultiDict for request context filters and FilterRule tuple *(backward incompatible)*
+* Debug info on request context creation
+
+
 0.22.2 (2017-09-27)
 -------------------
 
