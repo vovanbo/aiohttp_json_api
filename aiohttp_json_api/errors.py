@@ -97,10 +97,10 @@ class Error(Exception):
         """
         Returns the :attr:`detail` attribute per default.
         """
-        return json_dumps(self.json, indent=4, sort_keys=True)
+        return json_dumps(self.as_dict, indent=4, sort_keys=True)
 
     @property
-    def json(self):
+    def as_dict(self):
         """
         The serialized version of this error.
         """
@@ -197,7 +197,7 @@ class ErrorList(Exception):
 
         :seealso: http://jsonapi.org/format/#error-objects
         """
-        return [error.json for error in self.errors]
+        return [error.as_dict for error in self.errors]
 
 
 # Common HTTP errors

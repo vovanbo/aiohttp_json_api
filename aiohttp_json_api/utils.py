@@ -132,7 +132,8 @@ def error_to_response(request: web.Request,
 
     return jsonapi_response(
         {
-            'errors': [error.json] if isinstance(error, Error) else error.json,
+            'errors':
+                [error.as_dict] if isinstance(error, Error) else error.as_dict,
             'jsonapi': request.app[JSONAPI]['jsonapi']
         },
         status=error.status
