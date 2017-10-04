@@ -8,6 +8,7 @@ This module contains the base schema which implements the encoding, decoding,
 validation and update operations based on
 :class:`fields <aiohttp_json_api.schema.base_fields.BaseField>`.
 """
+import asyncio
 import copy
 import inspect
 import itertools
@@ -344,7 +345,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             A resource object
         :rtype: str
         :returns:
-            The id of the *resource*
+            The string representation of ID of the *resource*
         """
         if hasattr(resource, 'id'):
             resource_id = \
@@ -540,7 +541,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if data is not MISSING:
-            if inspect.iscoroutinefunction(field.pre_validate):
+            if asyncio.iscoroutinefunction(field.pre_validate):
                 await field.pre_validate(self, data, sp, context)
             else:
                 field.pre_validate(self, data, sp, context)
@@ -553,7 +554,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                 if validator_kwargs['on'] not in (Event.ALWAYS, context.event):
                     continue
 
-                if inspect.iscoroutinefunction(validator):
+                if asyncio.iscoroutinefunction(validator):
                     await validator(self, field, data, sp, context=context)
                 else:
                     validator(self, field, data, sp, context=context)
@@ -595,7 +596,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                 if validator_kwargs['on'] not in (Event.ALWAYS, context.event):
                     continue
 
-                if inspect.iscoroutinefunction(validator):
+                if asyncio.iscoroutinefunction(validator):
                     await validator(field, field_data, field_sp,
                                     context=context)
                 else:
