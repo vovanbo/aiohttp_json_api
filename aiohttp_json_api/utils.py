@@ -2,6 +2,7 @@
 Utilities
 =========
 """
+import asyncio
 import typing
 from collections import OrderedDict, defaultdict
 
@@ -76,25 +77,28 @@ async def get_compound_documents(resources, context, **kwargs):
     return compound_documents, relationships
 
 
-def serialize_resource(resource, context):
+async def serialize_resource(resource, context):
     registry = context.request.app[JSONAPI]['registry']
     schema = registry[resource]
     return schema.serialize_resource(resource, context=context)
 
 
-def render_document(data, included, context, *,
-                    pagination=None, links=None) -> typing.MutableMapping:
+async def render_document(data, included, context, *,
+                          pagination=None, links=None) -> typing.MutableMapping:
     document = OrderedDict()
 
     if is_collection(data):
-        document['data'] = [serialize_resource(r, context) for r in data]
+        document['data'] = await asyncio.gather(
+            *[serialize_resource(r, context) for r in data]
+        )
     else:
         document['data'] = \
-            serialize_resource(data, context) if data else None
+            await serialize_resource(data, context) if data else None
 
     if context.include and included:
-        document['included'] = [serialize_resource(r, context)
-                                for r in included.values()]
+        document['included'] = await asyncio.gather(
+            *[serialize_resource(r, context) for r in included.values()]
+        )
 
     document.setdefault('links', OrderedDict())
     document['links']['self'] = str(context.request.url)

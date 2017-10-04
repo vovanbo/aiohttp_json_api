@@ -47,7 +47,8 @@ async def get_collection(request: web.Request, context, schema):
         compound_documents, relationships = \
             await get_compound_documents(resources.values(), context)
 
-    result = render_document(resources.values(), compound_documents, context)
+    result = await render_document(resources.values(), compound_documents,
+                                   context)
 
     return jsonapi_response(result)
 
@@ -71,7 +72,7 @@ async def post_resource(request: web.Request, context, schema):
         context=context
     )
 
-    result = render_document(resource, None, context)
+    result = await render_document(resource, None, context)
 
     location = request.url.join(
         get_router_resource(request.app, 'resource').url_for(
@@ -102,7 +103,7 @@ async def get_resource(request: web.Request, context, schema):
         compound_documents, relationships = \
             await get_compound_documents(resource, context)
 
-    result = render_document(resource, compound_documents, context)
+    result = await render_document(resource, compound_documents, context)
 
     return jsonapi_response(result)
 
@@ -131,7 +132,7 @@ async def patch_resource(request: web.Request, context, schema):
     if old_resource == new_resource:
         return web.HTTPNoContent()
     else:
-        result = render_document(new_resource, None, context)
+        result = await render_document(new_resource, None, context)
         return jsonapi_response(result)
 
 
@@ -309,7 +310,7 @@ async def get_related(request: web.Request, context, schema):
         compound_documents, relationships = \
             await get_compound_documents(relatives, context)
 
-    result = render_document(relatives, compound_documents, context,
-                             pagination=pagination)
+    result = await render_document(relatives, compound_documents, context,
+                                   pagination=pagination)
 
     return jsonapi_response(result)
