@@ -2,6 +2,13 @@
 History
 =======
 
+0.24.0 (2017-10-04)
+-------------------
+
+* Convert document render utility to async coroutine *(backward incompatible)*
+* Rename Error class property "json" to "as_dict" to clarify
+
+
 0.23.0 (2017-10-03)
 -------------------
 
