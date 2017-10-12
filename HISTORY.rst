@@ -2,6 +2,12 @@
 History
 =======
 
+0.24.1 (2017-10-12)
+-------------------
+
+* Add support for length range specifying for List field
+
+
 0.24.0 (2017-10-04)
 -------------------
 
