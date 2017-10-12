@@ -498,10 +498,11 @@ class List(Attribute):
         All values of the list are encoded and decoded using this field.
     """
 
-    def __init__(self, field, **kwargs):
+    def __init__(self, field, min_length=0, max_length=None, **kwargs):
         super(List, self).__init__(**kwargs)
         self.field = field
-        self._trafaret = t.List(field._trafaret)
+        self._trafaret = t.List(field._trafaret,
+                                min_length=min_length, max_length=max_length)
         if self.allow_none:
             self._trafaret |= t.Null
 
