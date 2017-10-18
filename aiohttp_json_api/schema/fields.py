@@ -192,7 +192,7 @@ class Decimal(Attribute):
     """Encodes and decodes a :class:`decimal.Decimal` as a string."""
     def __init__(self, *, gte=None, lte=None, gt=None, lt=None, **kwargs):
         super(Decimal, self).__init__(**kwargs)
-        self._trafaret = DecimalTrafaret(gte=gte, lte=lte, gt=gt, lt=lt) >> str
+        self._trafaret = DecimalTrafaret(gte=gte, lte=lte, gt=gt, lt=lt)
         if self.allow_none:
             self._trafaret |= t.Null()
 
@@ -203,10 +203,16 @@ class Decimal(Attribute):
             raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
 
     def deserialize(self, schema, data, sp, **kwargs):
+        if self.allow_none and data is None:
+            return None
+
         return self._trafaret.check(data)
 
     def serialize(self, schema, data, **kwargs):
-        return self._trafaret.check(data)
+        if self.allow_none and data is None:
+            return None
+
+        return str(self._trafaret.check(data))
 
 
 class Fraction(Attribute):
