@@ -15,6 +15,7 @@ requirements = [
     'jsonpointer>=1.10',
     'python-dateutil>=2.6.0',
     'trafaret>=0.11.0',
+    'yarl>=0.13.0',
 ]
 
 test_requirements = [
