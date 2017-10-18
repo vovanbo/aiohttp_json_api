@@ -487,10 +487,6 @@ class Dict(Attribute):
 
 class List(Attribute):
     """
-    Realises a list which has only values of a special type::
-
-        todo = List(String(regex=".*[A-z0-9].*"))
-
     .. note::
 
         If your list has items of different types, you can still use the more
@@ -523,8 +519,8 @@ class List(Attribute):
             return None
 
         return [
-            self.field.deserialize(schema, item, sp / i)
-            for item, i in enumerate(data)
+            self.field.deserialize(schema, item, sp / index)
+            for index, item in enumerate(data)
         ]
 
     def serialize(self, schema, data, **kwargs):
