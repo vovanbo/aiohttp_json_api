@@ -2,6 +2,15 @@
 History
 =======
 
+0.25.0 (2017-10-18)
+-------------------
+
+* Add Tuple field
+* Fix bug with List field items enumeration
+* Fix wrong conversion of Decimal field to string on deserialization
+* Add yarl_ (>=0.13) to requirements
+
+
 0.24.1 (2017-10-12)
 -------------------
 
@@ -353,3 +362,4 @@ History
 
 
 .. _attrs: http://www.attrs.org/en/stable/
+.. _yarl: https://yarl.readthedocs.io
