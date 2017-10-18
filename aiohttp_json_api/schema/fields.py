@@ -530,6 +530,16 @@ class List(Attribute):
         return [self.field.serialize(schema, item) for item in data]
 
 
+class Tuple(List):
+    def deserialize(self, schema, data, sp, **kwargs):
+        result = super(Tuple, self).deserialize(schema, data, sp, **kwargs)
+        return tuple(result) if result is not None else result
+
+    def serialize(self, schema, data, **kwargs):
+        result = super(Tuple, self).serialize(schema, data, **kwargs)
+        return tuple(result) if result is not None else result
+
+
 # Some aliases.
 Number = Float
 Str = String
