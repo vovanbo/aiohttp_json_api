@@ -39,6 +39,7 @@ All helpers have a similar interface. Here is an example for the
     }
 """
 import typing
+from abc import ABC, abstractmethod
 
 import yarl
 from aiohttp import web
@@ -50,7 +51,7 @@ from .helpers import make_sentinel
 
 __all__ = (
     'DEFAULT_LIMIT',
-    'BasePagination',
+    'PaginationABC',
     'LimitOffset',
     'NumberSize',
     'Cursor'
@@ -60,7 +61,7 @@ __all__ = (
 DEFAULT_LIMIT = 25
 
 
-class BasePagination:
+class PaginationABC(ABC):
     def __init__(self, request: web.Request):
         self.request = request
 
@@ -68,14 +69,16 @@ class BasePagination:
     def url(self) -> yarl.URL:
         return self.request.url
 
+    @abstractmethod
     def meta(self) -> typing.MutableMapping:
         """
         **Must be overridden.**
 
         A dictionary, which must be included in the top-level *meta object*.
         """
-        return dict()
+        raise NotImplementedError
 
+    @abstractmethod
     def links(self) -> typing.MutableMapping:
         """
         **Must be overridden.**
@@ -127,7 +130,7 @@ class BasePagination:
         return str(self.request.url.update_query(query))
 
 
-class LimitOffset(BasePagination):
+class LimitOffset(PaginationABC):
     """
     Implements a pagination based on *limit* and *offset* values.
 
@@ -168,7 +171,7 @@ class LimitOffset(BasePagination):
             logger.warning('The offset is not dividable by the limit.')
 
     def links(self) -> typing.MutableMapping:
-        d = {
+        result = {
             'self': self.page_link(limit=self.limit, offset=self.offset),
             'first': self.page_link(limit=self.limit, offset=0),
             'last': self.page_link(
@@ -177,16 +180,16 @@ class LimitOffset(BasePagination):
             )
         }
         if self.offset > 0:
-            d['prev'] = self.page_link(
+            result['prev'] = self.page_link(
                 limit=self.limit,
                 offset=max(self.offset - self.limit, 0)
             )
         if self.offset + self.limit < self.total_resources:
-            d['next'] = self.page_link(
+            result['next'] = self.page_link(
                 limit=self.limit,
                 offset=self.offset + self.limit
             )
-        return d
+        return result
 
     def meta(self) -> typing.MutableMapping:
         """
@@ -206,7 +209,7 @@ class LimitOffset(BasePagination):
         }
 
 
-class NumberSize(BasePagination):
+class NumberSize(PaginationABC):
     """
     Implements a pagination based on *number* and *size* values.
 
@@ -266,16 +269,18 @@ class NumberSize(BasePagination):
         return int((self.total_resources - 1) / self.size)
 
     def links(self) -> typing.MutableMapping:
-        d = {
+        result = {
             'self': self.page_link(number=self.number, size=self.size),
             'first': self.page_link(number=0, size=self.size),
             'last': self.page_link(number=self.last_page, size=self.size)
         }
         if self.number > 0:
-            d['prev'] = self.page_link(number=self.number - 1, size=self.size)
+            result['prev'] = \
+                self.page_link(number=self.number - 1, size=self.size)
         if self.number < self.last_page:
-            d['next'] = self.page_link(number=self.number + 1, size=self.size)
-        return d
+            result['next'] = \
+                self.page_link(number=self.number + 1, size=self.size)
+        return result
 
     def meta(self) -> typing.MutableMapping:
         """
@@ -298,7 +303,7 @@ class NumberSize(BasePagination):
         }
 
 
-class Cursor(BasePagination):
+class Cursor(PaginationABC):
     """
     Implements a (generic) approach for a cursor based pagination.
 
@@ -363,18 +368,18 @@ class Cursor(BasePagination):
         if next_cursor is None:
             next_cursor = self.next_cursor
 
-        d = {
+        result = {
             'self': self.page_link(cursor=str(self.cursor), limit=self.limit),
             'first': self.page_link(cursor=str(self.FIRST), limit=self.limit),
             'last': self.page_link(cursor=str(self.LAST), limit=self.limit)
         }
         if next_cursor is not None:
-            d['next'] = self.page_link(cursor=str(next_cursor),
-                                       limit=self.limit)
+            result['next'] = self.page_link(cursor=str(next_cursor),
+                                            limit=self.limit)
         if prev_cursor is not None:
-            d['prev'] = self.page_link(cursor=str(prev_cursor),
-                                       limit=self.limit)
-        return d
+            result['prev'] = self.page_link(cursor=str(prev_cursor),
+                                            limit=self.limit)
+        return result
 
     def meta(self) -> typing.MutableMapping:
         """

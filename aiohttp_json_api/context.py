@@ -29,6 +29,12 @@ class SortDirection(Enum):
     DESC = '-'
 
 
+RequestFilters = MutableMapping[Tuple[str, str], Any]
+RequestFields = MutableMapping[str, Tuple[str, ...]]
+RequestIncludes = Tuple[Tuple[str, ...], ...]
+RequestSorting = MutableMapping[Tuple[str, ...], SortDirection]
+
+
 class RequestContext:
     def __init__(self, request: web.Request, resource_type: str = None):
         self._pagination = None
@@ -70,8 +76,7 @@ class RequestContext:
         return None
 
     @staticmethod
-    def parse_request_filters(
-        request: web.Request) -> MutableMapping[Tuple[str, str], Any]:
+    def parse_request_filters(request: web.Request) -> RequestFilters:
         """
         .. hint::
 
@@ -150,8 +155,7 @@ class RequestContext:
         return filters
 
     @staticmethod
-    def parse_request_fields(
-        request: web.Request) -> MutableMapping[str, Tuple[str, ...]]:
+    def parse_request_fields(request: web.Request) -> RequestFields:
         """
         The fields, which should be included in the response (sparse fieldset).
 
@@ -178,8 +182,7 @@ class RequestContext:
         return fields
 
     @staticmethod
-    def parse_request_includes(request: web.Request) -> \
-        Tuple[Tuple[str, ...], ...]:
+    def parse_request_includes(request: web.Request) -> RequestIncludes:
         """
         Returns the names of the relationships, which should be included into
         the response.
@@ -201,8 +204,7 @@ class RequestContext:
         )
 
     @staticmethod
-    def parse_request_sorting(
-        request: web.Request) -> MutableMapping[Tuple[str, ...], SortDirection]:
+    def parse_request_sorting(request: web.Request) -> RequestSorting:
         """
         Returns a mapping with tuples as keys, and values with SortDirection,
         describing how the output should be sorted.

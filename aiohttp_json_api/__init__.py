@@ -1,3 +1,5 @@
+"""JSON API implementation for aiohttp."""
+
 __author__ = """Vladimir Bolshakov"""
 __email__ = 'vovanbo@gmail.com'
 __version__ = '0.25.0'
@@ -8,7 +10,7 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
                   custom_handlers=None, log_errors=True,
                   routes_namespace=None):
     """
-    Setup JSON API in aiohttp application
+    Setup JSON API in aiohttp application.
 
     :param ~aiohttp.web.Application app:
         Application instance
@@ -62,7 +64,7 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     from .schema import Schema
 
     routes_namespace = routes_namespace \
-        if isinstance(routes_namespace, str) and len(routes_namespace) > 0 \
+        if routes_namespace and isinstance(routes_namespace, str) \
         else JSONAPI
 
     if registry_class is not None:

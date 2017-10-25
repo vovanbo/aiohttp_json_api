@@ -131,9 +131,9 @@ async def patch_resource(request: web.Request, context, schema):
 
     if old_resource == new_resource:
         return web.HTTPNoContent()
-    else:
-        result = await render_document(new_resource, None, context)
-        return jsonapi_response(result)
+
+    result = await render_document(new_resource, None, context)
+    return jsonapi_response(result)
 
 
 @jsonapi_handler
@@ -204,11 +204,10 @@ async def post_relationship(request: web.Request, context, schema):
 
     if old_resource == new_resource:
         return web.HTTPNoContent()
-    else:
-        result = schema.serialize_relationship(
-            relation_name, new_resource, pagination=pagination
-        )
-        return jsonapi_response(result)
+
+    result = schema.serialize_relationship(relation_name, new_resource,
+                                           pagination=pagination)
+    return jsonapi_response(result)
 
 
 @jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
@@ -240,10 +239,10 @@ async def patch_relationship(request: web.Request, context, schema):
 
     if old_resource == new_resource:
         return web.HTTPNoContent()
-    else:
-        result = schema.serialize_relationship(relation_name, new_resource,
-                                               pagination=pagination)
-        return jsonapi_response(result)
+
+    result = schema.serialize_relationship(relation_name, new_resource,
+                                           pagination=pagination)
+    return jsonapi_response(result)
 
 
 @jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
@@ -272,12 +271,13 @@ async def delete_relationship(request: web.Request, context, schema):
     old_resource, new_resource = await schema.remove_relationship(
         relation_name, resource_id, data, JSONPointer(''), context
     )
+
     if old_resource == new_resource:
         return web.HTTPNoContent()
-    else:
-        result = schema.serialize_relationship(relation_name, new_resource,
-                                               pagination=pagination)
-        return jsonapi_response(result)
+
+    result = schema.serialize_relationship(relation_name, new_resource,
+                                           pagination=pagination)
+    return jsonapi_response(result)
 
 
 @jsonapi_handler

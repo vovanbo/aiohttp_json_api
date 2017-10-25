@@ -28,7 +28,7 @@ def jsonapi_response(data=SENTINEL, *, text=None, body=None,
     )
 
 
-async def get_compound_documents(resources, context, **kwargs):
+async def get_compound_documents(resources, context):
     """
     .. seealso::
 
@@ -149,6 +149,6 @@ def validate_uri_resource_id(schema, resource_id, context):
     if field is not None:
         try:
             field.pre_validate(schema, resource_id, sp=None, context=context)
-        except ValidationError as e:
-            e.source_parameter = 'id'
-            raise e
+        except ValidationError as exc:
+            exc.source_parameter = 'id'
+            raise exc

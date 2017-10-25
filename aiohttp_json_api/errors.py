@@ -2,7 +2,6 @@
 Errors
 ======
 """
-import json
 from http import HTTPStatus
 
 from .encoder import json_dumps
@@ -84,6 +83,7 @@ class Error(Exception):
     def __init__(self, *, id_=None, about='',
                  code=None, title=None, detail='', source_parameter=None,
                  source_pointer=None, meta=None):
+        super(Error, self).__init__()
         self.id = id_
         self.about = about
         self.code = code
@@ -104,27 +104,27 @@ class Error(Exception):
         """
         The serialized version of this error.
         """
-        d = dict()
+        result = {}
         if self.id is not None:
-            d['id'] = str(self.id)
-        d['status'] = self.status.value
-        d['title'] = self.title
+            result['id'] = str(self.id)
+        result['status'] = self.status.value
+        result['title'] = self.title
         if self.about:
-            d['links'] = dict()
-            d['links']['about'] = self.about
+            result['links'] = dict()
+            result['links']['about'] = self.about
         if self.code:
-            d['code'] = self.code
+            result['code'] = self.code
         if self.detail:
-            d['detail'] = self.detail
+            result['detail'] = self.detail
         if self.source_pointer or self.source_parameter:
-            d['source'] = dict()
+            result['source'] = dict()
             if self.source_pointer:
-                d['source']['pointer'] = self.source_pointer
+                result['source']['pointer'] = self.source_pointer
             if self.source_parameter:
-                d['source']['parameter'] = self.source_parameter
+                result['source']['parameter'] = self.source_parameter
         if self.meta:
-            d['meta'] = self.meta
-        return d
+            result['meta'] = self.meta
+        return result
 
 
 class ErrorList(Exception):
@@ -161,8 +161,8 @@ class ErrorList(Exception):
             return self.errors[0].status
         elif any(400 <= err.status < 500 for err in self.errors):
             return max(e.status for e in self.errors)
-        else:
-            return HTTPStatus.INTERNAL_SERVER_ERROR
+
+        return HTTPStatus.INTERNAL_SERVER_ERROR
 
     def append(self, error):
         """

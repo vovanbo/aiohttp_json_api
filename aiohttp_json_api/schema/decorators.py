@@ -63,7 +63,7 @@ class Tag(Enum):
     QUERY = 'query'
 
 
-def tag_processor(tag, fn, **kwargs):
+def tag_processor(tag, callee, **kwargs):
     """
     Tags decorated processor function to be picked up later.
 
@@ -75,25 +75,25 @@ def tag_processor(tag, fn, **kwargs):
         bound.
     """
     # Allow using this as either a decorator or a decorator factory.
-    if fn is None:
+    if callee is None:
         return functools.partial(tag_processor, tag, **kwargs)
 
     try:
-        processing_tags = fn.__processing_tags__
+        processing_tags = callee.__processing_tags__
     except AttributeError:
-        fn.__processing_tags__ = processing_tags = set()
+        callee.__processing_tags__ = processing_tags = set()
     # Also save the kwargs for the tagged function on
     # __processing_kwargs__, keyed by (<tag_name>, <pass_many>)
     try:
-        processing_kwargs = fn.__processing_kwargs__
+        processing_kwargs = callee.__processing_kwargs__
     except AttributeError:
-        fn.__processing_kwargs__ = processing_kwargs = {}
+        callee.__processing_kwargs__ = processing_kwargs = {}
 
     field_key = kwargs.pop('field_key', None)
     processing_tags.add((tag, field_key))
     processing_kwargs[(tag, field_key)] = kwargs
 
-    return fn
+    return callee
 
 
 def gets(field_key):

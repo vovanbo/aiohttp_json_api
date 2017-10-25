@@ -70,7 +70,7 @@ class ToMany(Relationship):
     Additionally to *to-one* relationships, *to-many* relationships must also
     support adding and removing relatives.
 
-    :arg aiohttp_json_api.pagination.BasePagination pagination:
+    :arg aiohttp_json_api.pagination.PaginationABC pagination:
         The pagination helper *class* used to paginate the *to-many*
         relationship.
     """
@@ -84,7 +84,7 @@ class ToMany(Relationship):
     def serialize(self, schema, data, **kwargs) -> typing.MutableMapping:
         """Composes the final JSON API relationships object.
 
-        :arg ~aiohttp_json_api.pagination.BasePagination pagination:
+        :arg ~aiohttp_json_api.pagination.PaginationABC pagination:
             If not *None*, the links and meta members of the pagination
             helper are added to the final JSON API relationship object.
         """

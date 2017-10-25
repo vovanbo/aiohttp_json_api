@@ -1,6 +1,7 @@
 """
 Entirely ported from Python 3.6
 """
+# pylint: skip-file
 
 import sys
 from types import MappingProxyType, DynamicClassAttribute

@@ -40,6 +40,7 @@ __all__ = (
     'Schema'
 )
 
+Callee = typing.Union[typing.Callable, typing.Coroutine]
 
 def _get_fields(attrs, field_class, pop=False):
     """
@@ -101,12 +102,12 @@ class SchemaMeta(type):
         Returns an ordered dictionary, which maps the source pointer of a
         field to the field. Nested fields are listed before the parent.
         """
-        d = OrderedDict()
+        result = OrderedDict()
         for field in fields:
             if isinstance(field, Relationship):
-                d.update(mcs._sp_to_field(field.links.values()))
-            d[field.sp] = field
-        return MappingProxyType(d)
+                result.update(mcs._sp_to_field(field.links.values()))
+            result[field.sp] = field
+        return MappingProxyType(result)
 
     def __new__(mcs, name, bases, attrs):
         """
@@ -271,7 +272,7 @@ class SchemaMeta(type):
         """
         return super(SchemaMeta, cls).__call__(*args)
 
-    def _resolve_processors(self):
+    def _resolve_processors(cls):
         """
         Add in the decorated processors
         By doing this after constructing the class, we let standard inheritance
@@ -279,10 +280,10 @@ class SchemaMeta(type):
 
         Almost the same as https://github.com/marshmallow-code/marshmallow/blob/dev/marshmallow/schema.py#L139-L174
         """
-        mro = inspect.getmro(self)
-        self._has_processors = False
-        self.__processors__ = defaultdict(list)
-        for attr_name in dir(self):
+        mro = inspect.getmro(cls)
+        cls._has_processors = False
+        cls.__processors__ = defaultdict(list)
+        for attr_name in dir(cls):
             # Need to look up the actual descriptor, not whatever might be
             # bound to the class. This needs to come from the __dict__ of the
             # declaring class.
@@ -304,11 +305,11 @@ class SchemaMeta(type):
             except AttributeError:
                 continue
 
-            self._has_processors = bool(processor_tags)
+            cls._has_processors = bool(processor_tags)
             for tag in processor_tags:
                 # Use name here so we can get the bound method later, in case
                 # the processor was a descriptor or something.
-                self.__processors__[tag].append(attr_name)
+                cls.__processors__[tag].append(attr_name)
 
 
 class Schema(abc.SchemaABC, metaclass=SchemaMeta):
@@ -414,8 +415,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                 pass
 
     def _get_processors(self, tag: Tag, field: BaseField,
-                        default: typing.Union[typing.Callable,
-                                              typing.Coroutine] = None):
+                        default: typing.Optional[Callee] = None):
         if self._has_processors:
             processor_tag = tag, field.key
             processors = self.__processors__.get(processor_tag)
@@ -576,9 +576,8 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                     self._id, data['id'], sp / 'id', context
                 )
             else:
-                detail = "The id '{}' does not match " \
-                         "the endpoint id '{}'.".format(data['id'],
-                                                        expected_id)
+                detail = "The id '{}' does not match the endpoint id " \
+                         "'{}'.".format(data['id'], expected_id)
                 raise HTTPConflict(detail=detail, source_pointer=sp / 'id')
 
     async def validate_resource_after_deserialization(self, data, context):

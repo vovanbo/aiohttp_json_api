@@ -261,9 +261,9 @@ class Link(BaseField):
             return result
         elif isinstance(result, str):
             return {'href': result}
-        else:
-            # assert isinstance(data, collections.Mapping)
-            return result
+
+        # assert isinstance(data, collections.Mapping)
+        return result
 
 
 class Relationship(BaseField):

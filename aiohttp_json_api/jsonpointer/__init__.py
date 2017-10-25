@@ -11,9 +11,6 @@ from jsonpointer import JsonPointer as BaseJsonPointer
 
 
 class JSONPointer(BaseJsonPointer):
-    def __init__(self, pointer):
-        super(JSONPointer, self).__init__(pointer)
-
     def __truediv__(self,
                     path: typing.Union['JSONPointer', str]) -> 'JSONPointer':
         parts = self.parts.copy()

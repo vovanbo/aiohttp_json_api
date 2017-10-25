@@ -33,22 +33,22 @@ class DecimalTrafaret(t.Float):
                 value=value
             )
 
-    def check_and_return(self, val):
-        val = super(DecimalTrafaret, self).check_and_return(val)
+    def check_and_return(self, data):
+        data = super(DecimalTrafaret, self).check_and_return(data)
 
         if self.allow_nan:
-            if val.is_nan():
+            if data.is_nan():
                 return decimal.Decimal('NaN')  # avoid sNaN, -sNaN and -NaN
         else:
-            if val.is_nan() or val.is_infinite():
+            if data.is_nan() or data.is_infinite():
                 self._failure('Special numeric values are not permitted.',
-                              value=val)
+                              value=data)
 
-        if self.places is not None and val.is_finite():
+        if self.places is not None and data.is_finite():
             try:
-                val = val.quantize(self.places, rounding=self.rounding)
-            except decimal.InvalidOperation as exc:
+                data = data.quantize(self.places, rounding=self.rounding)
+            except decimal.InvalidOperation:
                 self._failure('Decimal can not be properly quantized.',
-                              value=val)
+                              value=data)
 
-        return val
+        return data

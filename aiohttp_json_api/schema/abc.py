@@ -86,7 +86,7 @@ class SchemaABC(object):
             The name of the relationship
         :arg resource:
             A resource object
-        :arg ~aiohttp_json_api.pagination.BasePagination pagination:
+        :arg ~aiohttp_json_api.pagination.PaginationABC pagination:
             Describes the pagination in case of a *to-many* relationship.
 
         :rtype: dict
