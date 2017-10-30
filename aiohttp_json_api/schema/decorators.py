@@ -142,7 +142,8 @@ updates = sets
 
 
 def validates(field_key,
-              step: Step = Step.AFTER_DESERIALIZATION, on: Event = Event.ALWAYS):
+              step: Step = Step.AFTER_DESERIALIZATION,
+              on: Event = Event.ALWAYS):
     """
     Decorator for adding a validator::
 
