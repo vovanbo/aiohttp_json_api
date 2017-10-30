@@ -560,8 +560,8 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                 else:
                     validator(self, field, data, sp, context=context)
 
-    async def validate_resource_before_deserialization(self, data, sp, context,
-                                                       *, expected_id=None):
+    async def pre_validate_resource(self, data, sp, context,
+                                    *, expected_id=None):
         if not isinstance(data, MutableMapping):
             detail = 'Must be an object.'
             raise InvalidType(detail=detail, source_pointer=sp)
@@ -573,15 +573,14 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
 
         if expected_id:
             if str(data['id']) == str(expected_id):
-                await self._pre_validate_field(
-                    self._id, data['id'], sp / 'id', context
-                )
+                await self._pre_validate_field(self._id, data['id'], sp / 'id',
+                                               context)
             else:
                 detail = "The id '{}' does not match the endpoint id " \
                          "'{}'.".format(data['id'], expected_id)
                 raise HTTPConflict(detail=detail, source_pointer=sp / 'id')
 
-    async def validate_resource_after_deserialization(self, data, context):
+    async def post_validate_resource(self, data, context):
         # NOTE: The fields in *data* are ordered, such that children are
         #       listed before their parent.
         for key, (field_data, field_sp) in data.items():
@@ -610,7 +609,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                                 Step.AFTER_DESERIALIZATION)
 
         if validate and Step.BEFORE_DESERIALIZATION in validation_steps:
-            await self.validate_resource_before_deserialization(
+            await self.pre_validate_resource(
                 data, sp, context, expected_id=expected_id
             )
 
@@ -647,7 +646,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                         )
 
         if validate and Step.AFTER_DESERIALIZATION in validation_steps:
-            await self.validate_resource_after_deserialization(result, context)
+            await self.post_validate_resource(result, context)
 
         return result
 
