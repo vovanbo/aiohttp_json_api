@@ -13,6 +13,7 @@ import copy
 import inspect
 import itertools
 import typing
+from abc import ABCMeta
 from collections import OrderedDict, defaultdict, MutableMapping
 from functools import partial
 from types import MappingProxyType
@@ -85,7 +86,7 @@ def _get_fields_by_mro(klass, field_class):
     )
 
 
-class SchemaMeta(type):
+class SchemaMeta(ABCMeta):
     @classmethod
     def _assign_sp(mcs, fields, sp: JSONPointer):
         """Sets the :attr:`BaseField.sp` (source pointer) property recursively
@@ -659,9 +660,6 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         if 'id' in data:
             result['id'] = data['id']
         return result
-
-    async def fetch_resource(self, resource_id, context, **kwargs):
-        raise NotImplementedError
 
     async def create_resource(self, data, sp, context, **kwargs):
         return self.map_data_to_schema(

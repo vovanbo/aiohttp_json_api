@@ -2,10 +2,10 @@
 Abstract base classes
 =====================
 """
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 
 
-class FieldABC:
+class FieldABC(ABC):
     @abstractmethod
     def serialize(self, schema, data, **kwargs):
         raise NotImplementedError
@@ -23,7 +23,7 @@ class FieldABC:
         raise NotImplementedError
 
 
-class SchemaABC(object):
+class SchemaABC(ABC):
     #: The JSON API *type*. (Leave it empty to derive it automatic from the
     #: resource class name or the schema name).
     type = None
@@ -162,6 +162,10 @@ class SchemaABC(object):
 
     # CRUD (resource)
     # ---------------
+
+    @abstractmethod
+    async def fetch_resource(self, resource_id, context, **kwargs):
+        raise NotImplementedError
 
     @abstractmethod
     async def create_resource(self, data, sp, context, **kwargs):
