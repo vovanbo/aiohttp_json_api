@@ -2,6 +2,13 @@
 History
 =======
 
+0.26.0 (2017-10-30)
+-------------------
+
+* Properly use abstract base classes. Inherit SchemaABC from ABC.
+* Rename resource validation methods *(backward incompatible)*
+
+
 0.25.0 (2017-10-18)
 -------------------
 

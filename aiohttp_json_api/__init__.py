@@ -2,7 +2,7 @@
 
 __author__ = """Vladimir Bolshakov"""
 __email__ = 'vovanbo@gmail.com'
-__version__ = '0.25.0'
+__version__ = '0.26.0'
 
 
 def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
