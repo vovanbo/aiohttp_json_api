@@ -108,7 +108,9 @@ class BaseSchema(SchemaABC):
             for resource in resources:
                 compound_document = getattr(resource, field.mapped_key)
                 if compound_document:
-                    compound_documents.extend(compound_document)
+                    compound_documents.extend(
+                        ensure_collection(compound_document)
+                    )
             return compound_documents
         raise RuntimeError('No includer and mapped_key have been defined.')
 
