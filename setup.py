@@ -24,7 +24,7 @@ test_requirements = [
 
 setup(
     name='aiohttp_json_api',
-    version='0.26.0',
+    version='0.27.0',
     description="JSON API driven by aiohttp",
     long_description=readme + '\n\n' + history,
     author="Vladimir Bolshakov",

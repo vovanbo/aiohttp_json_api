@@ -2,6 +2,17 @@
 History
 =======
 
+0.27.0 (2017-10-31)
+-------------------
+
+* Abstract base classes refactoring (separate Field and Schema ABCs)
+* Fix bug with compound documents in case models has no property “resource_id”
+* Remove buggy helper to check subclass of any instance
+* Decompose setup application method to increase readability
+* Properly error raised in jsonapi_handler decorator
+* Use one field instead of two to check what type of relation have the field
+
+
 0.26.0 (2017-10-30)
 -------------------
 
