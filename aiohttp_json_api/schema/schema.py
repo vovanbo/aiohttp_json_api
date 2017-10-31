@@ -166,13 +166,14 @@ class BaseSchema(SchemaABC):
         return getter(field, resource, **getter_kwargs, **kwargs)
 
     async def set_value(self, field, resource, data, sp, **kwargs):
-        assert field.writable is not Event.NEVER
+        if field.writable is not Event.NEVER:
+            raise RuntimeError('Attempt to set value to read-only field.')
+
         setter, setter_kwargs = first(
             self._get_processors(Tag.SET, field, self.default_setter)
         )
-        return await setter(
-            field, resource, data, sp, **setter_kwargs, **kwargs
-        )
+        return await setter(field, resource, data, sp, **setter_kwargs,
+                            **kwargs)
 
     def serialize_resource(self, resource, **kwargs) -> typing.MutableMapping:
         """
@@ -215,7 +216,8 @@ class BaseSchema(SchemaABC):
                     # TODO: Validation steps for pre/post serialization
                     result.setdefault(key, OrderedDict())
                     result[key][field.name] = \
-                        field.serialize(self, field_data, links=links, **kwargs)
+                        field.serialize(self, field_data, links=links,
+                                        **kwargs)
 
         result.setdefault('links', OrderedDict())
         if 'self' not in result['links']:
