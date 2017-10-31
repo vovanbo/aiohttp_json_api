@@ -35,7 +35,7 @@ __all__ = (
 @jsonapi_handler
 async def get_collection(request: web.Request, context, schema):
     """
-    Uses the :meth:`~aiohttp_json_api.schema.Schema.query_collection`
+    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.query_collection`
     method of the schema to query the resources in the collection.
 
     :seealso: http://jsonapi.org/format/#fetching
@@ -56,7 +56,7 @@ async def get_collection(request: web.Request, context, schema):
 @jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
 async def post_resource(request: web.Request, context, schema):
     """
-    Uses the :meth:`~aiohttp_json_api.schema.Schema.create_resource`
+    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.create_resource`
     method of the schema to create a new resource.
 
     :seealso: http://jsonapi.org/format/#crud-creating
@@ -88,7 +88,7 @@ async def post_resource(request: web.Request, context, schema):
 @jsonapi_handler
 async def get_resource(request: web.Request, context, schema):
     """
-    Uses the :meth:`~aiohttp_json_api.schema.Schema.query_resource`
+    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.query_resource`
     method of the schema to query the requested resource.
 
     :seealso: http://jsonapi.org/format/#fetching-resources
@@ -111,7 +111,7 @@ async def get_resource(request: web.Request, context, schema):
 @jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
 async def patch_resource(request: web.Request, context, schema):
     """
-    Uses the :meth:`~aiohttp_json_api.schema.Schema.update_resource`
+    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.update_resource`
     method of the schema to update a resource.
 
     :seealso: http://jsonapi.org/format/#crud-updating
@@ -139,7 +139,7 @@ async def patch_resource(request: web.Request, context, schema):
 @jsonapi_handler
 async def delete_resource(request: web.Request, context, schema):
     """
-    Uses the :meth:`~aiohttp_json_api.schema.Schema.delete_resource`
+    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.delete_resource`
     method of the schema to delete a resource.
 
     :seealso: http://jsonapi.org/format/#crud-deleting
@@ -177,7 +177,7 @@ async def get_relationship(request: web.Request, context, schema):
 @jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
 async def post_relationship(request: web.Request, context, schema):
     """
-    Uses the :meth:`~aiohttp_json_api.schema.Schema.add_relationship`
+    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.add_relationship`
     method of the schemato add new relationships.
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
@@ -213,7 +213,7 @@ async def post_relationship(request: web.Request, context, schema):
 @jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
 async def patch_relationship(request: web.Request, context, schema):
     """
-    Uses the :meth:`~aiohttp_json_api.schema.Schema.update_relationship`
+    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.update_relationship`
     method of the schema to update the relationship.
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
@@ -248,7 +248,7 @@ async def patch_relationship(request: web.Request, context, schema):
 @jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
 async def delete_relationship(request: web.Request, context, schema):
     """
-    Uses the :meth:`~aiohttp_json_api.schema.Schema.delete_relationship`
+    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.delete_relationship`
     method of the schema to update the relationship.
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
@@ -283,7 +283,7 @@ async def delete_relationship(request: web.Request, context, schema):
 @jsonapi_handler
 async def get_related(request: web.Request, context, schema):
     """
-    Uses the :meth:`~aiohttp_json_api.schema.Schema.query_relative`
+    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.query_relative`
     method of the schema to query the related resource.
 
     :seealso: http://jsonapi.org/format/#fetching
