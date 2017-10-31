@@ -68,8 +68,10 @@ async def get_compound_documents(resources, context):
                 )
 
                 for relative in nested_collection:
-                    compound_documents.setdefault(relative.resource_id,
-                                                  relative)
+                    compound_documents.setdefault(
+                        registry.ensure_identifier(relative),
+                        relative
+                    )
 
                 relationships[schema.type].add(rest_path)
                 rest_path = rest_path[1:]
