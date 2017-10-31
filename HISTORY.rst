@@ -2,6 +2,14 @@
 History
 =======
 
+0.28.0 (2017-10-31)
+-------------------
+
+* Add support for customizable inflection of fields from query string.
+* Convert static methods of RequestContext to class methods
+* Update docs of RequestContext methods
+
+
 0.27.1 (2017-10-31)
 -------------------
 

@@ -29,25 +29,30 @@ class SortDirection(Enum):
     DESC = '-'
 
 
-RequestFilters = MutableMapping[Tuple[str, str], Any]
+RequestFilters = MutableMapping[str, FilterRule]
 RequestFields = MutableMapping[str, Tuple[str, ...]]
 RequestIncludes = Tuple[Tuple[str, ...], ...]
 RequestSorting = MutableMapping[Tuple[str, ...], SortDirection]
 
 
 class RequestContext:
+    inflect = inflection.underscore
+
     def __init__(self, request: web.Request, resource_type: str = None):
         self._pagination = None
         self._resource_type = resource_type
         self.request = request
+
         self.filters = self.parse_request_filters(request)
         self.fields = self.parse_request_fields(request)
         self.include = self.parse_request_includes(request)
         self.sorting = self.parse_request_sorting(request)
+
         if self.request.method in Event.__members__:
             self.event = Event[self.request.method]
         else:
             self.event = None
+
         logger.debug('Request context info:\n'
                      'Filters: %s\n'
                      'Fields: %s\n'
@@ -75,8 +80,14 @@ class RequestContext:
 
         return None
 
-    @staticmethod
-    def parse_request_filters(request: web.Request) -> RequestFilters:
+    @classmethod
+    def convert_field_name(cls, field_name):
+        return cls.inflect(field_name) \
+            if cls.inflect is not None \
+            else field_name
+
+    @classmethod
+    def parse_request_filters(cls, request: web.Request) -> RequestFilters:
         """
         .. hint::
 
@@ -85,8 +96,8 @@ class RequestContext:
             If you want to use another filter strategy,
             feel free to **override** this method.
 
-        Returns a OrderedDict with tuples (field, name) as keys
-        and rule as values. Rule value is JSON deserialized from query string.
+        Returns a MultiDict with field names as keys and rules as values.
+        Rule value is JSON deserialized from query string.
 
         Filters can be applied using the query string.
 
@@ -97,19 +108,19 @@ class RequestContext:
 
             >>> request = make_mocked_request('GET', '/api/User/?filter[name]=endswith:"Simpson"')
             >>> RequestContext.parse_request_filters(request)
-            OrderedDict([(('name', 'endswith'), 'Simpson')])
+            <MultiDict('name': FilterRule(name='endswith', value='Simpson'))>
 
             >>> request = make_mocked_request('GET', '/api/User/?filter[name]=endswith:"Simpson"&filter[name]=in:["Some","Names"]')
             >>> RequestContext.parse_request_filters(request)
-            OrderedDict([(('name', 'endswith'), 'Simpson'), (('name', 'in'), ['Some', 'Names'])])
+            <MultiDict('name': FilterRule(name='endswith', value='Simpson'), 'name': FilterRule(name='in', value=['Some', 'Names']))>
 
             >>> request = make_mocked_request('GET', '/api/User/?filter[name]=in:["Homer Simpson", "Darth Vader"]')
             >>> RequestContext.parse_request_filters(request)
-            OrderedDict([(('name', 'in'), ['Homer Simpson', 'Darth Vader'])])
+            <MultiDict('name': FilterRule(name='in', value=['Homer Simpson', 'Darth Vader']))>
 
-            >>> request = make_mocked_request('GET', '/api/User/?filter[email]=startswith:"lisa"&filter[age]=lt:20')
+            >>> request = make_mocked_request('GET', '/api/User/?filter[some-field]=startswith:"lisa"&filter[another-field]=lt:20')
             >>> RequestContext.parse_request_filters(request)
-            OrderedDict([(('email', 'startswith'), 'lisa'), (('age', 'lt'), 20)])
+            <MultiDict('some_field': FilterRule(name='startswith', value='lisa'), 'another_field': FilterRule(name='lt', value=20))>
 
         The general syntax is::
 
@@ -120,9 +131,10 @@ class RequestContext:
         :raises HTTPBadRequest:
             If the rule of a filter is not a JSON object.
         :raises HTTPBadRequest:
-            If a filtername contains other characters than *[a-z]*.
+            If a filter name contains invalid characters.
         """
         filters = MultiDict()
+
         for key, value in request.query.items():
             key_match = re.fullmatch(FILTER_KEY, key)
             value_match = re.fullmatch(FILTER_VALUE, value)
@@ -151,11 +163,13 @@ class RequestContext:
                                "is not JSON serializable".format(value),
                         source_parameter=key
                     )
-                filters.add(field, FilterRule(name=name, value=value))
+                filters.add(cls.convert_field_name(field),
+                            FilterRule(name=name, value=value))
+
         return filters
 
-    @staticmethod
-    def parse_request_fields(request: web.Request) -> RequestFields:
+    @classmethod
+    def parse_request_fields(cls, request: web.Request) -> RequestFields:
         """
         The fields, which should be included in the response (sparse fieldset).
 
@@ -170,19 +184,21 @@ class RequestContext:
         :seealso: http://jsonapi.org/format/#fetching-sparse-fieldsets
         """
         fields = OrderedDict()
+
         for key, value in request.query.items():
             match = re.fullmatch(FIELDS_RE, key)
             if match:
                 typename = match.group('name')
-                type_fields = tuple(item.strip()
-                                    for item in value.split(',')
-                                    if item.strip())
+                fields[typename] = tuple(
+                    cls.convert_field_name(item.strip())
+                    for item in value.split(',')
+                    if item.strip()
+                )
 
-                fields[typename] = type_fields
         return fields
 
-    @staticmethod
-    def parse_request_includes(request: web.Request) -> RequestIncludes:
+    @classmethod
+    def parse_request_includes(cls, request: web.Request) -> RequestIncludes:
         """
         Returns the names of the relationships, which should be included into
         the response.
@@ -197,14 +213,13 @@ class RequestContext:
 
         :seealso: http://jsonapi.org/format/#fetching-includes
         """
-        include = request.query.get('include', '')
         return tuple(
-            tuple(inflection.underscore(p) for p in path.split('.'))
-            for path in include.split(',') if path
+            tuple(cls.convert_field_name(p) for p in path.split('.'))
+            for path in request.query.get('include', '').split(',') if path
         )
 
-    @staticmethod
-    def parse_request_sorting(request: web.Request) -> RequestSorting:
+    @classmethod
+    def parse_request_sorting(cls, request: web.Request) -> RequestSorting:
         """
         Returns a mapping with tuples as keys, and values with SortDirection,
         describing how the output should be sorted.
@@ -219,19 +234,16 @@ class RequestContext:
 
         :seealso: http://jsonapi.org/format/#fetching-sorting
         """
-        sort_in_query = request.query.get('sort')
-        sort_in_query = sort_in_query.split(',') if sort_in_query else list()
-
         sort = OrderedDict()
+        direction = SortDirection.ASC
 
-        for field in sort_in_query:
-            if field[0] == '+' or field[0] == '-':
+        for field in request.query.get('sort', '').split(','):
+            if field.startswith(('+', '-')):
                 direction = SortDirection(field[0])
                 field = field[1:]
-            else:
-                direction = SortDirection.ASC
 
-            field = tuple(e.strip() for e in field.split('.'))
+            field = tuple(cls.convert_field_name(e.strip())
+                          for e in field.split('.'))
             sort[field] = direction
 
         return sort
