@@ -7,6 +7,7 @@ from http import HTTPStatus
 
 from aiohttp import web, hdrs
 
+from .schema.common import Relation
 from .const import JSONAPI_CONTENT_TYPE
 from .jsonpointer import JSONPointer
 from .decorators import jsonapi_handler
@@ -162,7 +163,7 @@ async def get_relationship(request: web.Request, context, schema):
     validate_uri_resource_id(schema, resource_id, context)
 
     pagination = None
-    if relation_field.to_many:
+    if relation_field.relation is Relation.TO_MANY:
         pagination_type = relation_field.pagination
         if pagination_type:
             pagination = pagination_type(request)
@@ -191,7 +192,7 @@ async def post_relationship(request: web.Request, context, schema):
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(schema, resource_id, context)
 
-    if relation_field.to_many:
+    if relation_field.relation is Relation.TO_MANY:
         pagination_type = relation_field.pagination
         if pagination_type:
             pagination = pagination_type(request)
@@ -227,7 +228,7 @@ async def patch_relationship(request: web.Request, context, schema):
     validate_uri_resource_id(schema, resource_id, context)
 
     pagination = None
-    if relation_field.to_many:
+    if relation_field.relation is Relation.TO_MANY:
         pagination_type = relation_field.pagination
         if pagination_type:
             pagination = pagination_type(request)
@@ -262,7 +263,7 @@ async def delete_relationship(request: web.Request, context, schema):
     validate_uri_resource_id(schema, resource_id, context)
 
     pagination = None
-    if relation_field.to_many:
+    if relation_field.relation is Relation.TO_MANY:
         pagination_type = relation_field.pagination
         if pagination_type:
             pagination = pagination_type(request)
@@ -298,7 +299,7 @@ async def get_related(request: web.Request, context, schema):
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(schema, resource_id, context)
 
-    if relation_field.to_many:
+    if relation_field.relation is Relation.TO_MANY:
         pagination_type = relation_field.pagination
         if pagination_type:
             pagination = pagination_type(request)

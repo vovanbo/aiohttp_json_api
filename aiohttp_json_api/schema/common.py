@@ -25,3 +25,8 @@ class Event(Flag):
     ALWAYS = GET | POST | PATCH | DELETE
     CREATE = POST
     UPDATE = PATCH
+
+
+class Relation(Enum):
+    TO_ONE = auto()
+    TO_MANY = auto()

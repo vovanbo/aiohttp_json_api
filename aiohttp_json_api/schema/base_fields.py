@@ -296,16 +296,7 @@ class Relationship(BaseField):
         A set with all foreign types. If given, this list is used to validate
         the input data. Leave it empty to allow all types.
     """
-
-    #: True, if this is to-one relationship::
-    #:
-    #:      field.to_one == isinstance(field, ToOne)
-    to_one = None
-
-    #: True, if this is a to-many relationship::
-    #:
-    #:      field.to_many == isinstance(field, ToMany)
-    to_many = None
+    relation = None
 
     def __init__(self, *, dereference: bool = True,
                  require_data: Event = Event.ALWAYS,

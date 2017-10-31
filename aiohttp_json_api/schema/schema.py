@@ -235,7 +235,7 @@ class BaseSchema(SchemaABC):
         field = self.get_relationship_field(relation_name)
 
         kwargs = dict()
-        if field.to_one and pagination:
+        if field.relation is Relation.TO_ONE and pagination:
             kwargs['pagination'] = pagination
         field_data = self.get_value(field, resource, **kwargs)
         return field.serialize(self, field_data, **kwargs)
@@ -425,7 +425,9 @@ class BaseSchema(SchemaABC):
     async def add_relationship(self, relation_name, resource_id,
                                data, sp, context, **kwargs):
         field = self.get_relationship_field(relation_name)
-        assert field.to_many
+        if field.relation is not Relation.TO_MANY:
+            raise RuntimeError('Wrong relationship field.'
+                               'Relation to-many is required.')
 
         await self._pre_validate_field(field, data, sp, context)
         decoded = field.deserialize(self, data, sp, **kwargs)
@@ -443,7 +445,9 @@ class BaseSchema(SchemaABC):
     async def remove_relationship(self, relation_name, resource_id,
                                   data, sp, context, **kwargs):
         field = self.get_relationship_field(relation_name)
-        assert field.to_many
+        if field.relation is not Relation.TO_MANY:
+            raise RuntimeError('Wrong relationship field.'
+                               'Relation to-many is required.')
 
         await self._pre_validate_field(field, data, sp, context)
         decoded = field.deserialize(self, data, sp, **kwargs)

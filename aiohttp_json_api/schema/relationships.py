@@ -6,7 +6,8 @@ Relationships
 import typing
 from collections import OrderedDict, Mapping
 
-from aiohttp_json_api.helpers import is_collection
+from .common import Relation
+from ..helpers import is_collection
 from .base_fields import Relationship
 from ..errors import InvalidType
 
@@ -25,8 +26,7 @@ class ToOne(Relationship):
 
     Describes how to serialize, deserialize and update a *to-one* relationship.
     """
-    to_one = True
-    to_many = False
+    relation = Relation.TO_ONE
 
     def validate_relationship_object(self, schema, data, sp):
         """
@@ -74,8 +74,7 @@ class ToMany(Relationship):
         The pagination helper *class* used to paginate the *to-many*
         relationship.
     """
-    to_one = False
-    to_many = True
+    relation = Relation.TO_MANY
 
     def __init__(self, *, pagination=None, **kwargs):
         super(ToMany, self).__init__(**kwargs)
