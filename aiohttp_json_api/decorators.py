@@ -20,9 +20,10 @@ def jsonapi_handler(handler=None, resource_type=None, content_type=None):
     async def wrapper(request: web.Request):
         route_name = request.match_info.route.name
         namespace = request.app[JSONAPI]['routes_namespace']
-        assert route_name and route_name.startswith('{}.'.format(namespace)), \
-            'Request route must be named ' \
-            'and use namespace "{}.*"'.format(namespace)
+
+        if not route_name or not route_name.startswith('%s.' % namespace):
+            raise RuntimeError('Request route must be named and use namespace '
+                               '"{}.*"'.format(namespace))
 
         context_class = request.app[JSONAPI]['context_class']
         type_ = resource_type or request.match_info.get('type', None)
@@ -38,11 +39,10 @@ def jsonapi_handler(handler=None, resource_type=None, content_type=None):
 
         request[JSONAPI] = context
 
-        if content_type is not None and \
-                request.content_type != content_type:
+        if content_type is not None and request.content_type != content_type:
             raise HTTPUnsupportedMediaType(
-                detail="Only '{}' Content-Type "
-                       "is acceptable for this method.".format(content_type)
+                detail="Only '{}' Content-Type is acceptable "
+                       "for this method.".format(content_type)
             )
         return await handler(request, context, context.schema)
     return wrapper
