@@ -2,6 +2,12 @@
 History
 =======
 
+0.28.1 (2017-10-31)
+-------------------
+
+* Fix small bug with wrong empty sorting in RequestContext
+
+
 0.28.0 (2017-10-31)
 -------------------
 
