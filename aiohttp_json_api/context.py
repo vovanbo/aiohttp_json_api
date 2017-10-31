@@ -235,9 +235,13 @@ class RequestContext:
         :seealso: http://jsonapi.org/format/#fetching-sorting
         """
         sort = OrderedDict()
+
+        if 'sort' not in request.query:
+            return sort
+
         direction = SortDirection.ASC
 
-        for field in request.query.get('sort', '').split(','):
+        for field in request.query.get('sort').split(','):
             if field.startswith(('+', '-')):
                 direction = SortDirection(field[0])
                 field = field[1:]
