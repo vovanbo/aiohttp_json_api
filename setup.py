@@ -24,7 +24,7 @@ test_requirements = [
 
 setup(
     name='aiohttp_json_api',
-    version='0.27.0',
+    version='0.27.1',
     description="JSON API driven by aiohttp",
     long_description=readme + '\n\n' + history,
     author="Vladimir Bolshakov",
@@ -32,8 +32,10 @@ setup(
     url='https://github.com/vovanbo/aiohttp_json_api',
     packages=[
         'aiohttp_json_api',
-        'aiohttp_json_api.schema',
+        'aiohttp_json_api.compat',
         'aiohttp_json_api.jsonpointer',
+        'aiohttp_json_api.schema',
+        'aiohttp_json_api.schema.abc',
     ],
     package_dir={'aiohttp_json_api':
                  'aiohttp_json_api'},
