@@ -100,7 +100,7 @@ def gets(field_key):
     """
     Decorator for marking the getter of a field::
 
-        class Article(Schema):
+        class Article(BaseSchema):
 
             title = String()
 
@@ -120,7 +120,7 @@ def sets(field_key):
     """
     Decorator for marking the setter of a field::
 
-        class Article(Schema):
+        class Article(BaseSchema):
 
             title = String()
 
@@ -147,7 +147,7 @@ def validates(field_key,
     """
     Decorator for adding a validator::
 
-        class Article(Schema):
+        class Article(BaseSchema):
 
             created_at = DateTime()
 
@@ -175,7 +175,7 @@ def adds(field_key):
     """
     Decorator for marking the adder of a relationship::
 
-        class Article(Schema):
+        class Article(BaseSchema):
 
             comments = ToMany()
 
@@ -197,7 +197,7 @@ def removes(field_key):
     """
     Decorator for marking the remover of a relationship::
 
-        class Article(Schema):
+        class Article(BaseSchema):
 
             comments = ToMany()
 
@@ -219,7 +219,7 @@ def includes(field_key):
     """
     Decorator for marking the includer of a relationship::
 
-        class Article(Schema):
+        class Article(BaseSchema):
 
             author = ToOne()
 
@@ -248,7 +248,7 @@ def queries(field_key):
     Decorator for marking the function used to query the resources in a
     relationship::
 
-        class Article(Schema):
+        class Article(BaseSchema):
 
             comments = ToMany()
 

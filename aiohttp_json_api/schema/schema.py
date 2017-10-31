@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 """
-Schema
-======
+BaseSchema
+==========
 
 This module contains the base schema which implements the encoding, decoding,
 validation and update operations based on
@@ -10,310 +10,34 @@ validation and update operations based on
 """
 import asyncio
 import copy
-import inspect
-import itertools
 import typing
-from abc import ABCMeta
-from collections import OrderedDict, defaultdict, MutableMapping
+from collections import OrderedDict, MutableMapping
 from functools import partial
-from types import MappingProxyType
 
 import inflection
 from aiohttp import web
 
-from . import abc
-from .base_fields import BaseField, Link, Attribute, Relationship
-from .common import Event, Step
+from .abc.schema import SchemaABC
+from .base_fields import BaseField, Attribute, Relationship
+from .common import Event, Step, Relation
 from .decorators import Tag
-from ..const import JSONAPI, ALLOWED_MEMBER_NAME_REGEX
+from ..const import JSONAPI
 from ..errors import (
     ValidationError, InvalidValue, InvalidType, HTTPConflict,
     HTTPBadRequest
 )
-from ..helpers import (
-    MISSING, is_instance_or_subclass, first, get_router_resource
-)
+from ..helpers import MISSING, first, get_router_resource, ensure_collection
 from ..jsonpointer import JSONPointer
 from ..log import logger
 
 __all__ = (
-    'SchemaMeta',
-    'Schema'
+    'BaseSchema',
 )
 
 Callee = typing.Union[typing.Callable, typing.Coroutine]
 
-def _get_fields(attrs, field_class, pop=False):
-    """
-    Get fields from a class.
 
-    :param attrs: Mapping of class attributes
-    :param type field_class: Base field class
-    :param bool pop: Remove matching fields
-    """
-    fields = [
-        (field_name, field_value)
-        for field_name, field_value in attrs.items()
-        if is_instance_or_subclass(field_value, field_class)
-    ]
-    if pop:
-        for field_name, _ in fields:
-            del attrs[field_name]
-    return fields
-
-
-# This function allows Schemas to inherit from non-Schema classes and ensures
-#   inheritance according to the MRO
-def _get_fields_by_mro(klass, field_class):
-    """
-    Collect fields from a class, following its method resolution order. The
-    class itself is excluded from the search; only its parents are checked. Get
-    fields from ``_declared_fields`` if available, else use ``__dict__``.
-    :param type klass: Class whose fields to retrieve
-    :param type field_class: Base field class
-    """
-    mro = inspect.getmro(klass)
-    # Loop over mro in reverse to maintain correct order of fields
-    return sum(
-        (
-            _get_fields(
-                getattr(base, '_declared_fields', base.__dict__),
-                field_class,
-            )
-            for base in mro[:0:-1]
-        ),
-        [],
-    )
-
-
-class SchemaMeta(ABCMeta):
-    @classmethod
-    def _assign_sp(mcs, fields, sp: JSONPointer):
-        """Sets the :attr:`BaseField.sp` (source pointer) property recursively
-        for all child fields.
-        """
-        for field in fields:
-            field.sp = sp / field.name
-            if isinstance(field, Relationship):
-                mcs._assign_sp(field.links.values(), field.sp / 'links')
-
-    @classmethod
-    def _sp_to_field(mcs, fields):
-        """
-        Returns an ordered dictionary, which maps the source pointer of a
-        field to the field. Nested fields are listed before the parent.
-        """
-        result = OrderedDict()
-        for field in fields:
-            if isinstance(field, Relationship):
-                result.update(mcs._sp_to_field(field.links.values()))
-            result[field.sp] = field
-        return MappingProxyType(result)
-
-    def __new__(mcs, name, bases, attrs):
-        """
-        Detects all fields and wires everything up. These class attributes are
-        defined here:
-
-        *   *type*
-
-            The JSON API typename
-
-        *   *_declared_fields*
-
-            Maps the key (schema property name) to the associated
-            :class:`BaseField`.
-
-        *   *_fields_by_sp*
-
-            Maps the source pointer of a field to the associated
-            :class:`BaseField`.
-
-        *   *_attributes*
-
-            Maps the JSON API attribute name to the :class:`Attribute`
-            instance.
-
-        *   *_relationships*
-
-            Maps the JSON API relationship name to the :class:`Relationship`
-            instance.
-
-        *   *_links*
-
-            Maps the JSON API link name to the :class:`Link` instance.
-
-        *   *_meta*
-
-            Maps the (top level) JSON API meta member to the associated
-            :class:`Attribute` instance.
-
-        *   *_toplevel*
-
-            A list with all JSON API top level fields (attributes, ..., meta).
-
-        :arg str name:
-            The name of the schema class
-        :arg tuple bases:
-            The direct bases of the schema class
-        :arg dict attrs:
-            A dictionary with all properties defined on the schema class
-            (attributes, methods, ...)
-        """
-        cls_fields = _get_fields(attrs, abc.FieldABC, pop=True)
-        klass = super(SchemaMeta, mcs).__new__(mcs, name, bases, attrs)
-        inherited_fields = _get_fields_by_mro(klass, abc.FieldABC)
-        declared_fields = OrderedDict()
-
-        for key, prop in inherited_fields + cls_fields:
-            prop.key = key
-            prop.name = \
-                prop.name or (klass.inflect(key)
-                              if callable(klass.inflect) else key)
-            if not ALLOWED_MEMBER_NAME_REGEX.fullmatch(prop.name):
-                raise ValueError(
-                    'Field name "{}" is not allowed.'.format(prop.name)
-                )
-            prop.mapped_key = prop.mapped_key or key
-            declared_fields[prop.key] = prop
-
-        # Find nested fields (link_of, ...) and link them with
-        # their parent.
-        for key, field in declared_fields.items():
-            if getattr(field, 'link_of', None):
-                relationship = declared_fields[field.link_of]
-                assert isinstance(relationship, Relationship), \
-                    'Links can be added only for relationships.'
-                relationship.add_link(field)
-
-        klass._id = declared_fields.pop('id', None)
-
-        # Find the *top-level* attributes, relationships, links and meta fields.
-        attributes = OrderedDict(
-            (key, field)
-            for key, field in declared_fields.items()
-            if isinstance(field, Attribute) and not field.meta
-        )
-        mcs._assign_sp(attributes.values(), JSONPointer('/attributes'))
-        klass._attributes = MappingProxyType(attributes)
-
-        relationships = OrderedDict(
-            (key, field)
-            for key, field in declared_fields.items()
-            if isinstance(field, Relationship)
-        )
-        # TODO: Move default links to class initializer
-        # It will allow to use custom namespace for Links
-        for relationship in relationships.values():
-            # Add the default links.
-            relationship.links.update({
-                'self': Link('jsonapi.relationships',
-                             name='self', link_of=relationship.name),
-                'related': Link('jsonapi.related',
-                                name='related', link_of=relationship.name)
-
-            })
-        mcs._assign_sp(relationships.values(), JSONPointer('/relationships'))
-        klass._relationships = MappingProxyType(relationships)
-
-        links = OrderedDict(
-            (key, field)
-            for key, field in declared_fields.items()
-            if isinstance(field, Link) and not field.link_of
-        )
-        mcs._assign_sp(links.values(), JSONPointer('/links'))
-        klass._links = MappingProxyType(links)
-
-        meta = OrderedDict(
-            (key, field)
-            for key, field in declared_fields.items()
-            if isinstance(field, Attribute) and field.meta
-        )
-        mcs._assign_sp(links.values(), JSONPointer('/meta'))
-        klass._meta = MappingProxyType(meta)
-
-        # Collect all top level fields in a list.
-        toplevel = tuple(
-            itertools.chain(
-                klass._attributes.values(),
-                klass._relationships.values(),
-                klass._links.values(),
-                klass._meta.values()
-            )
-        )
-        klass._toplevel = toplevel
-
-        # Create the source pointer map.
-        klass._fields_by_sp = mcs._sp_to_field(toplevel)
-
-        # Determine 'type' name.
-        if not attrs.get('type') and attrs.get('resource_class'):
-            klass.type = inflection.dasherize(
-                inflection.tableize(attrs['resource_class'].__name__)
-            )
-        if not attrs.get('type'):
-            klass.type = name
-
-        if not ALLOWED_MEMBER_NAME_REGEX.fullmatch(klass.type):
-            raise ValueError('Type "{}" is not allowed.'.format(klass.type))
-
-        klass._declared_fields = MappingProxyType(declared_fields)
-        return klass
-
-    def __init__(cls, name, bases, attrs):
-        """
-        Initialise a new schema class.
-        """
-        super(SchemaMeta, cls).__init__(name, bases, attrs)
-        cls._resolve_processors()
-
-    def __call__(cls, *args):
-        """
-        Creates a new instance of a Schema class.
-        """
-        return super(SchemaMeta, cls).__call__(*args)
-
-    def _resolve_processors(cls):
-        """
-        Add in the decorated processors
-        By doing this after constructing the class, we let standard inheritance
-        do all the hard work.
-
-        Almost the same as https://github.com/marshmallow-code/marshmallow/blob/dev/marshmallow/schema.py#L139-L174
-        """
-        mro = inspect.getmro(cls)
-        cls._has_processors = False
-        cls.__processors__ = defaultdict(list)
-        for attr_name in dir(cls):
-            # Need to look up the actual descriptor, not whatever might be
-            # bound to the class. This needs to come from the __dict__ of the
-            # declaring class.
-            for parent in mro:
-                try:
-                    attr = parent.__dict__[attr_name]
-                except KeyError:
-                    continue
-                else:
-                    break
-            else:
-                # In case we didn't find the attribute and didn't break above.
-                # We should never hit this - it's just here for completeness
-                # to exclude the possibility of attr being undefined.
-                continue
-
-            try:
-                processor_tags = attr.__processing_tags__
-            except AttributeError:
-                continue
-
-            cls._has_processors = bool(processor_tags)
-            for tag in processor_tags:
-                # Use name here so we can get the bound method later, in case
-                # the processor was a descriptor or something.
-                cls.__processors__[tag].append(attr_name)
-
-
-class Schema(abc.SchemaABC, metaclass=SchemaMeta):
+class BaseSchema(SchemaABC):
     """
     A schema defines how we can serialize a resource and patch it.
     It also allows to patch a resource. All in all, it defines
@@ -384,7 +108,9 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
             for resource in resources:
                 compound_document = getattr(resource, field.mapped_key)
                 if compound_document:
-                    compound_documents.extend(compound_document)
+                    compound_documents.extend(
+                        ensure_collection(compound_document)
+                    )
             return compound_documents
         raise RuntimeError('No includer and mapped_key have been defined.')
 
@@ -440,13 +166,14 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         return getter(field, resource, **getter_kwargs, **kwargs)
 
     async def set_value(self, field, resource, data, sp, **kwargs):
-        assert field.writable is not Event.NEVER
+        if field.writable is not Event.NEVER:
+            raise RuntimeError('Attempt to set value to read-only field.')
+
         setter, setter_kwargs = first(
             self._get_processors(Tag.SET, field, self.default_setter)
         )
-        return await setter(
-            field, resource, data, sp, **setter_kwargs, **kwargs
-        )
+        return await setter(field, resource, data, sp, **setter_kwargs,
+                            **kwargs)
 
     def serialize_resource(self, resource, **kwargs) -> typing.MutableMapping:
         """
@@ -489,7 +216,8 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
                     # TODO: Validation steps for pre/post serialization
                     result.setdefault(key, OrderedDict())
                     result[key][field.name] = \
-                        field.serialize(self, field_data, links=links, **kwargs)
+                        field.serialize(self, field_data, links=links,
+                                        **kwargs)
 
         result.setdefault('links', OrderedDict())
         if 'self' not in result['links']:
@@ -507,7 +235,7 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
         field = self.get_relationship_field(relation_name)
 
         kwargs = dict()
-        if field.to_one and pagination:
+        if field.relation is Relation.TO_ONE and pagination:
             kwargs['pagination'] = pagination
         field_data = self.get_value(field, resource, **kwargs)
         return field.serialize(self, field_data, **kwargs)
@@ -697,7 +425,9 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
     async def add_relationship(self, relation_name, resource_id,
                                data, sp, context, **kwargs):
         field = self.get_relationship_field(relation_name)
-        assert field.to_many
+        if field.relation is not Relation.TO_MANY:
+            raise RuntimeError('Wrong relationship field.'
+                               'Relation to-many is required.')
 
         await self._pre_validate_field(field, data, sp, context)
         decoded = field.deserialize(self, data, sp, **kwargs)
@@ -715,7 +445,9 @@ class Schema(abc.SchemaABC, metaclass=SchemaMeta):
     async def remove_relationship(self, relation_name, resource_id,
                                   data, sp, context, **kwargs):
         field = self.get_relationship_field(relation_name)
-        assert field.to_many
+        if field.relation is not Relation.TO_MANY:
+            raise RuntimeError('Wrong relationship field.'
+                               'Relation to-many is required.')
 
         await self._pre_validate_field(field, data, sp, context)
         decoded = field.deserialize(self, data, sp, **kwargs)

@@ -13,7 +13,7 @@ from multidict import MultiDict
 from .const import JSONAPI
 from .errors import HTTPBadRequest
 from .log import logger
-from .schema import Schema
+from .schema import BaseSchema
 from .schema.common import Event
 
 FILTER_KEY = re.compile(r"filter\[(?P<field>\w[-\w_]*)\]")
@@ -58,7 +58,7 @@ class RequestContext:
                      self.event)
 
     @property
-    def schema(self) -> Optional[Schema]:
+    def schema(self) -> Optional[BaseSchema]:
         registry = self.request.app[JSONAPI]['registry']
         return registry.get(self._resource_type, None)
 

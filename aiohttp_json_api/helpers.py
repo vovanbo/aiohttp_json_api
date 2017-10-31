@@ -36,12 +36,8 @@ def is_collection(obj):
     return is_iterable_but_not_string(obj) and not isinstance(obj, Mapping)
 
 
-def is_instance_or_subclass(val, class_):
-    """Return True if ``val`` is either a subclass or instance of ``class_``."""
-    try:
-        return issubclass(val, class_)
-    except TypeError:
-        return isinstance(val, class_)
+def ensure_collection(value):
+    return value if is_collection(value) else (value,)
 
 
 def first(iterable, default=None, key=None):

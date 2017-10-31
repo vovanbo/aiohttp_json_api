@@ -35,9 +35,11 @@ You should only work with the following fields directly:
 """
 
 from collections import Mapping
-from typing import Sequence
+from typing import Sequence, Optional
 
-from .abc import FieldABC
+from ..jsonpointer import JSONPointer
+from ..const import ALLOWED_MEMBER_NAME_REGEX
+from .abc.field import FieldABC
 from .common import Event
 from ..errors import InvalidType, InvalidValue
 
@@ -82,24 +84,23 @@ class BaseField(FieldABC):
         enumeration value and describes in which CRUD context the field
         is required as input.
     """
-
     def __init__(self, *, name: str = None, mapped_key: str = None,
                  allow_none: bool = False,
                  writable: Event = Event.ALWAYS,
                  required: Event = Event.NEVER):
         #: The name of this field on the
-        # :class:`~aiohttp_json_api.schema.Schema`
+        # :class:`~aiohttp_json_api.schema.BaseSchema`
         #: it has been defined on. Please note, that not each field has a *key*
         #: (like some links or meta attributes).
-        self.key = None
+        self._key = None
 
         #: A :class:`aiohttp_json_api.jsonpointer.JSONPointer`
         #: to this field in a JSON API resource object. The source pointer is
-        #: set from the Schema class during initialisation.
-        self.sp = None
+        #: set from the BaseSchema class during initialisation.
+        self._sp = None
 
-        self.name = name
-        self.mapped_key = mapped_key
+        self._name = name
+        self._mapped_key = mapped_key
         self.allow_none = allow_none
 
         assert isinstance(writable, Event)
@@ -108,45 +109,44 @@ class BaseField(FieldABC):
         assert isinstance(required, Event)
         self.required = required
 
+    @property
+    def key(self) -> str:
+        return self._key
+
+    @property
+    def sp(self) -> JSONPointer:
+        return self._sp
+
+    @property
+    def name(self) -> Optional[str]:
+        return self._name
+
+    @name.setter
+    def name(self, value: Optional[str]):
+        if not ALLOWED_MEMBER_NAME_REGEX.fullmatch(value):
+            raise ValueError(
+                'Field name "{}" is not allowed.'.format(value)
+            )
+        self._name = value
+
+    @property
+    def mapped_key(self) -> Optional[str]:
+        return self._mapped_key
+
+    @mapped_key.setter
+    def mapped_key(self, value: Optional[str]):
+        self._mapped_key = value
+
     def serialize(self, schema, data, **kwargs):
-        """
-        Serialize the passed *data*. Can be overridden.
-        """
         return data
 
     def deserialize(self, schema, data, sp, **kwargs):
-        """
-        Deserialize the raw *data* from the JSON API input document
-        and returns it. Can be overridden.
-        """
         return data
 
     def pre_validate(self, schema, data, sp, context):
-        """
-        Validates the raw JSON API input for this field. This method is
-        called before :meth:`deserialize`.
-
-        :arg ~aiohttp_json_api.schema.Schema schema:
-            The schema this field has been defined on.
-        :arg data:
-            The raw input data
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
-            A JSON pointer to the source of *data*.
-        """
         pass
 
     def post_validate(self, schema, data, sp, context):
-        """
-        Validates the decoded input *data* for this field. This method is
-        called after :meth:`deserialize`.
-
-        :arg ~aiohttp_json_api.schema.Schema schema:
-            The schema this field has been defined on.
-        :arg data:
-            The decoded input data
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
-            A JSON pointer to the source of *data*.
-        """
         pass
 
 
@@ -166,7 +166,7 @@ class Attribute(BaseField):
 
     .. code-block:: python3
 
-        class Article(Schema):
+        class Article(BaseSchema):
 
             title = Attribute()
 
@@ -174,7 +174,7 @@ class Attribute(BaseField):
 
     .. code-block:: python3
 
-        class Article(Schema):
+        class Article(BaseSchema):
 
             title = Attribute()
 
@@ -211,7 +211,7 @@ class Link(BaseField):
 
     .. code-block:: python3
 
-        class Article(Schema):
+        class Article(BaseSchema):
 
             self = Link(route="some_route_name")
 
@@ -296,16 +296,7 @@ class Relationship(BaseField):
         A set with all foreign types. If given, this list is used to validate
         the input data. Leave it empty to allow all types.
     """
-
-    #: True, if this is to-one relationship::
-    #:
-    #:      field.to_one == isinstance(field, ToOne)
-    to_one = None
-
-    #: True, if this is a to-many relationship::
-    #:
-    #:      field.to_many == isinstance(field, ToMany)
-    to_many = None
+    relation = None
 
     def __init__(self, *, dereference: bool = True,
                  require_data: Event = Event.ALWAYS,
