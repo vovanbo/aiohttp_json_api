@@ -31,3 +31,4 @@ twine = "*"
 watchdog = "*"
 "e1839a8" = {path = ".", editable = true}
 pylint = "*"
+mimesis = "*"
