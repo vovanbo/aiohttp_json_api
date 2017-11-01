@@ -12,6 +12,13 @@ class BaseModel(abc.ABC):
     def __hash__(self):
         return hash((self.__class__.__name__, self._id))
 
+    def _repr(self, fields: Sequence[str]):
+        """Smart representation helper for inherited models."""
+        fields = ', '.join(
+            '{}={!r}'.format(field, getattr(self, field)) for field in fields
+        )
+        return '{0}({1})'.format(self.__class__.__name__, fields)
+
     @property
     def id(self):
         return self._id
@@ -28,6 +35,9 @@ class People(BaseModel):
         self.first_name = first_name
         self.last_name = last_name
         self.twitter = twitter
+
+    def __repr__(self):
+        return self._repr(('id', 'first_name', 'last_name', 'twitter'))
 
     @staticmethod
     def populate(count=100):
@@ -47,6 +57,9 @@ class Comment(BaseModel):
         super().__init__(id)
         self.body = body
         self.author = author
+
+    def __repr__(self):
+        return self._repr(('id', 'body', 'author'))
 
     @staticmethod
     def populate(authors: Sequence['People'], count=100):
@@ -70,6 +83,9 @@ class Article(BaseModel):
         self.title = title
         self.author = author
         self.comments = list(ensure_collection(comments))
+
+    def __repr__(self):
+        return self._repr(('id', 'title', 'author', 'comments'))
 
     @staticmethod
     def populate(comments: Sequence['Comment'], authors: Sequence['People'],
