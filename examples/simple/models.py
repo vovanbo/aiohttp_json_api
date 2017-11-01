@@ -1,6 +1,6 @@
 import abc
 import random
-from typing import Sequence
+from typing import Sequence, Generator
 
 from aiohttp_json_api.helpers import ensure_collection
 
@@ -40,7 +40,7 @@ class People(BaseModel):
         return self._repr(('id', 'first_name', 'last_name', 'twitter'))
 
     @staticmethod
-    def populate(count=100):
+    def populate(count=100) -> Generator['People', None, None]:
         import mimesis
 
         person = mimesis.Personal()
@@ -62,7 +62,8 @@ class Comment(BaseModel):
         return self._repr(('id', 'body', 'author'))
 
     @staticmethod
-    def populate(authors: Sequence['People'], count=100):
+    def populate(authors: Sequence['People'],
+                 count=100) -> Generator['Comment', None, None]:
         import mimesis
 
         cid = mimesis.Numbers()
@@ -89,7 +90,7 @@ class Article(BaseModel):
 
     @staticmethod
     def populate(comments: Sequence['Comment'], authors: Sequence['People'],
-                 count=100):
+                 count=100) -> Generator['Article', None, None]:
         import mimesis
 
         aid = mimesis.Numbers()
@@ -103,11 +104,11 @@ class Article(BaseModel):
                 counter += 1
 
         return (
-            Article(id=aid.between(1, count),
-                    title=article.title(),
-                    author=random.choice(authors),
-                    comments=[
-                        c for c in get_random_answers(random.randint(1, 10))
-                    ])
+            Article(
+                id=aid.between(1, count),
+                title=article.title(),
+                author=random.choice(authors),
+                comments=[c for c in get_random_answers(random.randint(1, 10))]
+            )
             for _ in range(count)
         )
