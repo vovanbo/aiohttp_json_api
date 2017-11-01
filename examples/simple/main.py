@@ -8,18 +8,24 @@ import time
 from aiohttp import web
 
 from aiohttp_json_api import setup_jsonapi
+from aiohttp_json_api.const import JSONAPI
 
 
 def setup_fixtures(app):
     from examples.simple.models import Article, People, Comment
 
-    people = tuple(People.populate())
-    comments = tuple(Comment.populate(people))
-    articles = tuple(Article.populate(comments, people))
+    registry = app[JSONAPI]['registry']
+
+    people = tuple(sorted(People.populate(), key=lambda p: p.id))
+    comments = tuple(sorted(Comment.populate(people), key=lambda c: c.id))
+    articles = tuple(sorted(Article.populate(comments, people),
+                            key=lambda a: a.id))
 
     for entities in (people, comments, articles):
         for entity in entities:
-            app['storage'][entity.__class__.__name__][str(entity.id)] = entity
+            # ResourceID for entity
+            resource_id = registry.ensure_identifier(entity)
+            app['storage'][entity.__class__][resource_id] = entity
 
     return app
 
@@ -32,13 +38,11 @@ async def init() -> web.Application:
     app = web.Application(debug=True)
     app['storage'] = defaultdict(OrderedDict)
 
-    setup_jsonapi(
-        app,
-        [
-            ArticleSchema, CommentSchema, PeopleSchema
-        ],
-        meta={'example': {'version': '0.0.1'}},
-    )
+    setup_jsonapi(app, (ArticleSchema, CommentSchema, PeopleSchema),
+                  meta={'example': {'version': '0.0.1'}})
+    # After JSON API application setup fixtures able to use Registry if needed.
+    # In setup_fixtures function, Registry will be used to setup IDs
+    # of saved entities.
     setup_fixtures(app)
 
     return app
