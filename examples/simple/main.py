@@ -13,23 +13,11 @@ from aiohttp_json_api import setup_jsonapi
 def setup_fixtures(app):
     from examples.simple.models import Article, People, Comment
 
-    peoples = (
-        People(1, 'Some', 'User'),
-        People(2, 'Another', 'Man'),
-        People(9, 'Dan', 'Gebhardt', 'dgeb'),
-    )
+    people = tuple(People.populate())
+    comments = tuple(Comment.populate(people))
+    articles = tuple(Article.populate(comments, people))
 
-    comments = (
-        Comment(5, 'First!', peoples[0]),
-        Comment(12, 'I like XML better', peoples[2])
-    )
-
-    articles = (
-        Article(1, 'JSON API paints my bikeshed!', peoples[2],
-                comments),
-    )
-
-    for entities in (peoples, comments, articles):
+    for entities in (people, comments, articles):
         for entity in entities:
             app['storage'][entity.__class__.__name__][str(entity.id)] = entity
 
