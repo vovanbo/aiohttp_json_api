@@ -42,6 +42,7 @@ Requirements
 * **Python 3.5** or newer
 * aiohttp_
 * inflection_
+* multidict_
 * jsonpointer_
 * dateutil_
 * trafaret_
@@ -77,3 +78,4 @@ This package was created with Cookiecutter_ and the
 .. _jsonpointer: https://python-json-pointer.readthedocs.io/en/latest/index.html
 .. _dateutil: https://dateutil.readthedocs.io/en/stable/
 .. _trafaret: http://trafaret.readthedocs.io/en/latest/
+.. _multidict: http://multidict.readthedocs.io/en/stable/

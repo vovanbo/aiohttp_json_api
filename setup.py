@@ -12,6 +12,7 @@ with open('HISTORY.rst') as history_file:
 requirements = [
     'aiohttp>=2.0.0',
     'inflection>=0.3.1',
+    'multidict>=3.3.0',
     'jsonpointer>=1.10',
     'python-dateutil>=2.6.0',
     'trafaret>=0.11.0',
@@ -24,7 +25,7 @@ test_requirements = [
 
 setup(
     name='aiohttp_json_api',
-    version='0.28.1',
+    version='0.28.2',
     description="JSON API driven by aiohttp",
     long_description=readme + '\n\n' + history,
     author="Vladimir Bolshakov",

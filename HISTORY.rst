@@ -2,6 +2,12 @@
 History
 =======
 
+0.28.2 (2017-11-01)
+-------------------
+
+* Add multidict_ to requirements and to README
+
+
 0.28.1 (2017-10-31)
 -------------------
 
@@ -401,3 +407,4 @@ History
 
 .. _attrs: http://www.attrs.org/en/stable/
 .. _yarl: https://yarl.readthedocs.io
+.. _multidict: http://multidict.readthedocs.io/en/stable/
