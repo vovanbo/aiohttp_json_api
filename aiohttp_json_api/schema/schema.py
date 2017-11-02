@@ -301,8 +301,9 @@ class BaseSchema(SchemaABC):
 
         if expected_id:
             if str(data['id']) == str(expected_id):
-                await self._pre_validate_field(self._id, data['id'], sp / 'id',
-                                               context)
+                if self._id is not None:
+                    await self._pre_validate_field(self._id, data['id'],
+                                                   sp / 'id', context)
             else:
                 detail = "The id '{}' does not match the endpoint id " \
                          "'{}'.".format(data['id'], expected_id)
