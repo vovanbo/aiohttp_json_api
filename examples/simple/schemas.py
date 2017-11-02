@@ -24,6 +24,7 @@ class SchemaWithStorage(BaseSchema):
         if result is None:
             raise ResourceNotFound(self.type, resource_id)
 
+        logger.debug('Fetch resource %r from storage.', result)
         return result
 
     async def query_collection(self, context, **kwargs):
@@ -60,14 +61,14 @@ class SchemaWithStorage(BaseSchema):
 
     async def delete_resource(self, resource_id, context, **kwargs):
         try:
-            removed = self.storage.pop(
+            removed_resource = self.storage.pop(
                 self.registry.ensure_identifier({'type': self.type,
                                                  'id': resource_id})
             )
         except KeyError:
             raise ResourceNotFound(self.type, resource_id)
 
-        logger.debug('%r is removed.', removed)
+        logger.debug('%r is removed.', removed_resource)
 
 
 class PeopleSchema(SchemaWithStorage):
