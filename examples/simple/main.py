@@ -1,4 +1,4 @@
-"""Simple JSON API application with in-memory storage."""
+"""Simple JSON API application example with in-memory storage."""
 
 import asyncio
 import logging
@@ -21,11 +21,12 @@ def setup_fixtures(app):
     articles = tuple(sorted(Article.populate(comments, people),
                             key=lambda a: a.id))
 
-    for entities in (people, comments, articles):
-        for entity in entities:
-            # ResourceID for entity
-            resource_id = registry.ensure_identifier(entity)
-            app['storage'][entity.__class__][resource_id] = entity
+    for resources in (people, comments, articles):
+        for resource in resources:
+            # Registry have a helper to return a ResourceID of instances
+            # of registered resource classes
+            resource_id = registry.ensure_identifier(resource)
+            app['storage'][resource.__class__][resource_id] = resource
 
     return app
 
@@ -38,11 +39,18 @@ async def init() -> web.Application:
     app = web.Application(debug=True)
     app['storage'] = defaultdict(OrderedDict)
 
+    # Note that we pass schema classes, not instances of them.
+    # Schemas instances will be initialized application-wide.
+    # Schema instance is stateless, therefore any request state must be passed
+    # to each of Schema's method as RequestContext instance.
+    # RequestContext instance created automatically in JSON API middleware
+    # for each request. JSON API handlers use it in calls of Schema's methods.
     setup_jsonapi(app, (ArticleSchema, CommentSchema, PeopleSchema),
                   meta={'example': {'version': '0.0.1'}})
-    # After JSON API application setup fixtures able to use Registry if needed.
-    # In setup_fixtures function, Registry will be used to setup IDs
-    # of saved entities.
+
+    # After setup of JSON API application fixtures able to use Registry
+    # if needed. In setup_fixtures function, Registry will be used
+    # to get ResourceID as keys of resources saved to simple storage.
     setup_fixtures(app)
 
     return app
@@ -65,9 +73,11 @@ def main():
     logging.Formatter.converter = time.gmtime
 
     app = loop.run_until_complete(init())
-    web.run_app(app,
-                access_log_format='%a (%{X-Real-IP}i) %t "%r" %s %b %Tf '
-                                  '"%{Referrer}i" "%{User-Agent}i"')
+
+    # More useful log format than default
+    log_format = '%a (%{X-Real-IP}i) %t "%r" %s %b %Tf ' \
+                 '"%{Referrer}i" "%{User-Agent}i"'
+    web.run_app(app, access_log_format=log_format)
 
 
 if __name__ == '__main__':
