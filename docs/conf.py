@@ -130,6 +130,20 @@ body_default_font = 'system-ui, -apple-system, BlinkMacSystemFont, ' \
 code_default_font = '"SFMono-Regular", "SF Mono", Consolas, ' \
                     '"Liberation Mono", Menlo, Courier, monospace;'
 html_theme_options = {
+    'logo': 'pwa-512x512.png',
+    'logo_name': False,
+    'github_user': 'vovanbo',
+    'github_repo': 'aiohttp_json_api',
+    'github_button': True,
+    'github_type': 'star',
+    'github_banner': True,
+    'travis_button': True,
+    'pre_bg': '#FFF6E5',
+    'note_bg': '#E5ECD1',
+    'note_border': '#BFCF8C',
+    'body_text': '#482C0A',
+    'sidebar_text': '#49443E',
+    'sidebar_header': '#4B4032',
     'font_family': body_default_font,
     'font_size': '16px',
     'head_font_family': body_default_font,
@@ -171,8 +185,13 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {}
-
+html_sidebars = {
+    '**': [
+        'about.html',
+        'navigation.html',
+        'searchbox.html',
+    ]
+}
 # Additional templates that should be rendered to pages, maps page names
 # to template names.
 #html_additional_pages = {}

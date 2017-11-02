@@ -1,5 +1,5 @@
-aiohttp JSON API
-================
+aiohttp-json-api: JSON API implementation for aiohttp
+=====================================================
 
 Contents:
 
