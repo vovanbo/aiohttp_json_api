@@ -47,6 +47,17 @@ class SchemaWithStorage(BaseSchema):
         logger.debug('%r is created.', new_resource)
         return new_resource
 
+    async def update_resource(self, resource_id, data, sp, context, **kwargs):
+        resource, updated_resource = \
+            await super(SchemaWithStorage, self).update_resource(
+                resource_id, data, sp, context, **kwargs)
+
+        updated_resource_id = self.registry.ensure_identifier(updated_resource)
+        self.storage[updated_resource_id] = updated_resource
+
+        logger.debug('%r is updated to %r.', resource, updated_resource)
+        return resource, updated_resource
+
     async def delete_resource(self, resource_id, context, **kwargs):
         try:
             removed = self.storage.pop(
