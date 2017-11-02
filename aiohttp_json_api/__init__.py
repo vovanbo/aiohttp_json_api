@@ -2,7 +2,7 @@
 
 __author__ = """Vladimir Bolshakov"""
 __email__ = 'vovanbo@gmail.com'
-__version__ = '0.29.0'
+__version__ = '0.29.1'
 
 import inspect
 from collections import MutableMapping, Sequence
