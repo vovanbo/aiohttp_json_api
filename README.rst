@@ -51,11 +51,13 @@ Requirements
 Todo
 ----
 
-* Documentation
+* Tutorials
+* Improve documentation
 * Tests
 * Features description
 * Customizable payload keys inflection (default is `dasherize` <-> `underscore`)
 * Support for JSON API extensions (bulk creation etc.)
+* Polymorphic relationships
 
 
 Credits

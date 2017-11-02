@@ -1,13 +1,15 @@
 aiohttp\_json\_api\.schema package
 ==================================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    aiohttp_json_api.schema.abc
+
 Submodules
 ----------
-
-.. automodule:: aiohttp_json_api.schema.abc
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 .. automodule:: aiohttp_json_api.schema.base_fields
     :members:
