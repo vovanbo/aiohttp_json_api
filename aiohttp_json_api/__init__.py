@@ -177,6 +177,13 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
     from .log import logger
     from .middleware import jsonapi_middleware
 
+    if JSONAPI in app:
+        logger.warning('JSON API application is initialized already. '
+                       'Please check your aiohttp.web.Application instance '
+                       'does not have a "%s" dictionary key.', JSONAPI)
+        logger.error('Initialization of JSON API application is FAILED.')
+        return app
+
     routes_namespace = routes_namespace \
         if routes_namespace and isinstance(routes_namespace, str) \
         else JSONAPI
