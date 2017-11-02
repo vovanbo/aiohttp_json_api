@@ -166,7 +166,7 @@ class BaseSchema(SchemaABC):
         return getter(field, resource, **getter_kwargs, **kwargs)
 
     async def set_value(self, field, resource, data, sp, **kwargs):
-        if field.writable is not Event.NEVER:
+        if field.writable is Event.NEVER:
             raise RuntimeError('Attempt to set value to read-only field.')
 
         setter, setter_kwargs = first(
