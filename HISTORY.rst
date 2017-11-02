@@ -2,6 +2,13 @@
 History
 =======
 
+0.28.3 (2017-11-02)
+-------------------
+
+* Fix bug with wrong read-only field error
+* Don’t require setup ID field in Schema to update a resource
+
+
 0.28.2 (2017-11-01)
 -------------------
 
