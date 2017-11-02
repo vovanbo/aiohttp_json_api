@@ -53,7 +53,6 @@ Todo
 
 * Documentation
 * Tests
-* Example application
 * Features description
 * Customizable payload keys inflection (default is `dasherize` <-> `underscore`)
 * Support for JSON API extensions (bulk creation etc.)
