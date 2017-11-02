@@ -2,6 +2,13 @@
 History
 =======
 
+0.29.0 (2017-11-02)
+-------------------
+
+* Simple example of usage is added
+* Fix bug in handler of relationship query
+
+
 0.28.3 (2017-11-02)
 -------------------
 

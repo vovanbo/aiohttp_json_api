@@ -169,8 +169,7 @@ async def get_relationship(request: web.Request, context, schema):
             pagination = pagination_type(request)
 
     resource = await schema.query_resource(resource_id, context)
-    relation = await schema.query_relatives(relation_name, resource, context)
-    result = schema.serialize_relationship(relation_name, relation,
+    result = schema.serialize_relationship(relation_name, resource,
                                            pagination=pagination)
     return jsonapi_response(result)
 
