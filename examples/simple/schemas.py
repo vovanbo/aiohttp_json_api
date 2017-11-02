@@ -2,7 +2,7 @@ import logging
 import random
 
 from aiohttp_json_api.errors import ResourceNotFound
-from aiohttp_json_api.schema import BaseSchema, fields, relationships
+from aiohttp_json_api.schema import BaseSchema, fields, relationships, sets
 from aiohttp_json_api.schema.common import Event
 
 from .models import Article, Comment, People
@@ -88,6 +88,44 @@ class CommentSchema(SchemaWithStorage):
     author = relationships.ToOne(required=Event.CREATE,
                                  foreign_types=(PeopleSchema.type,))
 
+    async def create_resource(self, data, sp, context, **kwargs):
+        initial_data = await super(SchemaWithStorage, self).create_resource(
+            data, sp, context, **kwargs
+        )
+
+        author_resource_id = self.registry.ensure_identifier(
+            initial_data['author']['data']
+        )
+        author = self.app['storage'][People].get(author_resource_id)
+        if author is None:
+            raise ResourceNotFound(author_resource_id.type,
+                                   author_resource_id.id)
+
+        new_resource = self.resource_class(
+            id=random.randint(1000, 9999), body=initial_data['body'],
+            author=author
+        )
+
+        new_resource_id = self.registry.ensure_identifier(new_resource)
+        self.storage[new_resource_id] = new_resource
+
+        logger.debug('%r is created.', new_resource)
+        return new_resource
+
+    @sets('author')
+    async def set_author(self, field, resource, data, sp, context=None,
+                         **kwargs):
+        author_resource_id = self.registry.ensure_identifier(data['data'])
+        author = self.app['storage'][People].get(author_resource_id)
+        if author is None:
+            raise ResourceNotFound(author_resource_id.type,
+                                   author_resource_id.id)
+
+        logger.debug('Set author of %r to %r.', resource, author)
+
+        resource.author = author
+        return resource
+
 
 class ArticleSchema(SchemaWithStorage):
     resource_class = Article  # type will be "articles"
@@ -96,3 +134,5 @@ class ArticleSchema(SchemaWithStorage):
     author = relationships.ToOne(required=Event.CREATE,
                                  foreign_types=(PeopleSchema.type,))
     comments = relationships.ToMany(foreign_types=(CommentSchema.type,))
+
+    # TODO: Create, update, add/remove comments
