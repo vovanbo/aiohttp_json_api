@@ -11,6 +11,7 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'aiohttp>=2.0.0',
+    'cachetools>=2.0.1',
     'inflection>=0.3.1',
     'multidict>=3.3.0',
     'jsonpointer>=1.10',

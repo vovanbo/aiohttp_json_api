@@ -37,6 +37,9 @@ You should only work with the following fields directly:
 from collections import Mapping
 from typing import Sequence, Optional
 
+from cachetools import cached, LRUCache
+from yarl import URL
+
 from ..jsonpointer import JSONPointer
 from ..const import ALLOWED_MEMBER_NAME_REGEX
 from .abc.field import FieldABC
@@ -84,6 +87,7 @@ class BaseField(FieldABC):
         enumeration value and describes in which CRUD context the field
         is required as input.
     """
+
     def __init__(self, *, name: str = None, mapped_key: str = None,
                  allow_none: bool = False,
                  writable: Event = Event.ALWAYS,
@@ -203,6 +207,20 @@ class Attribute(BaseField):
         self._trafaret = None
 
 
+@cached(cache={})
+def resolve_url(route, type_, id_, relation):
+    return route.url_for(type=type_, id=id_, relation=relation)
+
+
+@cached(cache={})
+def get_absolute_url(request_url, route_url):
+    return URL.build(scheme=request_url.scheme, user=request_url.user,
+                     password=request_url.password,
+                     host=request_url.host, port=request_url.port,
+                     path=route_url.path, query=route_url.query,
+                     fragment=route_url.fragment)
+
+
 class Link(BaseField):
     """
     .. seealso::
@@ -249,14 +267,17 @@ class Link(BaseField):
 
     def serialize(self, schema, data, context=None, **kwargs):
         """Normalizes the links object if wished."""
-        url = schema.app.router[self.route].url_for(
-            **schema.registry.ensure_identifier(data, asdict=True),
-            relation=self.link_of
-        )
+        rid = schema.registry.ensure_identifier(data)
+        route_url = resolve_url(schema.app.router[self.route],
+                                rid.type, rid.id, self.link_of)
+        # route_url = schema.app.router[self.route].url_for(
+        #     type=rid.type, id=rid.id, relation=self.link_of
+        # )
         if context is not None and self.absolute:
-            url = context.request.url.join(url)
+            request_url = context.request.url
+            route_url = get_absolute_url(request_url, route_url)
 
-        result = str(url)
+        result = str(route_url)
         if not self.normalize:
             return result
         elif isinstance(result, str):
