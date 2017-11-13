@@ -37,7 +37,7 @@ You should only work with the following fields directly:
 from collections import Mapping
 from typing import Sequence, Optional
 
-from cachetools import cached, LRUCache
+from cachetools import cached, LFUCache
 from yarl import URL
 
 from ..jsonpointer import JSONPointer
@@ -52,6 +52,8 @@ __all__ = (
     'Link',
     'Relationship',
 )
+
+cache_storage = LFUCache(100)
 
 
 class BaseField(FieldABC):
@@ -207,12 +209,12 @@ class Attribute(BaseField):
         self._trafaret = None
 
 
-@cached(cache={})
-def resolve_url(route, type_, id_, relation):
-    return route.url_for(type=type_, id=id_, relation=relation)
+@cached(cache=cache_storage)
+def resolve_url(route, resource_type, resource_id, relation):
+    return route.url_for(type=resource_type, id=resource_id, relation=relation)
 
 
-@cached(cache={})
+@cached(cache=cache_storage)
 def get_absolute_url(request_url, route_url):
     return URL.build(scheme=request_url.scheme, user=request_url.user,
                      password=request_url.password,
