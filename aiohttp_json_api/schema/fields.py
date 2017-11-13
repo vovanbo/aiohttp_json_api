@@ -295,11 +295,10 @@ class DateTime(Attribute):
         return self._trafaret.check(data)
 
     def serialize(self, schema, data, **kwargs):
-        value = self._trafaret.check(data)
+        if isinstance(data, datetime.datetime):
+            return data.isoformat()
 
-        return value.isoformat() \
-            if isinstance(value, datetime.datetime) \
-            else value
+        return self._trafaret.check(data)
 
 
 class TimeDelta(Attribute):
