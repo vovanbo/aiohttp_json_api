@@ -2,6 +2,13 @@
 History
 =======
 
+0.30.0 (2017-11-13)
+-------------------
+
+* Improve performance of URL resolving in Link field (with `cachetools`_)
+* Upgrade requirements
+
+
 0.29.2 (2017-11-02)
 -------------------
 
@@ -435,3 +442,4 @@ History
 .. _attrs: http://www.attrs.org/en/stable/
 .. _yarl: https://yarl.readthedocs.io
 .. _multidict: http://multidict.readthedocs.io/en/stable/
+.. _cachetools: https://github.com/tkem/cachetools
