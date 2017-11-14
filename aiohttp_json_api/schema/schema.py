@@ -13,6 +13,7 @@ import copy
 import typing
 from collections import OrderedDict, MutableMapping
 from functools import partial
+import urllib.parse
 
 import inflection
 from aiohttp import web
@@ -221,12 +222,15 @@ class BaseSchema(SchemaABC):
 
         result.setdefault('links', OrderedDict())
         if 'self' not in result['links']:
-            self_url = get_router_resource(self.app, 'resource').url_for(
-                **self.registry.ensure_identifier(resource, asdict=True)
+            rid = self.registry.ensure_identifier(resource)
+            route = get_router_resource(self.app, 'resource')
+            route_url = route._formatter.format_map({'type': rid.type,
+                                                     'id': rid.id})
+            route_url = urllib.parse.urlunsplit(
+                (context.request.scheme, context.request.host, route_url,
+                 context.request.query_string, None)
             )
-            if context.request is not None:
-                self_url = context.request.url.join(self_url)  # Absolute URL
-            result['links']['self'] = str(self_url)
+            result['links']['self'] = route_url
 
         return result
 
