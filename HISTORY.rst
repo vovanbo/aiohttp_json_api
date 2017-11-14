@@ -2,6 +2,13 @@
 History
 =======
 
+0.31.0 (2017-11-14)
+-------------------
+
+* Improve performance of URL resolving again. At this time with usage of standard Python urllib
+* Upgrade requirements
+
+
 0.30.0 (2017-11-13)
 -------------------
 
