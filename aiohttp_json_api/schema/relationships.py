@@ -80,7 +80,8 @@ class ToMany(Relationship):
         super(ToMany, self).__init__(**kwargs)
         self.pagination = pagination
 
-    def serialize(self, schema, data, **kwargs) -> typing.MutableMapping:
+    def serialize(self, schema, data, links=None, pagination=None,
+                  **kwargs) -> typing.MutableMapping:
         """Composes the final JSON API relationships object.
 
         :arg ~aiohttp_json_api.pagination.PaginationABC pagination:
@@ -95,11 +96,9 @@ class ToMany(Relationship):
                 for item in data
             ]
 
-        links = kwargs.get('links')
         if links is not None:
             document['links'] = links
 
-        pagination = kwargs.get('pagination')
         if pagination is not None:
             document['links'].update(pagination.links())
             document.setdefault('meta', OrderedDict())
