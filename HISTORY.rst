@@ -2,6 +2,15 @@
 History
 =======
 
+0.32.0 (2017-11-21)
+-------------------
+
+* Constants, enums and structs refactoring *(backward incompatible)*
+* Add useful typings
+* Documentation fixes
+* Extend development requirements
+
+
 0.31.0 (2017-11-14)
 -------------------
 

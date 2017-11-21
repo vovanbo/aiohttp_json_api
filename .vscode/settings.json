@@ -1,0 +1,8 @@
+{
+    "python.pythonPath": "/Users/bo/.pyenv/versions/aiohttp_json_api/bin/python",
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/.mypy_cache": true
+    }
+}

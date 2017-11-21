@@ -1,3 +1,3 @@
 major = 0
-minor = 31
+minor = 32
 patch = 0
