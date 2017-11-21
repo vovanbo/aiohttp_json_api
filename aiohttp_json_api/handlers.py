@@ -45,10 +45,9 @@ async def get_collection(request: web.Request, context, schema):
     compound_documents = None
     if context.include and resources:
         compound_documents, relationships = \
-            await get_compound_documents(resources.values(), context)
+            await get_compound_documents(resources, context)
 
-    result = await render_document(resources.values(), compound_documents,
-                                   context)
+    result = await render_document(resources, compound_documents, context)
 
     return jsonapi_response(result)
 
