@@ -28,7 +28,7 @@ class SchemaWithStorage(BaseSchema):
         return result
 
     async def query_collection(self, context, **kwargs):
-        return self.storage
+        return self.storage.values()
 
     async def query_resource(self, resource_id, context, **kwargs):
         # Here can be added additional permission check, for example.
