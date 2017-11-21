@@ -84,9 +84,14 @@ dist: clean ## builds source and wheel package
 install: clean ## install the package to the active Python's site-packages
 	python setup.py install
 
-update-requirements:
+pipenv-update:
 	pipenv update -d
 	pipenv lock
+
+generate-requirements:
 	pipenv lock -r 1> requirements.txt 2> /dev/null
 	pipenv lock -r -d 1> requirements_dev.txt 2> /dev/null
 	sort -u requirements.txt requirements_dev.txt -o requirements_dev.txt
+
+update-requirements: pipenv-update generate-requirements
+
