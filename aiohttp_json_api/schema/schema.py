@@ -29,12 +29,11 @@ from ..errors import (
 from ..helpers import MISSING, first, get_router_resource, ensure_collection
 from ..jsonpointer import JSONPointer
 from ..log import logger
+from ..typings import Callee
 
 __all__ = (
     'BaseSchema',
 )
-
-Callee = typing.Union[typing.Callable, typing.Coroutine]
 
 
 class BaseSchema(SchemaABC):

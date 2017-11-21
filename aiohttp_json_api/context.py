@@ -2,9 +2,8 @@
 
 import json
 import re
-from collections import OrderedDict, namedtuple
-from enum import Enum
-from typing import Optional, Tuple, MutableMapping, Any, Union
+from collections import OrderedDict
+from typing import Any, Optional, Tuple, Union
 
 import inflection
 from aiohttp import web
@@ -14,25 +13,9 @@ from .common import JSONAPI, Event, FilterRule, SortDirection
 from .errors import HTTPBadRequest
 from .log import logger
 from .schema import BaseSchema
-from .schema.common import Event
-
-FILTER_KEY = re.compile(r"filter\[(?P<field>\w[-\w_]*)\]")
-FILTER_VALUE = re.compile(r"(?P<name>[a-z]+):(?P<value>.*)")
-FIELDS_RE = re.compile(r"fields\[(?P<name>\w[-\w_]*)\]")
-
-
-FilterRule = namedtuple('FilterRule', ('name', 'value'))
-
-
-class SortDirection(Enum):
-    ASC = '+'
-    DESC = '-'
-
-
-RequestFilters = MutableMapping[str, FilterRule]
-RequestFields = MutableMapping[str, Tuple[str, ...]]
-RequestIncludes = Tuple[Tuple[str, ...], ...]
-RequestSorting = MutableMapping[Tuple[str, ...], SortDirection]
+from .typings import (
+    RequestFields, RequestFilters, RequestIncludes, RequestSorting
+)
 
 
 class RequestContext:

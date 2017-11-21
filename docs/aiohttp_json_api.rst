@@ -68,6 +68,11 @@ Submodules
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: aiohttp_json_api.typings
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. automodule:: aiohttp_json_api.utils
     :members:
     :undoc-members:

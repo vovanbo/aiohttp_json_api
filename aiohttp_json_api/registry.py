@@ -4,10 +4,9 @@ Application registry
 """
 import collections
 import inspect
-from typing import Dict, Union
 
-ResourceID = collections.namedtuple('ResourceID', ['type', 'id'])
-ResourceIdentifier = Union[ResourceID, Dict[str, str]]
+from .common import ResourceID
+from .typings import ResourceIdentifier
 
 
 class Registry(collections.UserDict):

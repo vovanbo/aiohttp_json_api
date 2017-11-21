@@ -8,8 +8,8 @@ from collections import OrderedDict, defaultdict
 
 from aiohttp import web
 
-from .const import JSONAPI, JSONAPI_CONTENT_TYPE
-from .helpers import SENTINEL, is_collection, first
+from .common import JSONAPI, JSONAPI_CONTENT_TYPE
+from .helpers import SENTINEL, is_collection, first, ensure_collection
 from .encoder import json_dumps
 from .errors import Error, ErrorList, ValidationError
 
@@ -51,7 +51,7 @@ async def get_compound_documents(resources, context):
     relationships = defaultdict(set)
     compound_documents = OrderedDict()
 
-    collection = resources if is_collection(resources) else (resources,)
+    collection = ensure_collection(resources)
     for path in context.include:
         if path and collection:
             rest_path = path
