@@ -13,8 +13,7 @@ from .decorators import jsonapi_handler
 from .errors import InvalidType
 from .helpers import get_router_resource
 from .utils import (
-    jsonapi_response,
-    render_document, get_compound_documents,
+    jsonapi_response, render_document, get_compound_documents,
     validate_uri_resource_id
 )
 
@@ -79,8 +78,7 @@ async def post_resource(request: web.Request, context, schema):
         )
     )
 
-    return jsonapi_response(result,
-                            status=HTTPStatus.CREATED,
+    return jsonapi_response(result, status=HTTPStatus.CREATED,
                             headers={hdrs.LOCATION: str(location)})
 
 
