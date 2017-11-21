@@ -62,3 +62,12 @@ target/
 .python-version
 
 Pipfile.lock
+
+.mypy_cache/
+
+### VisualStudioCode template
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
