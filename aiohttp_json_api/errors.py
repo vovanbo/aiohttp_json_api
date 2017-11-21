@@ -379,7 +379,8 @@ class UnsortableField(HTTPBadRequest):
     def __init__(self, type, field, **kwargs):
         kwargs.setdefault(
             'detail',
-            "The field '{}.{}' can not be used for sorting.".format(type, field)
+            "The field '{}.{}' can not be used "
+            "for sorting.".format(type, field)
         )
         kwargs.setdefault('source_parameter', 'sort')
         super(UnsortableField, self).__init__(**kwargs)
@@ -411,6 +412,7 @@ class ResourceNotFound(HTTPNotFound):
     def __init__(self, type, id, **kwargs):
         kwargs.setdefault(
             "detail",
-            "The resource (type='{}', id='{}') does not exist.".format(type, id)
+            "The resource (type='{}', id='{}') "
+            "does not exist.".format(type, id)
         )
         super(ResourceNotFound, self).__init__(**kwargs)

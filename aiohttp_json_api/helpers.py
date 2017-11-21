@@ -10,7 +10,8 @@ from .common import JSONAPI
 
 
 def is_generator(obj):
-    """Return True if ``obj`` is a generator
+    """
+    Return True if ``obj`` is a generator
     """
     return inspect.isgeneratorfunction(obj) or inspect.isgenerator(obj)
 
@@ -18,8 +19,8 @@ def is_generator(obj):
 def is_iterable_but_not_string(obj):
     """Return True if ``obj`` is an iterable object that isn't a string."""
     return (
-        (isinstance(obj, Iterable) and not hasattr(obj, "strip"))
-        or is_generator(obj)
+        (isinstance(obj, Iterable) and not hasattr(obj, "strip")) or
+        is_generator(obj)
     )
 
 
@@ -63,7 +64,7 @@ def first(iterable, default=None, key=None):
     >>> first([1, 1, 3, 4, 5], key=lambda x: x % 2 == 0)
     4
 
-    Contributed by Hynek Schlawack, author of `the original standalone module`_.
+    Contributed by Hynek Schlawack, author of `the original standalone module`_
 
     .. _the original standalone module: https://github.com/hynek/first
     """
@@ -123,6 +124,7 @@ def make_sentinel(name='_MISSING', var_name=None):
 
 
 def get_router_resource(app: web.Application, resource: str):
+    """Returns route of JSON API application for resource."""
     return app.router[
         '{}.{}'.format(app[JSONAPI]['routes_namespace'], resource)
     ]

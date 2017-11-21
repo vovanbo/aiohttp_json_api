@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 """
-BaseSchema
-==========
+Base schema
+===========
 
 This module contains the base schema which implements the encoding, decoding,
 validation and update operations based on
@@ -10,10 +10,10 @@ validation and update operations based on
 """
 import asyncio
 import copy
-import typing
 from collections import OrderedDict, MutableMapping
 from functools import partial
 import urllib.parse
+from typing import Optional, Dict
 
 import inflection
 from aiohttp import web
@@ -141,7 +141,7 @@ class BaseSchema(SchemaABC):
                 pass
 
     def _get_processors(self, tag: Tag, field: BaseField,
-                        default: typing.Optional[Callee] = None):
+                        default: Optional[Callee] = None):
         if self._has_processors:
             processor_tag = tag, field.key
             processors = self.__processors__.get(processor_tag)
@@ -174,7 +174,7 @@ class BaseSchema(SchemaABC):
         return await setter(field, resource, data, sp, **setter_kwargs,
                             **kwargs)
 
-    def serialize_resource(self, resource, **kwargs) -> typing.MutableMapping:
+    def serialize_resource(self, resource, **kwargs) -> MutableMapping:
         """
         .. seealso::
 
@@ -381,7 +381,7 @@ class BaseSchema(SchemaABC):
 
         return result
 
-    def map_data_to_schema(self, data) -> typing.Dict:
+    def map_data_to_schema(self, data) -> Dict:
         # Map the property names on the resource instance to its initial data.
         result = {
             self._declared_fields[key].mapped_key: field_data

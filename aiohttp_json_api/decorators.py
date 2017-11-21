@@ -1,7 +1,4 @@
-"""
-Handlers decorators
-===================
-"""
+"""Handlers decorators."""
 from functools import partial, wraps
 
 from aiohttp import web
@@ -12,12 +9,14 @@ from .log import logger
 
 
 def jsonapi_handler(handler=None, resource_type=None, content_type=None):
+    """Decorates JSON API handlers to pass request context etc."""
     if handler is None:
         return partial(jsonapi_handler,
                        resource_type=resource_type, content_type=content_type)
 
     @wraps(handler)
     async def wrapper(request: web.Request):
+        """JSON API handler wrapper."""
         route_name = request.match_info.route.name
         namespace = request.app[JSONAPI]['routes_namespace']
 

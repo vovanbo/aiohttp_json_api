@@ -1,6 +1,6 @@
 """
-Utilities
-=========
+Utilities related to JSON API
+=============================
 """
 import asyncio
 import typing
@@ -36,7 +36,7 @@ async def get_compound_documents(resources, context):
 
     Fetches the relationship paths *paths*.
 
-    :param typing.Sequence[Model] resources:
+    :param resources:
         A list with the primary data (resources) of the compound
         response document.
     :param context:

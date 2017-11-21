@@ -1,4 +1,7 @@
-"""Request context."""
+"""
+Request context
+===============
+"""
 
 import json
 import re
@@ -19,9 +22,13 @@ from .typings import (
 
 
 class RequestContext:
+    FILTER_KEY = re.compile(r"filter\[(?P<field>\w[-\w_]*)\]")
+    FILTER_VALUE = re.compile(r"(?P<name>[a-z]+):(?P<value>.*)")
+    FIELDS_RE = re.compile(r"fields\[(?P<name>\w[-\w_]*)\]")
+
     inflect = inflection.underscore
 
-    def __init__(self, request: web.Request, resource_type: str = None):
+    def __init__(self, request: web.Request, resource_type: str = None) -> None:
         self._pagination = None
         self._resource_type = resource_type
         self.request = request
@@ -116,11 +123,11 @@ class RequestContext:
         :raises HTTPBadRequest:
             If a filter name contains invalid characters.
         """
-        filters = MultiDict()
+        filters = MultiDict()  # type: MultiDict
 
         for key, value in request.query.items():
-            key_match = re.fullmatch(FILTER_KEY, key)
-            value_match = re.fullmatch(FILTER_VALUE, value)
+            key_match = re.fullmatch(cls.FILTER_KEY, key)
+            value_match = re.fullmatch(cls.FILTER_VALUE, value)
 
             # If the key indicates a filter, but the value is not correct
             # formatted.
@@ -140,7 +147,7 @@ class RequestContext:
                 try:
                     value = json.loads(value)
                 except Exception as err:
-                    logger.debug(err, exc_info=False)
+                    logger.debug(str(err), exc_info=False)
                     raise HTTPBadRequest(
                         detail="The value '{}' "
                                "is not JSON serializable".format(value),
@@ -166,10 +173,10 @@ class RequestContext:
 
         :seealso: http://jsonapi.org/format/#fetching-sparse-fieldsets
         """
-        fields = OrderedDict()
+        fields = OrderedDict()  # type: OrderedDict
 
         for key, value in request.query.items():
-            match = re.fullmatch(FIELDS_RE, key)
+            match = re.fullmatch(cls.FIELDS_RE, key)
             if match:
                 typename = match.group('name')
                 fields[typename] = tuple(
@@ -217,7 +224,7 @@ class RequestContext:
 
         :seealso: http://jsonapi.org/format/#fetching-sorting
         """
-        sort = OrderedDict()
+        sort = OrderedDict()  # type: RequestSorting
 
         if 'sort' not in request.query:
             return sort

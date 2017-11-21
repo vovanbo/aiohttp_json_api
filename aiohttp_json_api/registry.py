@@ -19,7 +19,8 @@ class Registry(collections.UserDict):
 
     def ensure_identifier(self, obj, asdict=False) -> ResourceIdentifier:
         """
-        Returns the identifier object (:class:`ResourceID`) for the *resource*:
+        Returns the identifier object
+        (:class:`ResourceID <.common.ResourceID>`) for the *resource*:
 
         .. code-block:: python3
 

@@ -16,34 +16,26 @@ All helpers have a similar interface. Here is an example for the
 
 .. code-block:: python3
 
-    >>> p = NumberSize(
-    ...     request,
-    ...     number=2,
-    ...     size=25,
-    ...     total_resources=106
-    )
+    >>> from aiohttp.test_utils import make_mocked_request
+    >>> from aiohttp_json_api.pagination import NumberSize
+    >>> request = make_mocked_request('GET', 'http://example.org/api/Article/?sort=date_added')
+    >>> p = NumberSize(request, total_resources=106)
     >>> p.links()
     {
-    'first': 'http://example.org/api/Article/?page%5Bsize%5D=25&sort=date_added&page%5Bnumber%5D=0',
-    'last': 'http://example.org/api/Article/?page%5Bsize%5D=25&sort=date_added&page%5Bnumber%5D=4',
-    'next': 'http://example.org/api/Article/?page%5Bsize%5D=25&sort=date_added&page%5Bnumber%5D=3',
-    'prev': 'http://example.org/api/Article/?page%5Bsize%5D=25&sort=date_added&page%5Bnumber%5D=1',
-    'self': 'http://example.org/api/Article/?page%5Bsize%5D=25&sort=date_added&page%5Bnumber%5D=2'
+        'self': 'http://example.org/api/Article/?sort=date_added&page%5Bnumber%5D=0&page%5Bsize%5D=25',
+        'first': 'http://example.org/api/Article/?sort=date_added&page%5Bnumber%5D=0&page%5Bsize%5D=25',
+        'last': 'http://example.org/api/Article/?sort=date_added&page%5Bnumber%5D=4&page%5Bsize%5D=25',
+        'next': 'http://example.org/api/Article/?sort=date_added&page%5Bnumber%5D=1&page%5Bsize%5D=25'
     }
     >>> p.meta()
-    {
-    'page-number': 2,
-    'page-size': 25,
-    'total-pages': 4,
-    'total-resources': 106
-    }
+    {'total-resources': 106, 'last-page': 4, 'page-number': 0, 'page-size': 25}
 """
-import typing
 from abc import ABC, abstractmethod
+from typing import MutableMapping
 
-import yarl
-from aiohttp import web
 import trafaret as t
+from aiohttp import web
+from yarl import URL
 
 from .errors import HTTPBadRequest
 from .log import logger
@@ -66,11 +58,11 @@ class PaginationABC(ABC):
         self.request = request
 
     @property
-    def url(self) -> yarl.URL:
+    def url(self) -> URL:
         return self.request.url
 
     @abstractmethod
-    def meta(self) -> typing.MutableMapping:
+    def meta(self) -> MutableMapping:
         """
         **Must be overridden.**
 
@@ -79,7 +71,7 @@ class PaginationABC(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def links(self) -> typing.MutableMapping:
+    def links(self) -> MutableMapping:
         """
         **Must be overridden.**
 
@@ -170,7 +162,7 @@ class LimitOffset(PaginationABC):
         if self.offset % self.limit != 0:
             logger.warning('The offset is not dividable by the limit.')
 
-    def links(self) -> typing.MutableMapping:
+    def links(self) -> MutableMapping:
         result = {
             'self': self.page_link(limit=self.limit, offset=self.offset),
             'first': self.page_link(limit=self.limit, offset=0),
@@ -191,7 +183,7 @@ class LimitOffset(PaginationABC):
             )
         return result
 
-    def meta(self) -> typing.MutableMapping:
+    def meta(self) -> MutableMapping:
         """
         Returns a dictionary with
 
@@ -268,7 +260,7 @@ class NumberSize(PaginationABC):
         """
         return int((self.total_resources - 1) / self.size)
 
-    def links(self) -> typing.MutableMapping:
+    def links(self) -> MutableMapping:
         result = {
             'self': self.page_link(number=self.number, size=self.size),
             'first': self.page_link(number=0, size=self.size),
@@ -282,7 +274,7 @@ class NumberSize(PaginationABC):
                 self.page_link(number=self.number + 1, size=self.size)
         return result
 
-    def meta(self) -> typing.MutableMapping:
+    def meta(self) -> MutableMapping:
         """
         Returns a dictionary with
 
@@ -356,7 +348,7 @@ class Cursor(PaginationABC):
             )
 
     def links(self, prev_cursor=None,
-              next_cursor=None) -> typing.MutableMapping:
+              next_cursor=None) -> MutableMapping:
         """
         :arg str prev_cursor:
             The cursor to the previous page.
@@ -381,7 +373,7 @@ class Cursor(PaginationABC):
                                             limit=self.limit)
         return result
 
-    def meta(self) -> typing.MutableMapping:
+    def meta(self) -> MutableMapping:
         """
         Returns a dictionary with
 

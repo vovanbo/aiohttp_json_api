@@ -1,14 +1,15 @@
 """JSON API implementation for aiohttp."""
 
+import inspect
+from collections import MutableMapping, Sequence
+
 __author__ = """Vladimir Bolshakov"""
 __email__ = 'vovanbo@gmail.com'
 __version__ = '0.31.0'
 
-import inspect
-from collections import MutableMapping, Sequence
-
 
 def setup_app_registry(app, registry_class, schemas):
+    """Setup JSON API application registry."""
     from .log import logger
     from .registry import Registry
     from .schema.abc.schema import SchemaABC
@@ -53,6 +54,7 @@ def setup_app_registry(app, registry_class, schemas):
 
 
 def setup_custom_handlers(custom_handlers):
+    """Setup default and custom handlers for JSON API application."""
     from . import handlers as default_handlers
     from .log import logger
 
@@ -132,6 +134,8 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
                   routes_namespace=None):
     """
     Setup JSON API in aiohttp application.
+
+    This function will setup resources, handlers and middleware.
 
     :param ~aiohttp.web.Application app:
         Application instance
