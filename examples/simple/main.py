@@ -8,7 +8,7 @@ import time
 from aiohttp import web
 
 from aiohttp_json_api import setup_jsonapi
-from aiohttp_json_api.const import JSONAPI
+from aiohttp_json_api.common import JSONAPI
 
 
 def setup_fixtures(app):

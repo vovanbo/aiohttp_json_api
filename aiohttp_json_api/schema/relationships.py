@@ -6,7 +6,7 @@ Relationships
 import typing
 from collections import OrderedDict, Mapping
 
-from .common import Relation
+from ..common import Relation
 from ..helpers import is_collection
 from .base_fields import Relationship
 from ..errors import InvalidType

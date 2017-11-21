@@ -6,7 +6,7 @@ import inspect
 from collections import Mapping, Iterable
 
 from aiohttp import web
-from .const import JSONAPI
+from .common import JSONAPI
 
 
 def is_generator(obj):

@@ -20,9 +20,8 @@ from aiohttp import web
 
 from .abc.schema import SchemaABC
 from .base_fields import BaseField, Attribute, Relationship
-from .common import Event, Step, Relation
+from ..common import JSONAPI, Step, Event, Relation
 from .decorators import Tag
-from ..const import JSONAPI
 from ..errors import (
     ValidationError, InvalidValue, InvalidType, HTTPConflict,
     HTTPBadRequest

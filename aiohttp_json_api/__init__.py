@@ -89,7 +89,8 @@ def setup_custom_handlers(custom_handlers):
 
 
 def setup_resources(app, base_path, handlers, routes_namespace):
-    from .const import ALLOWED_MEMBER_NAME_RULE
+    """Setup JSON API application resources."""
+    from .common import ALLOWED_MEMBER_NAME_RULE
 
     type_part = '{type:' + ALLOWED_MEMBER_NAME_RULE + '}'
     relation_part = '{relation:' + ALLOWED_MEMBER_NAME_RULE + '}'
@@ -172,7 +173,7 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
         aiohttp Application instance with configured JSON API
     :rtype: ~aiohttp.web.Application
     """
-    from .const import JSONAPI
+    from .common import JSONAPI
     from .context import RequestContext
     from .log import logger
     from .middleware import jsonapi_middleware

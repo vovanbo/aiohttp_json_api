@@ -13,7 +13,7 @@ Subpackages
 Submodules
 ----------
 
-.. automodule:: aiohttp_json_api.const
+.. automodule:: aiohttp_json_api.common
     :members:
     :undoc-members:
     :show-inheritance:

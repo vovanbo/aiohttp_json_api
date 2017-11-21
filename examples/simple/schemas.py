@@ -3,7 +3,7 @@ import random
 
 from aiohttp_json_api.errors import ResourceNotFound
 from aiohttp_json_api.schema import BaseSchema, fields, relationships, sets
-from aiohttp_json_api.schema.common import Event
+from aiohttp_json_api.common import Event
 
 from .models import Article, Comment, People
 

@@ -7,8 +7,7 @@ from http import HTTPStatus
 
 from aiohttp import web, hdrs
 
-from .schema.common import Relation
-from .const import JSONAPI_CONTENT_TYPE
+from .common import JSONAPI_CONTENT_TYPE, Relation
 from .jsonpointer import JSONPointer
 from .decorators import jsonapi_handler
 from .errors import InvalidType

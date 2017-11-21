@@ -16,11 +16,6 @@ Submodules
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: aiohttp_json_api.schema.common
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 .. automodule:: aiohttp_json_api.schema.decorators
     :members:
     :undoc-members:

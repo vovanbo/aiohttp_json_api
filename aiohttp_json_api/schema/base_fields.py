@@ -39,9 +39,8 @@ from typing import Sequence, Optional
 import urllib.parse
 
 from ..jsonpointer import JSONPointer
-from ..const import ALLOWED_MEMBER_NAME_REGEX
+from ..common import ALLOWED_MEMBER_NAME_REGEX, Event
 from .abc.field import FieldABC
-from .common import Event
 from ..errors import InvalidType, InvalidValue
 
 __all__ = (

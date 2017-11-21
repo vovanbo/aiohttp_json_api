@@ -11,7 +11,7 @@ from types import MappingProxyType
 
 import inflection
 
-from ...const import ALLOWED_MEMBER_NAME_REGEX
+from ...common import ALLOWED_MEMBER_NAME_REGEX
 from ...jsonpointer import JSONPointer
 
 from .field import FieldABC

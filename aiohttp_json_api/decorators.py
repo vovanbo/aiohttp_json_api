@@ -6,7 +6,7 @@ from functools import partial, wraps
 
 from aiohttp import web
 
-from .const import JSONAPI
+from .common import JSONAPI
 from .errors import HTTPUnsupportedMediaType, HTTPNotFound
 from .log import logger
 
