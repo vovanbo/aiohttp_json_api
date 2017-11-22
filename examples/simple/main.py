@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Simple JSON API application example with in-memory storage."""
 
 import asyncio

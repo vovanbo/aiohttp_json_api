@@ -95,3 +95,5 @@ generate-requirements:
 
 update-requirements: pipenv-update generate-requirements
 
+simple-example:
+	PYTHONPATH=./examples/simple ./examples/simple/main.py
