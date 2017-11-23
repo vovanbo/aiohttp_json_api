@@ -13,7 +13,7 @@ authors = Table(
     Column('date_of_birth', Date, nullable=False),
     Column('date_of_death', Date),
     Column('created_at', DateTime, nullable=False,
-           server_default=text("CURRENT_TIMESTAMP")),
+           server_default=text('CURRENT_TIMESTAMP')),
     Column('updated_at', DateTime),
     CheckConstraint("name <> ''::text")
 )
@@ -26,7 +26,7 @@ books = Table(
     Column('date_published', Date, nullable=False),
     Column('title', Text, nullable=False),
     Column('created_at', DateTime, nullable=False,
-           server_default=text("CURRENT_TIMESTAMP")),
+           server_default=text('CURRENT_TIMESTAMP')),
     Column('updated_at', DateTime),
     CheckConstraint("title <> ''::text")
 )
