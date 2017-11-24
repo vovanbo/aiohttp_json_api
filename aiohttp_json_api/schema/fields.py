@@ -301,6 +301,33 @@ class DateTime(Attribute):
         return self._trafaret.check(data)
 
 
+class Date(Attribute):
+    """
+    Stores a :class:`datetime.datetime` in ISO-8601 as recommended in
+    http://jsonapi.org/recommendations/#date-and-time-fields.
+    """
+    def __init__(self, *, allow_blank: bool = False, **kwargs):
+        super(Date, self).__init__(**kwargs)
+        self._trafaret = rfc_3339.Date(allow_blank=allow_blank)
+        if self.allow_none:
+            self._trafaret |= t.Null()
+
+    def pre_validate(self, schema, data, sp, context):
+        try:
+            self._trafaret.check(data)
+        except t.DataError as error:
+            raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
+
+    def deserialize(self, schema, data, sp, **kwargs):
+        return self._trafaret.check(data)
+
+    def serialize(self, schema, data, **kwargs):
+        if isinstance(data, datetime.date):
+            return data.isoformat()
+
+        return self._trafaret.check(data)
+
+
 class TimeDelta(Attribute):
     """Stores a :class:`datetime.timedelta` as total number of seconds.
 
