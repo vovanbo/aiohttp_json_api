@@ -20,7 +20,8 @@ async def close_db_connections(app):
 
 async def init() -> web.Application:
     from examples.fantasy.schemas import (
-        StoreSchema
+        AuthorSchema, BookSchema, ChapterSchema,
+        PhotoSchema, StoreSchema, SeriesSchema
     )
 
     app = web.Application(debug=True)
@@ -36,7 +37,9 @@ async def init() -> web.Application:
     # to each of Schema's method as RequestContext instance.
     # RequestContext instance created automatically in JSON API middleware
     # for each request. JSON API handlers use it in calls of Schema's methods.
-    setup_jsonapi(app, (StoreSchema,),
+    setup_jsonapi(app,
+                  (AuthorSchema, BookSchema, ChapterSchema,
+                   StoreSchema, SeriesSchema, PhotoSchema),
                   meta={'fantasy': {'version': '0.0.1'}})
 
     return app
