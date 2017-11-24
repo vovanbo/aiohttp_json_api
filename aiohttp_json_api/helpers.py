@@ -29,12 +29,13 @@ def is_indexable_but_not_string(obj):
     return not hasattr(obj, "strip") and hasattr(obj, "__getitem__")
 
 
-def is_collection(obj):
+def is_collection(obj, exclude=()):
     """
     Return True if ``obj`` is a collection type,
     e.g list, tuple, queryset.
     """
-    return is_iterable_but_not_string(obj) and not isinstance(obj, Mapping)
+    return not isinstance(obj, (Mapping,) + exclude) \
+           and is_iterable_but_not_string(obj)
 
 
 def ensure_collection(value):
