@@ -89,7 +89,7 @@ async def render_document(data, included, context, *,
                           pagination=None, links=None) -> typing.MutableMapping:
     document = OrderedDict()
 
-    if is_collection(data):
+    if is_collection(data, exclude=(context.schema.resource_class,)):
         document['data'] = await asyncio.gather(
             *[serialize_resource(r, context) for r in data]
         )
