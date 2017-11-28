@@ -2,15 +2,14 @@
 """Simple JSON API application example with in-memory storage."""
 
 import asyncio
+import os
 import logging
-from collections import defaultdict, OrderedDict
 
 import time
 from aiohttp import web
 from aiopg.sa import create_engine
 
 from aiohttp_json_api import setup_jsonapi
-from aiohttp_json_api.common import JSONAPI
 
 
 async def close_db_connections(app):
@@ -18,16 +17,14 @@ async def close_db_connections(app):
     await app['db'].wait_closed()
 
 
-async def init() -> web.Application:
+async def init(db_dsn: str) -> web.Application:
     from examples.fantasy.schemas import (
         AuthorSchema, BookSchema, ChapterSchema,
         PhotoSchema, StoreSchema, SeriesSchema
     )
 
     app = web.Application(debug=True)
-    engine = await create_engine(
-        dsn='postgresql://example:somepassword@localhost/example', echo=True
-    )
+    engine = await create_engine(dsn=db_dsn, echo=True)
     app['db'] = engine
     app.on_cleanup.append(close_db_connections)
 
@@ -46,13 +43,6 @@ async def init() -> web.Application:
 
 
 def main():
-    loop = asyncio.get_event_loop()
-
-    root = logging.getLogger()
-    if root.handlers:
-        for handler in root.handlers:
-            root.removeHandler(handler)
-
     logging.basicConfig(
         level=logging.DEBUG,
         format='%(levelname)-8s [%(asctime)s.%(msecs)03d] '
@@ -61,12 +51,16 @@ def main():
     )
     logging.Formatter.converter = time.gmtime
 
-    app = loop.run_until_complete(init())
+    dsn = os.getenv('EXAMPLE_DSN',
+                    'postgresql://example:somepassword@localhost/example')
+    port = os.getenv('EXAMPLE_PORT', 8082)
+
+    app = asyncio.get_event_loop().run_until_complete(init(dsn))
 
     # More useful log format than default
     log_format = '%a (%{X-Real-IP}i) %t "%r" %s %b %Tf ' \
                  '"%{Referrer}i" "%{User-Agent}i"'
-    web.run_app(app, port=8082, access_log_format=log_format)
+    web.run_app(app, port=port, access_log_format=log_format)
 
 
 if __name__ == '__main__':
