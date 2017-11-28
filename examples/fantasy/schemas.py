@@ -63,7 +63,7 @@ class BookSchema(CommonQueryMixin, BaseSchema):
 
 class ChapterSchema(CommonQueryMixin, BaseSchema):
     resource_class = Chapter
-    type = 'chapter'
+    type = 'chapters'
 
     title = fields.String()
     ordering = fields.Integer()
