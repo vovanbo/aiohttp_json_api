@@ -107,7 +107,7 @@ class Error(Exception):
         result = {}
         if self.id is not None:
             result['id'] = str(self.id)
-        result['status'] = self.status.value
+        result['status'] = str(self.status.value)
         result['title'] = self.title
         if self.about:
             result['links'] = dict()
