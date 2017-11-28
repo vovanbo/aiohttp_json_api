@@ -17,13 +17,13 @@ async def close_db_connections(app):
     await app['db'].wait_closed()
 
 
-async def init(db_dsn: str) -> web.Application:
+async def init(db_dsn: str, loop=None) -> web.Application:
     from examples.fantasy.schemas import (
         AuthorSchema, BookSchema, ChapterSchema,
         PhotoSchema, StoreSchema, SeriesSchema
     )
 
-    app = web.Application(debug=True)
+    app = web.Application(debug=True, loop=loop)
     engine = await create_engine(dsn=db_dsn, echo=True)
     app['db'] = engine
     app.on_cleanup.append(close_db_connections)
