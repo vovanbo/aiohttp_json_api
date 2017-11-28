@@ -253,6 +253,41 @@ class Chapter(NamedTuple):
                    created_at=NON_POPULATED,
                    updated_at=NON_POPULATED)
 
+    @classmethod
+    async def fetch_many(cls, conn: SAConnection, cte: CTE = None):
+        results = OrderedDict()
+
+        if cte is None:
+            cte = cls.Options.db_table
+
+        query = cte.select()
+
+        async for row in conn.execute(query):
+            chapter_id = row[cte.c.id]
+            chapter = results.get(chapter_id)
+            if chapter is None:
+                chapter = \
+                    cls.from_row(row,
+                                 book=Book.not_populated(row[cte.c.book_id]),
+                                 alias=cte)
+                results[chapter_id] = chapter
+
+        return results
+
+    @classmethod
+    async def fetch_one(cls, conn: SAConnection, chapter_id):
+        query = (
+            tbl.chapters.select()
+            .where(tbl.chapters.c.id == chapter_id)
+            .limit(1)
+        )
+        result = await conn.execute(query)
+        row = await result.fetchone()
+        chapter = cls.from_row(
+            row, book=Book.not_populated(row[tbl.chapters.c.book_id])
+        )
+        return chapter
+
 
 class Photo(NamedTuple):
     id: int
