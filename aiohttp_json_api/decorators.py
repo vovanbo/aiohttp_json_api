@@ -1,14 +1,15 @@
 """Handlers decorators."""
 from functools import partial, wraps
 
-from aiohttp import web
+from aiohttp import web, hdrs
 
-from .common import JSONAPI
-from .errors import HTTPUnsupportedMediaType, HTTPNotFound
+from .common import JSONAPI, JSONAPI_CONTENT_TYPE
+from .errors import HTTPUnsupportedMediaType, HTTPNotFound, HTTPNotAcceptable
 from .log import logger
 
 
-def jsonapi_handler(handler=None, resource_type=None, content_type=None):
+def jsonapi_handler(handler=None, resource_type=None,
+                    content_type=JSONAPI_CONTENT_TYPE):
     """Decorates JSON API handlers to pass request context etc."""
     if handler is None:
         return partial(jsonapi_handler,
@@ -17,6 +18,19 @@ def jsonapi_handler(handler=None, resource_type=None, content_type=None):
     @wraps(handler)
     async def wrapper(request: web.Request):
         """JSON API handler wrapper."""
+        if request.method in ('POST', 'PATCH'):
+            request_content_type = request.content_type
+        else:
+            request_content_type = request.headers.get(hdrs.ACCEPT,
+                                                       request.content_type)
+
+        if request_content_type.startswith(content_type) and \
+            request_content_type != content_type:
+            raise HTTPNotAcceptable()
+        elif request_content_type != content_type:
+            raise HTTPUnsupportedMediaType(
+                detail="Content-Type '{}' is required.".format(content_type))
+
         route_name = request.match_info.route.name
         namespace = request.app[JSONAPI]['routes_namespace']
 
@@ -37,11 +51,5 @@ def jsonapi_handler(handler=None, resource_type=None, content_type=None):
             raise HTTPNotFound()
 
         request[JSONAPI] = context
-
-        if content_type is not None and request.content_type != content_type:
-            raise HTTPUnsupportedMediaType(
-                detail="Only '{}' Content-Type is acceptable "
-                       "for this method.".format(content_type)
-            )
         return await handler(request, context, context.schema)
     return wrapper
