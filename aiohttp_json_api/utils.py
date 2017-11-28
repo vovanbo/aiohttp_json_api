@@ -7,25 +7,22 @@ import typing
 from collections import OrderedDict, defaultdict
 
 from aiohttp import web
+from aiohttp.web_response import Response
 
 from .common import JSONAPI, JSONAPI_CONTENT_TYPE
-from .helpers import SENTINEL, is_collection, first, ensure_collection
+from .helpers import is_collection, first, ensure_collection
 from .encoder import json_dumps
 from .errors import Error, ErrorList, ValidationError
 
 
-def jsonapi_response(data=SENTINEL, *, text=None, body=None,
-                     status=web.HTTPOk.status_code,
-                     reason=None, headers=None,
-                     dumps=None):
+def jsonapi_response(data, *, status=web.HTTPOk.status_code,
+                     reason=None, headers=None, dumps=None):
     if not callable(dumps):
         dumps = json_dumps
 
-    return web.json_response(
-        data=data, text=text, body=body, status=status,
-        reason=reason, headers=headers, content_type=JSONAPI_CONTENT_TYPE,
-        dumps=dumps
-    )
+    body = dumps(data).encode('utf-8')
+    return Response(body=body, status=status, reason=reason,
+                    headers=headers, content_type=JSONAPI_CONTENT_TYPE)
 
 
 async def get_compound_documents(resources, context):

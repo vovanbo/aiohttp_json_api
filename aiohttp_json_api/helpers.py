@@ -131,5 +131,4 @@ def get_router_resource(app: web.Application, resource: str):
     ]
 
 
-SENTINEL = make_sentinel(var_name='SENTINEL')
 MISSING = make_sentinel()
