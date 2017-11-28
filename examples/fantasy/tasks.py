@@ -5,25 +5,26 @@ import sys
 import sqlalchemy as sa
 from invoke import task
 
-FANTASY_DB_SQL = Path.cwd() / 'fantasy-database' / 'schema.sql'
-FANTASY_DB_DATA = Path.cwd() / 'fantasy-database' / 'data.json'
+FANTASY_DATA_FOLDER = Path(__file__).parent / 'fantasy-database'
 
 
 @task
-def populate_db(ctx, data_file=FANTASY_DB_DATA):
+def populate_db(ctx, data_folder=FANTASY_DATA_FOLDER, dsn=None):
     from examples.fantasy import tables
 
+    data_file = data_folder / 'data.json'
     if not Path(data_file).exists():
         sys.exit(f'Invalid data file: {data_file}')
 
     with data_file.open() as f:
         data = json.load(f)
 
-    create_sql = FANTASY_DB_SQL.read_text()
+    create_sql = (data_folder / 'schema.sql').read_text()
 
-    engine = \
-        sa.create_engine('postgresql://example:somepassword@localhost/example',
-                         echo=True)
+    if dsn is None:
+        dsn = 'postgresql://example:somepassword@localhost/example'
+
+    engine = sa.create_engine(dsn, echo=True)
     conn = engine.connect()
     trans = conn.begin()
 
