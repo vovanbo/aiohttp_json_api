@@ -57,7 +57,7 @@ def pg_server(unused_port, session_id, docker):
     docker.pull(docker_image)
     container = docker.create_container(
         image=docker_image,
-        name=f'test-fantasy-example-{session_id}',
+        name='test-fantasy-example-{}'.format(session_id),
         ports=[5432],
         detach=True,
         environment={

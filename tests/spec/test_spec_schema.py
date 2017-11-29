@@ -11,7 +11,7 @@ from aiohttp_json_api.common import JSONAPI_CONTENT_TYPE
 async def test_spec_schema(test_client, fantasy_app, jsonapi_validator,
                            resource_type):
     client = await test_client(fantasy_app)
-    response = await client.get(f'/api/{resource_type}')
+    response = await client.get('/api/{}'.format(resource_type))
     json = await response.json(content_type=JSONAPI_CONTENT_TYPE)
     assert jsonapi_validator.is_valid(json)
 
