@@ -23,15 +23,13 @@ def jsonapi_handler(handler=None, resource_type=None,
     async def wrapper(request: web.Request):
         """JSON API handler wrapper."""
         if request.method in ('POST', 'PATCH'):
-            request_content_type = request.content_type
+            request_ct = request.content_type
         else:
-            request_content_type = request.headers.get(hdrs.ACCEPT,
-                                                       request.content_type)
+            request_ct = request.headers.get(hdrs.ACCEPT, request.content_type)
 
-        if request_content_type.startswith(content_type) and \
-            request_content_type != content_type:
+        if request_ct.startswith(content_type) and request_ct != content_type:
             raise HTTPNotAcceptable()
-        elif request_content_type != content_type:
+        elif request_ct != content_type:
             raise HTTPUnsupportedMediaType(
                 detail="Content-Type '{}' is required.".format(content_type))
 
@@ -56,4 +54,5 @@ def jsonapi_handler(handler=None, resource_type=None,
 
         request[JSONAPI] = context
         return await handler(request, context, context.schema)
+
     return wrapper
