@@ -3,8 +3,7 @@ Middleware
 ==========
 """
 from .errors import Error, ErrorList
-from .common import JSONAPI
-from .log import logger
+from .common import JSONAPI, logger
 from .utils import error_to_response
 
 

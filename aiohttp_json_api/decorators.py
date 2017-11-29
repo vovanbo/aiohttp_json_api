@@ -3,9 +3,8 @@ from functools import partial, wraps
 
 from aiohttp import web, hdrs
 
-from .common import JSONAPI, JSONAPI_CONTENT_TYPE
+from .common import JSONAPI, JSONAPI_CONTENT_TYPE, logger
 from .errors import HTTPUnsupportedMediaType, HTTPNotFound, HTTPNotAcceptable
-from .log import logger
 
 
 def jsonapi_handler(handler=None, resource_type=None,

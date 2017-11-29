@@ -20,7 +20,7 @@ from aiohttp import web
 
 from .abc.schema import SchemaABC
 from .base_fields import BaseField, Attribute, Relationship
-from ..common import JSONAPI, Step, Event, Relation
+from ..common import JSONAPI, Step, Event, Relation, logger
 from .decorators import Tag
 from ..errors import (
     ValidationError, InvalidValue, InvalidType, HTTPConflict,
@@ -28,7 +28,6 @@ from ..errors import (
 )
 from ..helpers import MISSING, first, get_router_resource, ensure_collection
 from ..jsonpointer import JSONPointer
-from ..log import logger
 from ..typings import Callee
 
 __all__ = (

@@ -38,7 +38,7 @@ from aiohttp import web
 from yarl import URL
 
 from .errors import HTTPBadRequest
-from .log import logger
+from .common import logger
 from .helpers import make_sentinel
 
 __all__ = (

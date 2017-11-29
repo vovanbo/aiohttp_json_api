@@ -12,9 +12,8 @@ import inflection
 from aiohttp import web
 from multidict import MultiDict
 
-from .common import JSONAPI, Event, FilterRule, SortDirection
+from .common import JSONAPI, Event, FilterRule, SortDirection, logger
 from .errors import HTTPBadRequest
-from .log import logger
 from .schema import BaseSchema
 from .typings import (
     RequestFields, RequestFilters, RequestIncludes, RequestSorting

@@ -10,7 +10,7 @@ __version__ = '0.32.0'
 
 def setup_app_registry(app, registry_class, schemas):
     """Setup JSON API application registry."""
-    from .log import logger
+    from .common import logger
     from .registry import Registry
     from .schema.abc.schema import SchemaABC
 
@@ -56,7 +56,7 @@ def setup_app_registry(app, registry_class, schemas):
 def setup_custom_handlers(custom_handlers):
     """Setup default and custom handlers for JSON API application."""
     from . import handlers as default_handlers
-    from .log import logger
+    from .common import logger
 
     handlers = {
         name: handler
@@ -177,9 +177,8 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
         aiohttp Application instance with configured JSON API
     :rtype: ~aiohttp.web.Application
     """
-    from .common import JSONAPI
+    from .common import JSONAPI, logger
     from .context import RequestContext
-    from .log import logger
     from .middleware import jsonapi_middleware
 
     if JSONAPI in app:

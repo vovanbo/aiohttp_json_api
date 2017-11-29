@@ -3,6 +3,7 @@ Common constants, enumerations and structures
 =============================================
 """
 import collections
+import logging
 import re
 import sys
 from collections import namedtuple
@@ -11,6 +12,9 @@ if sys.version_info < (3, 6):
     from .compat.enum import Enum, Flag, auto
 else:
     from enum import Enum, Flag, auto
+
+#: Logger instance
+logger = logging.getLogger('aiohttp-json-api')
 
 #: Key of JSON API stuff in aiohttp.web.Application
 JSONAPI = 'jsonapi'
