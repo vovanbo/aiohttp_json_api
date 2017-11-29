@@ -5,17 +5,15 @@ Handlers
 import collections
 from http import HTTPStatus
 
-from aiohttp import web, hdrs
+from aiohttp import hdrs, web
 
 from .common import JSONAPI_CONTENT_TYPE, Relation
-from .jsonpointer import JSONPointer
 from .decorators import jsonapi_handler
 from .errors import InvalidType
 from .helpers import get_router_resource
-from .utils import (
-    jsonapi_response, render_document, get_compound_documents,
-    validate_uri_resource_id
-)
+from .jsonpointer import JSONPointer
+from .utils import (get_compound_documents, jsonapi_response, render_document,
+                    validate_uri_resource_id)
 
 __all__ = (
     'get_collection',

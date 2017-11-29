@@ -1,9 +1,7 @@
-"""
-Middleware
-==========
-"""
-from .errors import Error, ErrorList
+"""Middleware."""
+
 from .common import JSONAPI, logger
+from .errors import Error, ErrorList
 from .utils import error_to_response
 
 

@@ -5,7 +5,7 @@ Useful typing
 
 # pylint: disable=C0103
 import typing
-from typing import MutableMapping, Tuple, Union, Dict
+from typing import Dict, MutableMapping, Tuple, Union
 
 from .common import FilterRule, ResourceID, SortDirection
 

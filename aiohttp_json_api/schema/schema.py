@@ -10,23 +10,21 @@ validation and update operations based on
 """
 import asyncio
 import copy
-from collections import OrderedDict, MutableMapping
-from functools import partial
 import urllib.parse
-from typing import Optional, Dict
+from collections import MutableMapping, OrderedDict
+from functools import partial
+from typing import Dict, Optional
 
 import inflection
 from aiohttp import web
 
 from .abc.schema import SchemaABC
-from .base_fields import BaseField, Attribute, Relationship
-from ..common import JSONAPI, Step, Event, Relation, logger
+from .base_fields import Attribute, BaseField, Relationship
 from .decorators import Tag
-from ..errors import (
-    ValidationError, InvalidValue, InvalidType, HTTPConflict,
-    HTTPBadRequest
-)
-from ..helpers import MISSING, first, get_router_resource, ensure_collection
+from ..common import Event, JSONAPI, Relation, Step, logger
+from ..errors import (HTTPBadRequest, HTTPConflict, InvalidType, InvalidValue,
+                      ValidationError)
+from ..helpers import MISSING, ensure_collection, first, get_router_resource
 from ..jsonpointer import JSONPointer
 from ..typings import Callee
 

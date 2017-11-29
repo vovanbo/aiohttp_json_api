@@ -1,10 +1,10 @@
 """Handlers decorators."""
 from functools import partial, wraps
 
-from aiohttp import web, hdrs
+from aiohttp import hdrs, web
 
 from .common import JSONAPI, JSONAPI_CONTENT_TYPE, logger
-from .errors import HTTPUnsupportedMediaType, HTTPNotFound, HTTPNotAcceptable
+from .errors import HTTPNotAcceptable, HTTPNotFound, HTTPUnsupportedMediaType
 
 
 def jsonapi_handler(handler=None, resource_type=None,

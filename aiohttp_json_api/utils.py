@@ -4,15 +4,15 @@ Utilities related to JSON API
 """
 import asyncio
 import typing
-from collections import OrderedDict, defaultdict
+from collections import defaultdict, OrderedDict
 
 from aiohttp import web
 from aiohttp.web_response import Response
 
 from .common import JSONAPI, JSONAPI_CONTENT_TYPE
-from .helpers import is_collection, first, ensure_collection
 from .encoder import json_dumps
 from .errors import Error, ErrorList, ValidationError
+from .helpers import ensure_collection, first, is_collection
 
 
 def jsonapi_response(data, *, status=web.HTTPOk.status_code,

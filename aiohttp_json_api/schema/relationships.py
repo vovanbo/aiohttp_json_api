@@ -4,12 +4,12 @@ Relationships
 """
 
 import typing
-from collections import OrderedDict, Mapping
+from collections import Mapping, OrderedDict
 
-from ..common import Relation
-from ..helpers import is_collection
 from .base_fields import Relationship
+from ..common import Relation
 from ..errors import InvalidType
+from ..helpers import is_collection
 
 __all__ = (
     'ToOne',

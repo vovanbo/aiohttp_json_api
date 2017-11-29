@@ -12,7 +12,7 @@ import inflection
 from aiohttp import web
 from multidict import MultiDict
 
-from .common import JSONAPI, Event, FilterRule, SortDirection, logger
+from .common import Event, FilterRule, JSONAPI, logger, SortDirection
 from .errors import HTTPBadRequest
 from .schema import BaseSchema
 from .typings import (

@@ -3,18 +3,17 @@ Schema abstract base classes
 ============================
 """
 
+import abc
 import inspect
 import itertools
-import abc
 from collections import OrderedDict, defaultdict
 from types import MappingProxyType
 
 import inflection
 
+from .field import FieldABC
 from ...common import ALLOWED_MEMBER_NAME_REGEX
 from ...jsonpointer import JSONPointer
-
-from .field import FieldABC
 
 _issubclass = issubclass
 

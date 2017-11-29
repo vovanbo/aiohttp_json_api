@@ -37,8 +37,8 @@ import trafaret as t
 from aiohttp import web
 from yarl import URL
 
-from .errors import HTTPBadRequest
 from .common import logger
+from .errors import HTTPBadRequest
 from .helpers import make_sentinel
 
 __all__ = (
