@@ -2,6 +2,7 @@
 Entirely ported from Python 3.6
 """
 # pylint: skip-file
+# flake8: noqa
 
 import sys
 from types import MappingProxyType, DynamicClassAttribute
