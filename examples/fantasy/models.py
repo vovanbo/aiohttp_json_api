@@ -11,6 +11,7 @@ from sqlalchemy.sql.selectable import CTE
 from trafaret.contrib.rfc_3339 import DateTime, Date
 
 import examples.fantasy.tables as tbl
+from aiohttp_json_api.helpers import first
 
 NON_POPULATED = object()
 ImageableType = Union['Author', 'Book', 'Series']
@@ -107,8 +108,7 @@ class Author(NamedTuple):
         cte = cls.cte(where=(cls.Options.db_table.c.id == author_id),
                       limit=1)
         results = await cls.fetch_many(conn, cte=cte)
-        _, author = results.popitem(last=False)
-        return author
+        return first(results.values())
 
 
 class Book(NamedTuple):
@@ -215,8 +215,7 @@ class Book(NamedTuple):
         cte = cls.cte(where=(cls.Options.db_table.c.id == book_id),
                       limit=1)
         results = await cls.fetch_many(conn, cte=cte)
-        _, book = results.popitem(last=False)
-        return book
+        return first(results.values())
 
 
 class Chapter(NamedTuple):
@@ -358,8 +357,7 @@ class Photo(NamedTuple):
         cte = cls.cte(where=(cls.Options.db_table.c.id == photo_id),
                       limit=1)
         results = await cls.fetch_many(conn, cte=cte)
-        _, photo = results.popitem(last=False)
-        return photo
+        return first(results.values())
 
 
 class Store(NamedTuple):
@@ -431,8 +429,7 @@ class Store(NamedTuple):
         cte = cls.cte(where=(cls.Options.db_table.c.id == store_id),
                       limit=1)
         results = await cls.fetch_many(conn, cte=cte)
-        _, store = results.popitem(last=False)
-        return store
+        return first(results.values())
 
 
 class Series(NamedTuple):
