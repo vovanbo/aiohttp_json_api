@@ -23,7 +23,7 @@ async def test_content_negotiation(test_client, fantasy_app):
         headers={hdrs.ACCEPT: 'application/vnd.api+json'}
     )
     assert response.status == 200
-    assert response.headers['Content-Type'] == 'application/vnd.api+json'
+    assert response.headers[hdrs.CONTENT_TYPE] == 'application/vnd.api+json'
 
     response = await client.get(
         '/api/books/1',
