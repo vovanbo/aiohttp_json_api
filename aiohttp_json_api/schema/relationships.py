@@ -35,7 +35,8 @@ class ToOne(Relationship):
         """
         super(ToOne, self).validate_relationship_object(schema, data, sp)
         if 'data' in data and data['data'] is not None:
-            self.validate_resource_identifier(schema, data['data'], sp / 'data')
+            self.validate_resource_identifier(schema, data['data'],
+                                              sp / 'data')
 
     def serialize(self, schema, data, **kwargs) -> typing.MutableMapping:
         """Composes the final relationships object."""

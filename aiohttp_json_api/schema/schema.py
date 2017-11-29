@@ -361,8 +361,8 @@ class BaseSchema(SchemaABC):
                 if field.key:
                     field_sp = sp / key / field.name
 
-                    if validate and \
-                            Step.BEFORE_DESERIALIZATION in validation_steps:
+                    if (validate and 
+                        Step.BEFORE_DESERIALIZATION in validation_steps):
                         await self._pre_validate_field(
                             field, field_data, field_sp, context
                         )
