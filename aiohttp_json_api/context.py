@@ -1,7 +1,4 @@
-"""
-Request context
-===============
-"""
+"""Request context."""
 
 import json
 import re
@@ -21,13 +18,22 @@ from .typings import (
 
 
 class RequestContext:
+    """JSON API request context."""
+
     FILTER_KEY = re.compile(r"filter\[(?P<field>\w[-\w_]*)\]")
     FILTER_VALUE = re.compile(r"(?P<name>[a-z]+):(?P<value>.*)")
     FIELDS_RE = re.compile(r"fields\[(?P<name>\w[-\w_]*)\]")
 
     inflect = inflection.underscore
 
-    def __init__(self, request: web.Request, resource_type: str = None) -> None:
+    def __init__(self, request: web.Request,
+                 resource_type: str = None) -> None:
+        """
+        Initialize request context.
+
+        :param request: Request instance
+        :param resource_type: Resource type for current request
+        """
         self._pagination = None
         self._resource_type = resource_type
         self.request = request
@@ -78,6 +84,8 @@ class RequestContext:
     @classmethod
     def parse_request_filters(cls, request: web.Request) -> RequestFilters:
         """
+        Parse filters from request query string.
+
         .. hint::
 
             Please note, that the *filter* strategy is not defined by the
@@ -160,7 +168,10 @@ class RequestContext:
     @classmethod
     def parse_request_fields(cls, request: web.Request) -> RequestFields:
         """
-        The fields, which should be included in the response (sparse fieldset).
+        Parse sparse fields from request query string.
+
+        Used for determine fields, which should be included in the response
+        (sparse fieldset).
 
         .. code-block:: python3
 
@@ -189,6 +200,8 @@ class RequestContext:
     @classmethod
     def parse_request_includes(cls, request: web.Request) -> RequestIncludes:
         """
+        Parse compound documents parameters from request query string.
+
         Returns the names of the relationships, which should be included into
         the response.
 
@@ -210,6 +223,8 @@ class RequestContext:
     @classmethod
     def parse_request_sorting(cls, request: web.Request) -> RequestSorting:
         """
+        Parse sorting parameters of fields from request query string.
+
         Returns a mapping with tuples as keys, and values with SortDirection,
         describing how the output should be sorted.
 
@@ -243,6 +258,8 @@ class RequestContext:
 
     def has_filter(self, field: str, name: str) -> bool:
         """
+        Check current context for existing filters of field.
+
         Returns true, if the filter *name* has been applied at least once
         on the *field*.
 
@@ -255,6 +272,8 @@ class RequestContext:
 
     def get_filter(self, field: str, name: str, default: Any = None) -> Any:
         """
+        Get filter from request context by name and field.
+
         If the filter *name* has been applied on the *field*, the
         *filter* is returned and *default* otherwise.
 
@@ -270,6 +289,8 @@ class RequestContext:
     def get_order(self, field: Union[str, Tuple[str, ...]],
                   default: SortDirection = SortDirection.ASC) -> SortDirection:
         """
+        Get sorting order of field from request context.
+
         Checks if a sort criterion (``+`` or ``-``) for the *field* exists
         and returns it.
 

@@ -1,7 +1,5 @@
-"""
-Utilities related to JSON API
-=============================
-"""
+"""Utilities related to JSON API."""
+
 import asyncio
 import typing
 from collections import defaultdict, OrderedDict
@@ -17,6 +15,16 @@ from .helpers import ensure_collection, first, is_collection
 
 def jsonapi_response(data, *, status=web.HTTPOk.status_code,
                      reason=None, headers=None, dumps=None):
+    """
+    Return JSON API response.
+
+    :param data: Rendered JSON API document
+    :param status: HTTP status of JSON API response
+    :param reason: Readable reason of error response
+    :param headers: Headers
+    :param dumps: Custom JSON dumps callable
+    :return: Response instance
+    """
     if not callable(dumps):
         dumps = json_dumps
 
@@ -27,6 +35,8 @@ def jsonapi_response(data, *, status=web.HTTPOk.status_code,
 
 async def get_compound_documents(resources, context):
     """
+    Get compound documents of resources.
+
     .. seealso::
 
         http://jsonapi.org/format/#fetching-includes
@@ -77,13 +87,31 @@ async def get_compound_documents(resources, context):
 
 
 async def serialize_resource(resource, context):
+    """
+    Serialize resource by schema.
+
+    :param resource: Resource instance
+    :param context: Request context
+    :return: Serialized resource
+    """
     registry = context.request.app[JSONAPI]['registry']
     schema = registry[resource]
     return schema.serialize_resource(resource, context=context)
 
 
 async def render_document(data, included, context, *,
-                          pagination=None, links=None) -> typing.MutableMapping:
+                          pagination=None,
+                          links=None) -> typing.MutableMapping:
+    """
+    Render JSON API document.
+
+    :param data: One or many resources
+    :param included: Compound documents
+    :param context: Request context
+    :param pagination: Pagination instance
+    :param links: Additional links
+    :return: Rendered JSON API document
+    """
     document = OrderedDict()
 
     if is_collection(data, exclude=(context.schema.resource_class,)):
@@ -120,8 +148,7 @@ async def render_document(data, included, context, *,
 def error_to_response(request: web.Request,
                       error: typing.Union[Error, ErrorList]):
     """
-    Converts an :class:`Error` or :class:`ErrorList`
-    to a :class:`~aiohttp.web.Response`.
+    Convert an :class:`Error` or :class:`ErrorList` to JSON API response.
 
     :arg ~aiohttp.web.Request request:
         The web request instance.
@@ -144,6 +171,13 @@ def error_to_response(request: web.Request,
 
 
 def validate_uri_resource_id(schema, resource_id, context):
+    """
+    Validate resource ID from URI.
+
+    :param schema: Resource schema
+    :param resource_id: Resource ID
+    :param context: Request context
+    """
     field = getattr(schema, '_id', None)
     if field is not None:
         try:

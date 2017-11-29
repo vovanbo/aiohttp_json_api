@@ -9,7 +9,12 @@ from .errors import HTTPNotAcceptable, HTTPNotFound, HTTPUnsupportedMediaType
 
 def jsonapi_handler(handler=None, resource_type=None,
                     content_type=JSONAPI_CONTENT_TYPE):
-    """Decorates JSON API handlers to pass request context etc."""
+    """
+    JSON API handler decorator.
+
+    Used for content type negotiation, create request context,
+    check existence of schema for current request.
+    """
     if handler is None:
         return partial(jsonapi_handler,
                        resource_type=resource_type, content_type=content_type)

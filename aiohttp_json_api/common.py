@@ -1,7 +1,5 @@
-"""
-Common constants, enumerations and structures
-=============================================
-"""
+"""Common constants, enumerations and structures."""
+
 import collections
 import logging
 import re
@@ -38,12 +36,14 @@ ResourceID = collections.namedtuple('ResourceID', ['type', 'id'])
 
 class SortDirection(Enum):
     """Sorting direction enumeration."""
+
     ASC = '+'
     DESC = '-'
 
 
 class Step(Enum):
     """Marshalling step enumeration."""
+
     BEFORE_DESERIALIZATION = auto()
     AFTER_DESERIALIZATION = auto()
     BEFORE_SERIALIZATION = auto()
@@ -52,6 +52,7 @@ class Step(Enum):
 
 class Event(Flag):
     """Request event enumeration."""
+
     GET = auto()
     POST = auto()
     PATCH = auto()
@@ -64,5 +65,6 @@ class Event(Flag):
 
 class Relation(Enum):
     """Types of relations enumeration."""
+
     TO_ONE = auto()
     TO_MANY = auto()

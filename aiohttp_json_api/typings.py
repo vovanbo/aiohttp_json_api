@@ -1,7 +1,4 @@
-"""
-Useful typing
-=============
-"""
+"""Useful typing."""
 
 # pylint: disable=C0103
 import typing

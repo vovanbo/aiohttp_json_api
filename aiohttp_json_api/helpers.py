@@ -1,7 +1,5 @@
-"""
-Helpers
-=======
-"""
+"""Helpers."""
+
 import inspect
 from collections import Iterable, Mapping
 
@@ -11,9 +9,7 @@ from .common import JSONAPI
 
 
 def is_generator(obj):
-    """
-    Return True if ``obj`` is a generator
-    """
+    """Return True if ``obj`` is a generator."""
     return inspect.isgeneratorfunction(obj) or inspect.isgenerator(obj)
 
 
@@ -31,22 +27,22 @@ def is_indexable_but_not_string(obj):
 
 
 def is_collection(obj, exclude=()):
-    """
-    Return True if ``obj`` is a collection type,
-    e.g list, tuple, queryset.
-    """
-    return not isinstance(obj, (Mapping,) + exclude) \
-           and is_iterable_but_not_string(obj)
+    """Return True if ``obj`` is a collection type."""
+    return (not isinstance(obj, (Mapping,) + exclude) and
+            is_iterable_but_not_string(obj))
 
 
 def ensure_collection(value):
+    """Ensure value is collection."""
     return value if is_collection(value) else (value,)
 
 
 def first(iterable, default=None, key=None):
     """
+    Return first element of *iterable*.
+
     Return first element of *iterable* that evaluates to ``True``, else
-    return ``None`` or optional *default*. Similar to :func:`one`.
+    return ``None`` or optional *default*.
 
     >>> first([0, False, None, [], (), 42])
     42
@@ -75,6 +71,8 @@ def first(iterable, default=None, key=None):
 
 def make_sentinel(name='_MISSING', var_name=None):
     """
+    Create sentinel instance.
+
     Creates and returns a new **instance** of a new class, suitable for
     usage as a "sentinel", a kind of singleton often used to indicate
     a value is missing when ``None`` is a valid input.
@@ -113,6 +111,7 @@ def make_sentinel(name='_MISSING', var_name=None):
             if self.var_name:
                 return self.var_name
             return '%s(%r)' % (self.__class__.__name__, self.name)
+
         if var_name:
             def __reduce__(self):
                 return self.var_name
@@ -126,7 +125,7 @@ def make_sentinel(name='_MISSING', var_name=None):
 
 
 def get_router_resource(app: web.Application, resource: str):
-    """Returns route of JSON API application for resource."""
+    """Return route of JSON API application for resource."""
     return app.router[
         '{}.{}'.format(app[JSONAPI]['routes_namespace'], resource)
     ]

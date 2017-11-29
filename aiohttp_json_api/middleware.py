@@ -6,9 +6,7 @@ from .utils import error_to_response
 
 
 async def jsonapi_middleware(app, handler):
-    """
-    Middleware for handling JSON API errors.
-    """
+    """Middleware for handling JSON API errors."""
     async def middleware_handler(request):
         try:
             return await handler(request)

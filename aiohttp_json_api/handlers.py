@@ -1,7 +1,5 @@
-"""
-Handlers
-========
-"""
+"""Handlers."""
+
 import collections
 from http import HTTPStatus
 
@@ -32,6 +30,8 @@ __all__ = (
 @jsonapi_handler
 async def get_collection(request: web.Request, context, schema):
     """
+    Fetch resources collection, render JSON API document and return response.
+
     Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.query_collection`
     method of the schema to query the resources in the collection.
 
@@ -52,6 +52,8 @@ async def get_collection(request: web.Request, context, schema):
 @jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
 async def post_resource(request: web.Request, context, schema):
     """
+    Create resource, render JSON API document and return response.
+
     Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.create_resource`
     method of the schema to create a new resource.
 
@@ -83,6 +85,8 @@ async def post_resource(request: web.Request, context, schema):
 @jsonapi_handler
 async def get_resource(request: web.Request, context, schema):
     """
+    Get single resource, render JSON API document and return response.
+
     Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.query_resource`
     method of the schema to query the requested resource.
 
@@ -106,6 +110,8 @@ async def get_resource(request: web.Request, context, schema):
 @jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
 async def patch_resource(request: web.Request, context, schema):
     """
+    Update resource (via PATCH), render JSON API document and return response.
+
     Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.update_resource`
     method of the schema to update a resource.
 
@@ -134,6 +140,8 @@ async def patch_resource(request: web.Request, context, schema):
 @jsonapi_handler
 async def delete_resource(request: web.Request, context, schema):
     """
+    Remove resource.
+
     Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.delete_resource`
     method of the schema to delete a resource.
 
@@ -148,6 +156,14 @@ async def delete_resource(request: web.Request, context, schema):
 
 @jsonapi_handler
 async def get_relationship(request: web.Request, context, schema):
+    """
+    Get relationships of resource.
+
+    :param request: Request instance
+    :param context: Request context instance
+    :param schema: Schema instance
+    :return: Response
+    """
     relation_name = request.match_info['relation']
     relation_field = schema.get_relationship_field(
         relation_name, source_parameter='URI'
@@ -171,6 +187,8 @@ async def get_relationship(request: web.Request, context, schema):
 @jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
 async def post_relationship(request: web.Request, context, schema):
     """
+    Create relationships of resource.
+
     Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.add_relationship`
     method of the schemato add new relationships.
 
@@ -207,6 +225,8 @@ async def post_relationship(request: web.Request, context, schema):
 @jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
 async def patch_relationship(request: web.Request, context, schema):
     """
+    Update relationships of resource.
+
     Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.update_relationship`
     method of the schema to update the relationship.
 
@@ -242,6 +262,8 @@ async def patch_relationship(request: web.Request, context, schema):
 @jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
 async def delete_relationship(request: web.Request, context, schema):
     """
+    Remove relationships of resource.
+
     Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.delete_relationship`
     method of the schema to update the relationship.
 
@@ -277,6 +299,8 @@ async def delete_relationship(request: web.Request, context, schema):
 @jsonapi_handler
 async def get_related(request: web.Request, context, schema):
     """
+    Get related resources.
+
     Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.query_relative`
     method of the schema to query the related resource.
 
