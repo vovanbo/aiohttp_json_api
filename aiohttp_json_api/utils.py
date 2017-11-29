@@ -6,6 +6,7 @@ from collections import defaultdict, OrderedDict
 
 from aiohttp import web
 from aiohttp.web_response import Response
+import trafaret as t
 
 from .common import JSONAPI, JSONAPI_CONTENT_TYPE
 from .encoder import json_dumps
@@ -179,7 +180,13 @@ def validate_uri_resource_id(schema, resource_id, context):
     :param context: Request context
     """
     field = getattr(schema, '_id', None)
-    if field is not None:
+    if field is None:
+        try:
+            t.Int().check(resource_id)
+        except t.DataError as exc:
+            raise ValidationError(detail=str(exc).capitalize(),
+                                  source_parameter='id')
+    else:
         try:
             field.pre_validate(schema, resource_id, sp=None, context=context)
         except ValidationError as exc:
