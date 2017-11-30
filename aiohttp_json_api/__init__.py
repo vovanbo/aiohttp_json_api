@@ -128,7 +128,7 @@ def setup_resources(app, base_path, handlers, routes_namespace):
     related_resource.add_route('GET', handlers['get_related'])
 
 
-def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
+def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0',
                   meta=None, context_class=None, registry_class=None,
                   custom_handlers=None, log_errors=True,
                   routes_namespace=None):
