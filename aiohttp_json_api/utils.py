@@ -11,7 +11,7 @@ import trafaret as t
 from .common import JSONAPI, JSONAPI_CONTENT_TYPE
 from .encoder import json_dumps
 from .errors import Error, ErrorList, ValidationError
-from .helpers import ensure_collection, first, is_collection
+from .helpers import first, is_collection
 
 
 def jsonapi_response(data, *, status=web.HTTPOk.status_code,
@@ -59,7 +59,7 @@ async def get_compound_documents(resources, context):
     relationships = defaultdict(set)
     compound_documents = OrderedDict()
 
-    collection = ensure_collection(resources)
+    collection = (resources,) if type(resources) in registry else resources
     for path in context.include:
         if path and collection:
             rest_path = path

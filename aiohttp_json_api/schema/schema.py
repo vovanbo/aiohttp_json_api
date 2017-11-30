@@ -24,7 +24,7 @@ from .decorators import Tag
 from ..common import Event, JSONAPI, Relation, Step, logger
 from ..errors import (HTTPBadRequest, HTTPConflict, InvalidType, InvalidValue,
                       ValidationError)
-from ..helpers import MISSING, ensure_collection, first, get_router_resource
+from ..helpers import MISSING, first, get_router_resource
 from ..jsonpointer import JSONPointer
 from ..typings import Callee
 
@@ -105,7 +105,9 @@ class BaseSchema(SchemaABC):
                 compound_document = getattr(resource, field.mapped_key)
                 if compound_document:
                     compound_documents.extend(
-                        ensure_collection(compound_document)
+                        (compound_document,)
+                        if type(compound_document) in self.registry
+                        else compound_document
                     )
             return compound_documents
         raise RuntimeError('No includer and mapped_key have been defined.')
@@ -361,7 +363,7 @@ class BaseSchema(SchemaABC):
                 if field.key:
                     field_sp = sp / key / field.name
 
-                    if (validate and 
+                    if (validate and
                         Step.BEFORE_DESERIALIZATION in validation_steps):
                         await self._pre_validate_field(
                             field, field_data, field_sp, context
