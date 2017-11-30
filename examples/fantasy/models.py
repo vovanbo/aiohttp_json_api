@@ -11,9 +11,9 @@ from sqlalchemy.sql.selectable import CTE
 from trafaret.contrib.rfc_3339 import DateTime, Date
 
 import examples.fantasy.tables as tbl
-from aiohttp_json_api.helpers import first
+from aiohttp_json_api.helpers import first, make_sentinel
 
-NON_POPULATED = object()
+NON_POPULATED = make_sentinel(name='NON_POPULATED')
 ImageableType = Union['Author', 'Book', 'Series']
 
 
