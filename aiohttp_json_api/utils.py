@@ -133,11 +133,18 @@ async def render_document(data, included, context, *,
     if links is not None:
         document['links'].update(links)
 
+    meta_object = context.request.app[JSONAPI]['meta']
     pagination = pagination or context.pagination
+
+    if pagination or meta_object:
+        document.setdefault('meta', OrderedDict())
+
     if pagination is not None:
         document['links'].update(pagination.links())
-        document.setdefault('meta', OrderedDict())
         document['meta'].update(pagination.meta())
+
+    if meta_object:
+        document['meta'].update(meta_object)
 
     jsonapi_info = context.request.app[JSONAPI]['jsonapi']
     if jsonapi_info:

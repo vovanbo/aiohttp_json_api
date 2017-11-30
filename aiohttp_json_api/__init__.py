@@ -203,9 +203,9 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0',
 
     app[JSONAPI] = {
         'context_class': context_class,
+        'meta': meta,
         'jsonapi': {
             'version': version,
-            'meta': meta
         },
         'registry': app_registry,
         'log_errors': log_errors,
