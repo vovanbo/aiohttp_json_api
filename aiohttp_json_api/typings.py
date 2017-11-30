@@ -6,9 +6,20 @@ from typing import Dict, MutableMapping, Tuple, Union
 
 from .common import FilterRule, ResourceID, SortDirection
 
+#: Type for Request filters
 RequestFilters = MutableMapping[str, FilterRule]
+
+#: Type for Request fields
 RequestFields = MutableMapping[str, Tuple[str, ...]]
+
+#: Type for Request includes (compound documents)
 RequestIncludes = Tuple[Tuple[str, ...], ...]
+
+#: Type for Request sorting parameters
 RequestSorting = MutableMapping[Tuple[str, ...], SortDirection]
+
+#: Type for Resource identifier
 ResourceIdentifier = Union[ResourceID, Dict[str, str]]
+
+#: Type for callable or co-routine
 Callee = typing.Union[typing.Callable, typing.Coroutine]
