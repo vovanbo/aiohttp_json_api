@@ -240,7 +240,7 @@ class Link(BaseField):
     """
 
     def __init__(self, route: str, link_of: str, *, name: str = None,
-                 normalize: bool = True, absolute: bool = True):
+                 normalize: bool = False, absolute: bool = True):
         super(Link, self).__init__(name=name, writable=Event.NEVER)
 
         self.normalize = bool(normalize)
