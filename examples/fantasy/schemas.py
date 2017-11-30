@@ -1,7 +1,9 @@
 from aiohttp_json_api.errors import ResourceNotFound
-from aiohttp_json_api.schema import BaseSchema, fields, relationships, sets
+from aiohttp_json_api.schema import BaseSchema, fields, relationships, sets, \
+    decorators
 from aiohttp_json_api.common import Event
 
+import examples.fantasy.tables as tbl
 from examples.fantasy.models import Author, Store, Book, Series, Photo, Chapter
 
 
@@ -59,6 +61,20 @@ class BookSchema(CommonQueryMixin, BaseSchema):
 
     async def delete_resource(self, resource_id, context, **kwargs):
         pass
+
+    @decorators.includes('author')
+    async def include_authors(self, field, resources, context, **kwargs):
+        authors_ids = set(r.author.id for r in resources)
+
+        if not authors_ids:
+            return ()
+
+        cte = Author.cte(where=(tbl.authors.c.id.in_(authors_ids)))
+
+        async with self.app['db'].acquire() as connection:
+            results = await Author.fetch_many(connection, cte)
+
+        return results.values()
 
 
 class ChapterSchema(CommonQueryMixin, BaseSchema):
