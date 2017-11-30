@@ -129,4 +129,9 @@ def jsonapi_validator(here):
 @pytest.fixture
 async def fantasy_app(loop, pg_params, populated_db):
     from examples.fantasy.main import init
-    return await init(DSN_FORMAT.format(**pg_params), loop=loop)
+    return await init(DSN_FORMAT.format(**pg_params), debug=False, loop=loop)
+
+
+@pytest.fixture
+async def fantasy_client(fantasy_app, test_client):
+    return await test_client(fantasy_app)
