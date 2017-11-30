@@ -32,9 +32,9 @@ def is_collection(obj, exclude=()):
             is_iterable_but_not_string(obj))
 
 
-def ensure_collection(value):
+def ensure_collection(value, exclude=()):
     """Ensure value is collection."""
-    return value if is_collection(value) else (value,)
+    return value if is_collection(value, exclude=exclude) else (value,)
 
 
 def first(iterable, default=None, key=None):
