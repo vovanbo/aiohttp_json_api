@@ -25,7 +25,7 @@ def jsonapi_handler(handler=None, resource_type=None,
         if request.method in ('POST', 'PATCH'):
             request_ct = request.content_type
         else:
-            request_ct = request.headers.get(hdrs.ACCEPT, request.content_type)
+            request_ct = request.headers.get(hdrs.ACCEPT, JSONAPI_CONTENT_TYPE)
 
         if request_ct.startswith(content_type) and request_ct != content_type:
             raise HTTPNotAcceptable()
