@@ -17,14 +17,14 @@ async def close_db_connections(app):
     await app['db'].wait_closed()
 
 
-async def init(db_dsn: str, loop=None) -> web.Application:
+async def init(db_dsn: str, debug=False, loop=None) -> web.Application:
     from examples.fantasy.schemas import (
         AuthorSchema, BookSchema, ChapterSchema,
         PhotoSchema, StoreSchema, SeriesSchema
     )
 
-    app = web.Application(debug=True, loop=loop)
-    engine = await create_engine(dsn=db_dsn, echo=True)
+    app = web.Application(debug=debug, loop=loop)
+    engine = await create_engine(dsn=db_dsn, echo=debug)
     app['db'] = engine
     app.on_cleanup.append(close_db_connections)
 
@@ -37,6 +37,7 @@ async def init(db_dsn: str, loop=None) -> web.Application:
     setup_jsonapi(app,
                   (AuthorSchema, BookSchema, ChapterSchema,
                    StoreSchema, SeriesSchema, PhotoSchema),
+                  log_errors=debug,
                   meta={'fantasy': {'version': '0.0.1'}})
 
     return app
@@ -55,7 +56,7 @@ def main():
                     'postgresql://example:somepassword@localhost/example')
     port = os.getenv('EXAMPLE_PORT', 8082)
 
-    app = asyncio.get_event_loop().run_until_complete(init(dsn))
+    app = asyncio.get_event_loop().run_until_complete(init(dsn, debug=True))
 
     # More useful log format than default
     log_format = '%a (%{X-Real-IP}i) %t "%r" %s %b %Tf ' \
