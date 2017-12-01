@@ -118,7 +118,7 @@ def populated_db(here, pg_params):
 
 @pytest.fixture(scope='session')
 def jsonapi_validator(here):
-    path = here / 'spec' / 'schema.dms'
+    path = here / 'integration' / 'schema.dms'
     with open(path) as fp:
         schema = json.load(fp)
 
