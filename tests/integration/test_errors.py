@@ -1,0 +1,4 @@
+class TestErrors:
+    """Errors"""
+    pass
+

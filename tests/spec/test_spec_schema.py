@@ -1,43 +1,12 @@
-import pytest
+from collections import MutableMapping
+
 from aiohttp import hdrs
 from jsonpointer import resolve_pointer
 
 from aiohttp_json_api.common import JSONAPI_CONTENT_TYPE, JSONAPI
 from aiohttp_json_api.helpers import MISSING, get_router_resource
 
-GET_HEADERS = {
-    hdrs.ACCEPT: 'application/vnd.api+json'
-}
-
-
-@pytest.mark.parametrize(
-    'resource_type',
-    ('authors', 'books', 'chapters', 'photos', 'stores')
-)
-async def test_spec_schema(fantasy_client, jsonapi_validator,
-                           resource_type):
-    response = await fantasy_client.get('/api/{}'.format(resource_type))
-    json = await response.json(content_type=JSONAPI_CONTENT_TYPE)
-    assert jsonapi_validator.is_valid(json)
-
-
-async def test_content_negotiation(fantasy_client):
-    response = await fantasy_client.get('/api/books/1', headers=GET_HEADERS)
-
-    assert response.status == 200
-    assert response.headers[hdrs.CONTENT_TYPE] == 'application/vnd.api+json'
-
-    response = await fantasy_client.get(
-        '/api/books/1',
-        headers={hdrs.CONTENT_TYPE: 'application/vnd.api+json; foo=bar'}
-    )
-    assert response.status == 415
-
-    response = await fantasy_client.get(
-        '/api/books/1',
-        headers={hdrs.ACCEPT: 'application/vnd.api+json; foo=bar'}
-    )
-    assert response.status == 406
+GET_HEADERS = {hdrs.ACCEPT: JSONAPI_CONTENT_TYPE}
 
 
 async def test_fetch_single_resource(fantasy_client):
@@ -45,11 +14,23 @@ async def test_fetch_single_resource(fantasy_client):
     data = await response.json(content_type=JSONAPI_CONTENT_TYPE)
 
     assert response.status == 200
+    assert isinstance(resolve_pointer(data, '/data'), MutableMapping)
+
+    assert isinstance(resolve_pointer(data, '/data/type'), str)
     assert resolve_pointer(data, '/data/type') == 'books'
+
+    assert isinstance(resolve_pointer(data, '/data/id'), str)
     assert resolve_pointer(data, '/data/id') == '1'
+
     assert resolve_pointer(data, '/data/attributes/title') == \
            'The Fellowship of the Ring'
+
+    assert isinstance(resolve_pointer(data, '/data/relationships/author'),
+                      MutableMapping)
     assert resolve_pointer(data, '/data/relationships/author')
+
+    assert isinstance(resolve_pointer(data, '/data/relationships/series'),
+                      MutableMapping)
     assert resolve_pointer(data, '/data/relationships/series')
     assert resolve_pointer(data, '/data/links/self')
 
