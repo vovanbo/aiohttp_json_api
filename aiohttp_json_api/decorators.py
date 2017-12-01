@@ -22,16 +22,21 @@ def jsonapi_handler(handler=None, resource_type=None,
     @wraps(handler)
     async def wrapper(request: web.Request):
         """JSON API handler wrapper."""
-        if request.method in ('POST', 'PATCH'):
-            request_ct = request.content_type
-        else:
-            request_ct = request.headers.get(hdrs.ACCEPT, JSONAPI_CONTENT_TYPE)
+        request_ct = request.headers.get(hdrs.CONTENT_TYPE)
 
-        if request_ct.startswith(content_type) and request_ct != content_type:
+        content_type_error = \
+            "Content-Type '{}' is required.".format(JSONAPI_CONTENT_TYPE)
+        mutation_methods = ('POST', 'PATCH', 'DELETE')
+
+        if request_ct is None and request.method in mutation_methods:
+            raise HTTPUnsupportedMediaType(detail=content_type_error)
+
+        if request_ct is not None and request_ct != JSONAPI_CONTENT_TYPE:
+            raise HTTPUnsupportedMediaType(detail=content_type_error)
+
+        request_accept = request.headers[hdrs.ACCEPT]
+        if request_accept != '*/*' and request_accept != JSONAPI_CONTENT_TYPE:
             raise HTTPNotAcceptable()
-        elif request_ct != content_type:
-            raise HTTPUnsupportedMediaType(
-                detail="Content-Type '{}' is required.".format(content_type))
 
         route_name = request.match_info.route.name
         namespace = request.app[JSONAPI]['routes_namespace']
