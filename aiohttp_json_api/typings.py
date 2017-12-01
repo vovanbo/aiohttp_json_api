@@ -1,8 +1,7 @@
 """Useful typing."""
 
 # pylint: disable=C0103
-import typing
-from typing import Dict, MutableMapping, Tuple, Union
+from typing import Callable, Coroutine, Dict, MutableMapping, Tuple, Union
 
 from .common import FilterRule, ResourceID, SortDirection
 
@@ -22,4 +21,4 @@ RequestSorting = MutableMapping[Tuple[str, ...], SortDirection]
 ResourceIdentifier = Union[ResourceID, Dict[str, str]]
 
 #: Type for callable or co-routine
-Callee = typing.Union[typing.Callable, typing.Coroutine]
+Callee = Union[Callable, Coroutine]
