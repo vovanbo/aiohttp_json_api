@@ -34,7 +34,7 @@ def jsonapi_handler(handler=None, resource_type=None,
         if request_ct is not None and request_ct != JSONAPI_CONTENT_TYPE:
             raise HTTPUnsupportedMediaType(detail=content_type_error)
 
-        request_accept = request.headers[hdrs.ACCEPT]
+        request_accept = request.headers.get(hdrs.ACCEPT, '*/*')
         if request_accept != '*/*' and request_accept != JSONAPI_CONTENT_TYPE:
             raise HTTPNotAcceptable()
 
