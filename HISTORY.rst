@@ -2,6 +2,19 @@
 History
 =======
 
+0.33.0 (2017-12-06)
+-------------------
+
+* Improve content type negotiation
+* Improve documentation
+* Add field for Date
+* Add example based on `fantasy database <https://github.com/endpoints/fantasy-database>`_
+* Introduce JSON API integration test suite (not done yet!)
+* Improve collections helpers
+* No more links normalization by default
+* Move meta object at top level of result document
+
+
 0.32.0 (2017-11-21)
 -------------------
 
