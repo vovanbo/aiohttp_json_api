@@ -37,8 +37,8 @@ import trafaret as t
 from aiohttp import web
 from yarl import URL
 
+from .common import logger
 from .errors import HTTPBadRequest
-from .log import logger
 from .helpers import make_sentinel
 
 __all__ = (
@@ -54,7 +54,14 @@ DEFAULT_LIMIT = 25
 
 
 class PaginationABC(ABC):
+    """Pagination abstract base class."""
+
     def __init__(self, request: web.Request):
+        """
+        Initialize paginator.
+
+        :param request: Request instance
+        """
         self.request = request
 
     @property
@@ -64,6 +71,8 @@ class PaginationABC(ABC):
     @abstractmethod
     def meta(self) -> MutableMapping:
         """
+        Return meta object of pagination.
+
         **Must be overridden.**
 
         A dictionary, which must be included in the top-level *meta object*.
@@ -73,10 +82,12 @@ class PaginationABC(ABC):
     @abstractmethod
     def links(self) -> MutableMapping:
         """
+        Return pagination links.
+
         **Must be overridden.**
 
-        A dictionary, which must be included in the top-level *links object*. It
-        contains these keys:
+        A dictionary, which must be included in the top-level *links object*.
+        It contains these keys:
 
         *   *self*
             The link to the current page
@@ -97,6 +108,8 @@ class PaginationABC(ABC):
 
     def page_link(self, **kwargs) -> str:
         """
+        Return link to page.
+
         Uses the :attr:`uri` and replaces the *page* query parameters with the
         values in *pagination*.
 
@@ -107,11 +120,9 @@ class PaginationABC(ABC):
             pager.page_link({"cursor": 1, "limit": 5})
             # ...
 
-        :arg dict pagination:
-            Query parameters for the pagination.
+        :param kwargs: Additional parameters to query string
         :rtype: str
-        :returns:
-            The url to the page
+        :return: The URL to the page
         """
         query = self.request.query.copy()
         query.update({
@@ -137,7 +148,14 @@ class LimitOffset(PaginationABC):
     :arg int total_resources:
         The total number of resources in the collection.
     """
+
     def __init__(self, request: web.Request, total_resources: int = 0):
+        """
+        Initialize limit-offset paginator.
+
+        :param request: Request instance
+        :param total_resources: Total count of resources
+        """
         super(LimitOffset, self).__init__(request)
         self.total_resources = total_resources
 
@@ -168,7 +186,8 @@ class LimitOffset(PaginationABC):
             'first': self.page_link(limit=self.limit, offset=0),
             'last': self.page_link(
                 limit=self.limit,
-                offset=int((self.total_resources - 1) / self.limit) * self.limit
+                offset=int(
+                    (self.total_resources - 1) / self.limit) * self.limit
             )
         }
         if self.offset > 0:
@@ -185,7 +204,7 @@ class LimitOffset(PaginationABC):
 
     def meta(self) -> MutableMapping:
         """
-        Returns a dictionary with
+        Return meta object of paginator.
 
         *   *total-resources*
             The total number of resources in the collection
@@ -217,7 +236,14 @@ class NumberSize(PaginationABC):
     :arg int total_resources:
         The total number of resources in the collection.
     """
+
     def __init__(self, request: web.Request, total_resources):
+        """
+        Initialize a number size based paginator.
+
+        :param request: Request instance
+        :param total_resources: Total count of resources
+        """
         super(NumberSize, self).__init__(request)
         self.total_resources = total_resources
 
@@ -241,23 +267,21 @@ class NumberSize(PaginationABC):
 
     @property
     def limit(self) -> int:
-        """
-        The limit, based on the page :attr:`size`.
-        """
+        """Return the limit, based on the page :attr:`size`."""
         return self.size
 
     @property
     def offset(self) -> int:
         """
-        The offset, based on the page :attr:`size` and :attr:`number`.
+        Return the offset.
+
+        Offset based on the page :attr:`size` and :attr:`number`.
         """
         return self.size * self.number
 
     @property
     def last_page(self) -> int:
-        """
-        The number of the last page.
-        """
+        """Return the number of the last page."""
         return int((self.total_resources - 1) / self.size)
 
     def links(self) -> MutableMapping:
@@ -276,7 +300,7 @@ class NumberSize(PaginationABC):
 
     def meta(self) -> MutableMapping:
         """
-        Returns a dictionary with
+        Return meta object of pagination.
 
         *   *total-resources*
             The total number of resources in the collection
@@ -312,13 +336,22 @@ class Cursor(PaginationABC):
         The cursor in the query string must match this regular expression.
         If it doesn't, an exception is raised.
     """
-    # The cursor to the first page
+
+    #: The cursor to the first page
     FIRST = make_sentinel(var_name='jsonapi:first')
-    # The cursor to the last page
+    #: The cursor to the last page
     LAST = make_sentinel(var_name='jsonapi:last')
 
     def __init__(self, request: web.Request, prev_cursor=None,
                  next_cursor=None, cursor_regex: str = None):
+        """
+        Initialize cursor based paginator.
+
+        :param request: Request instance
+        :param prev_cursor: Previous cursor identifier
+        :param next_cursor: Next cursor identifier
+        :param cursor_regex: Regexp to validate a cursor string
+        """
         super(Cursor, self).__init__(request)
 
         self.cursor = request.query.get('page[cursor]', self.FIRST)
@@ -350,6 +383,8 @@ class Cursor(PaginationABC):
     def links(self, prev_cursor=None,
               next_cursor=None) -> MutableMapping:
         """
+        Return links object of paginator.
+
         :arg str prev_cursor:
             The cursor to the previous page.
         :arg str next_cursor:
@@ -375,7 +410,7 @@ class Cursor(PaginationABC):
 
     def meta(self) -> MutableMapping:
         """
-        Returns a dictionary with
+        Return meta object of paginator.
 
         *   *page-limit*
             The number of resources per page

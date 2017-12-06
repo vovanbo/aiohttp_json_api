@@ -38,7 +38,7 @@ class.
 import functools
 from enum import Enum
 
-from ..common import Step, Event
+from ..common import Event, Step
 
 __all__ = (
     'Tag',

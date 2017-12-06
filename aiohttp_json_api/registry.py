@@ -1,7 +1,5 @@
-"""
-Application registry
-====================
-"""
+"""Application registry."""
+
 import collections
 import inspect
 
@@ -10,17 +8,31 @@ from .typings import ResourceIdentifier
 
 
 class Registry(collections.UserDict):
+    """
+    JSON API application registry.
+
+    This is a dictionary created on JSON API application set up.
+    It contains a mapping between types, resource classes and schemas.
+    """
+
     __slots__ = ('data',)
 
     def __getitem__(self, key):
+        """
+        Get schema for type or resource class type.
+
+        :param key: Type string or resource class.
+        :return: Schema instance
+        """
         return super(Registry, self).__getitem__(
             key if isinstance(key, str) or inspect.isclass(key) else type(key)
         )
 
     def ensure_identifier(self, obj, asdict=False) -> ResourceIdentifier:
         """
-        Returns the identifier object
-        (:class:`ResourceID <.common.ResourceID>`) for the *resource*:
+        Return the identifier object for the *resource*.
+
+        (:class:`ResourceID <.common.ResourceID>`)
 
         .. code-block:: python3
 

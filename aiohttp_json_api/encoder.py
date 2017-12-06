@@ -1,7 +1,4 @@
-"""
-JSON encoder extension
-======================
-"""
+"""JSON encoder extension."""
 
 import functools
 import json
@@ -10,11 +7,10 @@ from .jsonpointer import JSONPointer
 
 
 class JSONEncoder(json.JSONEncoder):
-    """
-    Overloaded JSON encoder with JSONPointer support.
-    """
+    """Overloaded JSON encoder with JSONPointer support."""
+
     def default(self, o):
-        """Default dumps behaviour overriding."""
+        """Add JSONPointer serializing support to default json.dumps."""
         if isinstance(o, JSONPointer):
             return o.path
 

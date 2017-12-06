@@ -9,8 +9,8 @@ __version__ = '0.32.0'
 
 
 def setup_app_registry(app, registry_class, schemas):
-    """Setup JSON API application registry."""
-    from .log import logger
+    """Set up JSON API application registry."""
+    from .common import logger
     from .registry import Registry
     from .schema.abc.schema import SchemaABC
 
@@ -54,9 +54,9 @@ def setup_app_registry(app, registry_class, schemas):
 
 
 def setup_custom_handlers(custom_handlers):
-    """Setup default and custom handlers for JSON API application."""
+    """Set up default and custom handlers for JSON API application."""
     from . import handlers as default_handlers
-    from .log import logger
+    from .common import logger
 
     handlers = {
         name: handler
@@ -91,7 +91,7 @@ def setup_custom_handlers(custom_handlers):
 
 
 def setup_resources(app, base_path, handlers, routes_namespace):
-    """Setup JSON API application resources."""
+    """Set up JSON API application resources."""
     from .common import ALLOWED_MEMBER_NAME_RULE
 
     type_part = '{type:' + ALLOWED_MEMBER_NAME_RULE + '}'
@@ -128,12 +128,12 @@ def setup_resources(app, base_path, handlers, routes_namespace):
     related_resource.add_route('GET', handlers['get_related'])
 
 
-def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
+def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0',
                   meta=None, context_class=None, registry_class=None,
                   custom_handlers=None, log_errors=True,
                   routes_namespace=None):
     """
-    Setup JSON API in aiohttp application.
+    Set up JSON API in aiohttp application.
 
     This function will setup resources, handlers and middleware.
 
@@ -177,9 +177,8 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
         aiohttp Application instance with configured JSON API
     :rtype: ~aiohttp.web.Application
     """
-    from .common import JSONAPI
+    from .common import JSONAPI, logger
     from .context import RequestContext
-    from .log import logger
     from .middleware import jsonapi_middleware
 
     if JSONAPI in app:
@@ -204,9 +203,9 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0.0',
 
     app[JSONAPI] = {
         'context_class': context_class,
+        'meta': meta,
         'jsonapi': {
             'version': version,
-            'meta': meta
         },
         'registry': app_registry,
         'log_errors': log_errors,

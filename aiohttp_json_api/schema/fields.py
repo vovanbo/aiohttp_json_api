@@ -40,10 +40,10 @@ import trafaret as t
 from trafaret.contrib import rfc_3339
 from yarl import URL
 
-from .trafarets import DecimalTrafaret
 from .base_fields import Attribute
-from ..helpers import is_collection
+from .trafarets import DecimalTrafaret
 from ..errors import InvalidType, InvalidValue
+from ..helpers import is_collection
 
 __all__ = [
     "String",
@@ -190,6 +190,7 @@ class Complex(Attribute):
 
 class Decimal(Attribute):
     """Encodes and decodes a :class:`decimal.Decimal` as a string."""
+
     def __init__(self, *, gte=None, lte=None, gt=None, lt=None, **kwargs):
         super(Decimal, self).__init__(**kwargs)
         self._trafaret = DecimalTrafaret(gte=gte, lte=lte, gt=gt, lt=lt)
@@ -254,10 +255,12 @@ class Fraction(Attribute):
             raise InvalidValue(detail=detail, source_pointer=sp / "numerator")
         if not isinstance(data["denominator"], int):
             detail = "The denominator must be an integer."
-            raise InvalidValue(detail=detail, source_pointer=sp / "denominator")
+            raise InvalidValue(detail=detail,
+                               source_pointer=sp / "denominator")
         if data["denominator"] == 0:
             detail = "The denominator must be not equal to zero."
-            raise InvalidValue(detail=detail, source_pointer=sp / "denominator")
+            raise InvalidValue(detail=detail,
+                               source_pointer=sp / "denominator")
 
         val = data["numerator"] / data["denominator"]
         if self.min is not None and self.min > val:
@@ -279,6 +282,7 @@ class DateTime(Attribute):
     Stores a :class:`datetime.datetime` in ISO-8601 as recommended in
     http://jsonapi.org/recommendations/#date-and-time-fields.
     """
+
     def __init__(self, *, allow_blank: bool = False, **kwargs):
         super(DateTime, self).__init__(**kwargs)
         self._trafaret = rfc_3339.DateTime(allow_blank=allow_blank)
@@ -296,6 +300,34 @@ class DateTime(Attribute):
 
     def serialize(self, schema, data, **kwargs):
         if isinstance(data, datetime.datetime):
+            return data.isoformat()
+
+        return self._trafaret.check(data)
+
+
+class Date(Attribute):
+    """
+    Stores a :class:`datetime.datetime` in ISO-8601 as recommended in
+    http://jsonapi.org/recommendations/#date-and-time-fields.
+    """
+
+    def __init__(self, *, allow_blank: bool = False, **kwargs):
+        super(Date, self).__init__(**kwargs)
+        self._trafaret = rfc_3339.Date(allow_blank=allow_blank)
+        if self.allow_none:
+            self._trafaret |= t.Null()
+
+    def pre_validate(self, schema, data, sp, context):
+        try:
+            self._trafaret.check(data)
+        except t.DataError as error:
+            raise InvalidValue(detail=error.as_dict(), source_pointer=sp)
+
+    def deserialize(self, schema, data, sp, **kwargs):
+        return self._trafaret.check(data)
+
+    def serialize(self, schema, data, **kwargs):
+        if isinstance(data, datetime.date):
             return data.isoformat()
 
         return self._trafaret.check(data)
@@ -348,6 +380,7 @@ class UUID(Attribute):
     :arg int version:
         The required version of the UUID.
     """
+
     def __init__(self, *, version=None, **kwargs):
         super(UUID, self).__init__(**kwargs)
         self.version = version
@@ -425,6 +458,7 @@ class URI(Attribute):
 
 class Email(Attribute):
     """Checks if a string is syntactically correct Email address."""
+
     def __init__(self, **kwargs):
         super(Email, self).__init__(**kwargs)
         self._trafaret = t.Email

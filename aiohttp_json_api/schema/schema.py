@@ -10,25 +10,22 @@ validation and update operations based on
 """
 import asyncio
 import copy
-from collections import OrderedDict, MutableMapping
-from functools import partial
 import urllib.parse
-from typing import Optional, Dict
+from collections import MutableMapping, OrderedDict
+from functools import partial
+from typing import Dict, Optional
 
 import inflection
 from aiohttp import web
 
 from .abc.schema import SchemaABC
-from .base_fields import BaseField, Attribute, Relationship
-from ..common import JSONAPI, Step, Event, Relation
+from .base_fields import Attribute, BaseField, Relationship
 from .decorators import Tag
-from ..errors import (
-    ValidationError, InvalidValue, InvalidType, HTTPConflict,
-    HTTPBadRequest
-)
-from ..helpers import MISSING, first, get_router_resource, ensure_collection
+from ..common import Event, JSONAPI, Relation, Step, logger
+from ..errors import (HTTPBadRequest, HTTPConflict, InvalidType, InvalidValue,
+                      ValidationError)
+from ..helpers import MISSING, first, get_router_resource
 from ..jsonpointer import JSONPointer
-from ..log import logger
 from ..typings import Callee
 
 __all__ = (
@@ -108,7 +105,9 @@ class BaseSchema(SchemaABC):
                 compound_document = getattr(resource, field.mapped_key)
                 if compound_document:
                     compound_documents.extend(
-                        ensure_collection(compound_document)
+                        (compound_document,)
+                        if type(compound_document) in self.registry
+                        else compound_document
                     )
             return compound_documents
         raise RuntimeError('No includer and mapped_key have been defined.')
@@ -364,8 +363,8 @@ class BaseSchema(SchemaABC):
                 if field.key:
                     field_sp = sp / key / field.name
 
-                    if validate and \
-                            Step.BEFORE_DESERIALIZATION in validation_steps:
+                    if (validate and
+                        Step.BEFORE_DESERIALIZATION in validation_steps):
                         await self._pre_validate_field(
                             field, field_data, field_sp, context
                         )

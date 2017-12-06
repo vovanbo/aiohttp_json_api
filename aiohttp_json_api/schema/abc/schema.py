@@ -3,18 +3,17 @@ Schema abstract base classes
 ============================
 """
 
+import abc
 import inspect
 import itertools
-import abc
 from collections import OrderedDict, defaultdict
 from types import MappingProxyType
 
 import inflection
 
+from .field import FieldABC
 from ...common import ALLOWED_MEMBER_NAME_REGEX
 from ...jsonpointer import JSONPointer
-
-from .field import FieldABC
 
 _issubclass = issubclass
 
@@ -175,9 +174,10 @@ class SchemaMeta(abc.ABCMeta):
 
         for key, field in inherited_fields + cls_fields:
             field._key = key
-            field.name = \
-                field.name or (klass.inflect(key)
-                               if callable(klass.inflect) else key)
+            field.name = (
+                field.name or
+                (klass.inflect(key) if callable(klass.inflect) else key)
+            )
             field.mapped_key = field.mapped_key or key
             declared_fields[field.key] = field
 
@@ -195,7 +195,8 @@ class SchemaMeta(abc.ABCMeta):
 
         klass._id = declared_fields.pop('id', None)
 
-        # Find the *top-level* attributes, relationships, links and meta fields.
+        # Find the *top-level* attributes, relationships,
+        # links and meta fields.
         attributes = OrderedDict(
             (key, field)
             for key, field in declared_fields.items()
@@ -472,8 +473,8 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
 
             http://jsonapi.org/format/#crud-creating
 
-        Creates a new resource instance and returns it. **You should overridde
-        this method.**
+        Creates a new resource instance and returns it.
+        **You should override this method.**
 
         The default implementation passes the attributes, (dereferenced)
         relationships and meta data from the JSON API resource object
@@ -590,8 +591,8 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
 
             http://jsonapi.org/format/#crud-updating-to-many-relationships
 
-        Deletes the members specified in the JSON API relationship object *data*
-        from the relationship.
+        Deletes the members specified in the JSON API relationship object
+        *data* from the relationship.
 
         :arg str relation_name:
             The name of the relationship.

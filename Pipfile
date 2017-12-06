@@ -11,7 +11,7 @@ aiohttp = ">=2.0.0"
 inflection = ">=0.3.1"
 jsonpointer = ">=1.10"
 python-dateutil = ">=2.6.0"
-trafaret = ">=0.11.0"
+trafaret = {git = "https://github.com/Deepwalker/trafaret.git", editable = true, ref = "master"}
 
 
 [dev-packages]
@@ -29,10 +29,18 @@ sphinx-autodoc-typehints = "*"
 tox = "*"
 twine = "*"
 watchdog = "*"
-"e1839a8" = {path = ".", editable = true}
 pylint = "*"
 mimesis = "*"
 "pep8" = "*"
 "autopep8" = "*"
 mypy = "*"
 tox-pyenv = "*"
+aiopg = "*"
+sqlalchemy = "*"
+docker = "*"
+invoke = "*"
+attrs = "*"
+jsonschema = "*"
+aiohttp = "*"
+pytest-aiohttp = "*"
+"flake8-import-order" = "*"

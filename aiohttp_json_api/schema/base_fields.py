@@ -34,14 +34,14 @@ You should only work with the following fields directly:
 
 """
 
-from collections import Mapping
-from typing import Sequence, Optional
 import urllib.parse
+from collections import Mapping
+from typing import Optional, Sequence
 
-from ..jsonpointer import JSONPointer
-from ..common import ALLOWED_MEMBER_NAME_REGEX, Event
 from .abc.field import FieldABC
+from ..common import ALLOWED_MEMBER_NAME_REGEX, Event
 from ..errors import InvalidType, InvalidValue
+from ..jsonpointer import JSONPointer
 
 __all__ = (
     'BaseField',
@@ -240,7 +240,7 @@ class Link(BaseField):
     """
 
     def __init__(self, route: str, link_of: str, *, name: str = None,
-                 normalize: bool = True, absolute: bool = True):
+                 normalize: bool = False, absolute: bool = True):
         super(Link, self).__init__(name=name, writable=Event.NEVER)
 
         self.normalize = bool(normalize)

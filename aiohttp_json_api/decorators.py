@@ -1,15 +1,20 @@
 """Handlers decorators."""
 from functools import partial, wraps
 
-from aiohttp import web
+from aiohttp import hdrs, web
 
-from .common import JSONAPI
-from .errors import HTTPUnsupportedMediaType, HTTPNotFound
-from .log import logger
+from .common import JSONAPI, JSONAPI_CONTENT_TYPE, logger
+from .errors import HTTPNotAcceptable, HTTPNotFound, HTTPUnsupportedMediaType
 
 
-def jsonapi_handler(handler=None, resource_type=None, content_type=None):
-    """Decorates JSON API handlers to pass request context etc."""
+def jsonapi_handler(handler=None, resource_type=None,
+                    content_type=JSONAPI_CONTENT_TYPE):
+    """
+    JSON API handler decorator.
+
+    Used for content type negotiation, create request context,
+    check existence of schema for current request.
+    """
     if handler is None:
         return partial(jsonapi_handler,
                        resource_type=resource_type, content_type=content_type)
@@ -17,6 +22,22 @@ def jsonapi_handler(handler=None, resource_type=None, content_type=None):
     @wraps(handler)
     async def wrapper(request: web.Request):
         """JSON API handler wrapper."""
+        request_ct = request.headers.get(hdrs.CONTENT_TYPE)
+
+        content_type_error = \
+            "Content-Type '{}' is required.".format(JSONAPI_CONTENT_TYPE)
+        mutation_methods = ('POST', 'PATCH', 'DELETE')
+
+        if request_ct is None and request.method in mutation_methods:
+            raise HTTPUnsupportedMediaType(detail=content_type_error)
+
+        if request_ct is not None and request_ct != JSONAPI_CONTENT_TYPE:
+            raise HTTPUnsupportedMediaType(detail=content_type_error)
+
+        request_accept = request.headers[hdrs.ACCEPT]
+        if request_accept != '*/*' and request_accept != JSONAPI_CONTENT_TYPE:
+            raise HTTPNotAcceptable()
+
         route_name = request.match_info.route.name
         namespace = request.app[JSONAPI]['routes_namespace']
 
@@ -37,11 +58,6 @@ def jsonapi_handler(handler=None, resource_type=None, content_type=None):
             raise HTTPNotFound()
 
         request[JSONAPI] = context
-
-        if content_type is not None and request.content_type != content_type:
-            raise HTTPUnsupportedMediaType(
-                detail="Only '{}' Content-Type is acceptable "
-                       "for this method.".format(content_type)
-            )
         return await handler(request, context, context.schema)
+
     return wrapper

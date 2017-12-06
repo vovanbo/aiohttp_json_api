@@ -48,11 +48,6 @@ Submodules
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: aiohttp_json_api.log
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 .. automodule:: aiohttp_json_api.middleware
     :members:
     :undoc-members:

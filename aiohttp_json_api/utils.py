@@ -1,35 +1,43 @@
-"""
-Utilities related to JSON API
-=============================
-"""
+"""Utilities related to JSON API."""
+
 import asyncio
 import typing
-from collections import OrderedDict, defaultdict
+from collections import defaultdict, OrderedDict
 
 from aiohttp import web
+from aiohttp.web_response import Response
+import trafaret as t
 
 from .common import JSONAPI, JSONAPI_CONTENT_TYPE
-from .helpers import SENTINEL, is_collection, first, ensure_collection
 from .encoder import json_dumps
 from .errors import Error, ErrorList, ValidationError
+from .helpers import first, is_collection
 
 
-def jsonapi_response(data=SENTINEL, *, text=None, body=None,
-                     status=web.HTTPOk.status_code,
-                     reason=None, headers=None,
-                     dumps=None):
+def jsonapi_response(data, *, status=web.HTTPOk.status_code,
+                     reason=None, headers=None, dumps=None):
+    """
+    Return JSON API response.
+
+    :param data: Rendered JSON API document
+    :param status: HTTP status of JSON API response
+    :param reason: Readable reason of error response
+    :param headers: Headers
+    :param dumps: Custom JSON dumps callable
+    :return: Response instance
+    """
     if not callable(dumps):
         dumps = json_dumps
 
-    return web.json_response(
-        data=data, text=text, body=body, status=status,
-        reason=reason, headers=headers, content_type=JSONAPI_CONTENT_TYPE,
-        dumps=dumps
-    )
+    body = dumps(data).encode('utf-8')
+    return Response(body=body, status=status, reason=reason,
+                    headers=headers, content_type=JSONAPI_CONTENT_TYPE)
 
 
 async def get_compound_documents(resources, context):
     """
+    Get compound documents of resources.
+
     .. seealso::
 
         http://jsonapi.org/format/#fetching-includes
@@ -51,7 +59,7 @@ async def get_compound_documents(resources, context):
     relationships = defaultdict(set)
     compound_documents = OrderedDict()
 
-    collection = ensure_collection(resources)
+    collection = (resources,) if type(resources) in registry else resources
     for path in context.include:
         if path and collection:
             rest_path = path
@@ -80,16 +88,34 @@ async def get_compound_documents(resources, context):
 
 
 async def serialize_resource(resource, context):
+    """
+    Serialize resource by schema.
+
+    :param resource: Resource instance
+    :param context: Request context
+    :return: Serialized resource
+    """
     registry = context.request.app[JSONAPI]['registry']
     schema = registry[resource]
     return schema.serialize_resource(resource, context=context)
 
 
 async def render_document(data, included, context, *,
-                          pagination=None, links=None) -> typing.MutableMapping:
+                          pagination=None,
+                          links=None) -> typing.MutableMapping:
+    """
+    Render JSON API document.
+
+    :param data: One or many resources
+    :param included: Compound documents
+    :param context: Request context
+    :param pagination: Pagination instance
+    :param links: Additional links
+    :return: Rendered JSON API document
+    """
     document = OrderedDict()
 
-    if is_collection(data):
+    if is_collection(data, exclude=(context.schema.resource_class,)):
         document['data'] = await asyncio.gather(
             *[serialize_resource(r, context) for r in data]
         )
@@ -107,11 +133,18 @@ async def render_document(data, included, context, *,
     if links is not None:
         document['links'].update(links)
 
+    meta_object = context.request.app[JSONAPI]['meta']
     pagination = pagination or context.pagination
+
+    if pagination or meta_object:
+        document.setdefault('meta', OrderedDict())
+
     if pagination is not None:
         document['links'].update(pagination.links())
-        document.setdefault('meta', OrderedDict())
         document['meta'].update(pagination.meta())
+
+    if meta_object:
+        document['meta'].update(meta_object)
 
     jsonapi_info = context.request.app[JSONAPI]['jsonapi']
     if jsonapi_info:
@@ -123,8 +156,7 @@ async def render_document(data, included, context, *,
 def error_to_response(request: web.Request,
                       error: typing.Union[Error, ErrorList]):
     """
-    Converts an :class:`Error` or :class:`ErrorList`
-    to a :class:`~aiohttp.web.Response`.
+    Convert an :class:`Error` or :class:`ErrorList` to JSON API response.
 
     :arg ~aiohttp.web.Request request:
         The web request instance.
@@ -147,8 +179,21 @@ def error_to_response(request: web.Request,
 
 
 def validate_uri_resource_id(schema, resource_id, context):
+    """
+    Validate resource ID from URI.
+
+    :param schema: Resource schema
+    :param resource_id: Resource ID
+    :param context: Request context
+    """
     field = getattr(schema, '_id', None)
-    if field is not None:
+    if field is None:
+        try:
+            t.Int().check(resource_id)
+        except t.DataError as exc:
+            raise ValidationError(detail=str(exc).capitalize(),
+                                  source_parameter='id')
+    else:
         try:
             field.pre_validate(schema, resource_id, sp=None, context=context)
         except ValidationError as exc:
