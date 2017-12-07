@@ -56,6 +56,7 @@ async def get_compound_documents(resources, context):
         names of the included relationships.
     """
     registry = context.request.app[JSONAPI]['registry']
+    controllers = context.request.app[JSONAPI]['controllers']
     relationships = defaultdict(set)
     compound_documents = OrderedDict()
 
@@ -70,7 +71,8 @@ async def get_compound_documents(resources, context):
                 if rest_path in relationships[schema.type]:
                     break
 
-                nested_collection = await schema.fetch_compound_documents(
+                controller = controllers[schema.type]
+                nested_collection = await controller.fetch_compound_documents(
                     relation_name=rest_path[0], resources=nested_collection,
                     context=context, rest_path=rest_path[1:]
                 )
@@ -115,7 +117,7 @@ async def render_document(data, included, context, *,
     """
     document = OrderedDict()
 
-    if is_collection(data, exclude=(context.schema.resource_class,)):
+    if is_collection(data, exclude=(context.schema.resource_cls,)):
         document['data'] = await asyncio.gather(
             *[serialize_resource(r, context) for r in data]
         )

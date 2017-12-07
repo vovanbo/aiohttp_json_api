@@ -9,24 +9,21 @@ validation and update operations based on
 :class:`fields <aiohttp_json_api.schema.base_fields.BaseField>`.
 """
 import asyncio
-import copy
 import urllib.parse
 from collections import MutableMapping, OrderedDict
 from functools import partial
-from typing import Dict, Optional
+from typing import Dict
 
 import inflection
-from aiohttp import web
 
-from aiohttp_json_api.abc.schema import SchemaABC
-from .base_fields import Attribute, BaseField, Relationship
-from .decorators import Tag
-from ..common import Event, JSONAPI, Relation, Step, logger
-from ..errors import (HTTPBadRequest, HTTPConflict, InvalidType, InvalidValue,
-                      ValidationError)
-from ..helpers import MISSING, first, get_router_resource
-from ..jsonpointer import JSONPointer
-from ..typings import Callee
+from .abc.schema import SchemaABC
+from .fields.base import Attribute, BaseField, Relationship
+from .fields.decorators import Tag
+from .common import Event, Relation, Step, JSONAPI
+from .errors import (
+    HTTPBadRequest, HTTPConflict, InvalidType, InvalidValue, ValidationError
+)
+from .helpers import MISSING, first, get_router_resource, get_processors
 
 __all__ = (
     'BaseSchema',
@@ -44,15 +41,6 @@ class BaseSchema(SchemaABC):
     """
 
     inflect = partial(inflection.dasherize)
-
-    def __init__(self, app: web.Application = None):
-        self.app = app
-        if self.opts is None:
-            self.opts = {'pagination': None}
-
-    @property
-    def registry(self):
-        return self.app[JSONAPI]['registry']
 
     @staticmethod
     def get_object_id(resource) -> str:
@@ -98,68 +86,9 @@ class BaseSchema(SchemaABC):
         if field.mapped_key:
             setattr(resource, field.mapped_key, data)
 
-    async def default_include(self, field, resources, context, **kwargs):
-        if field.mapped_key:
-            compound_documents = []
-            for resource in resources:
-                compound_document = getattr(resource, field.mapped_key)
-                if compound_document:
-                    compound_documents.extend(
-                        (compound_document,)
-                        if type(compound_document) in self.registry
-                        else compound_document
-                    )
-            return compound_documents
-        raise RuntimeError('No includer and mapped_key have been defined.')
-
-    async def default_query(self, field, resource, context, **kwargs):
-        if field.mapped_key:
-            return getattr(resource, field.mapped_key)
-        raise RuntimeError('No query method and mapped_key have been defined.')
-
-    async def default_add(self, field, resource, data, sp):
-        logger.warning('You should override the adder.')
-
-        if not field.mapped_key:
-            raise RuntimeError('No adder and mapped_key have been defined.')
-
-        relatives = getattr(resource, field.mapped_key)
-        relatives.extend(data)
-
-    async def default_remove(self, field, resource, data, sp):
-        logger.warning('You should override the remover.')
-
-        if not field.mapped_key:
-            raise RuntimeError('No remover and mapped_key have been defined.')
-
-        relatives = getattr(resource, field.mapped_key)
-        for relative in data:
-            try:
-                relatives.remove(relative)
-            except ValueError:
-                pass
-
-    def _get_processors(self, tag: Tag, field: BaseField,
-                        default: Optional[Callee] = None):
-        if self._has_processors:
-            processor_tag = tag, field.key
-            processors = self.__processors__.get(processor_tag)
-            if processors:
-                for processor_name in processors:
-                    processor = getattr(self, processor_name)
-                    processor_kwargs = \
-                        processor.__processing_kwargs__.get(processor_tag)
-                    yield processor, processor_kwargs
-                return
-
-        if not callable(default):
-            return
-
-        yield default, {}
-
     def get_value(self, field, resource, **kwargs):
         getter, getter_kwargs = first(
-            self._get_processors(Tag.GET, field, self.default_getter)
+            get_processors(self, Tag.GET, field, self.default_getter)
         )
         return getter(field, resource, **getter_kwargs, **kwargs)
 
@@ -168,7 +97,7 @@ class BaseSchema(SchemaABC):
             raise RuntimeError('Attempt to set value to read-only field.')
 
         setter, setter_kwargs = first(
-            self._get_processors(Tag.SET, field, self.default_setter)
+            get_processors(self, Tag.SET, field, self.default_setter)
         )
         return await setter(field, resource, data, sp, **setter_kwargs,
                             **kwargs)
@@ -219,8 +148,9 @@ class BaseSchema(SchemaABC):
 
         result.setdefault('links', OrderedDict())
         if 'self' not in result['links']:
-            rid = self.registry.ensure_identifier(resource)
-            route = get_router_resource(self.app, 'resource')
+            registry = context.request.app[JSONAPI]['registry']
+            rid = registry.ensure_identifier(resource)
+            route = get_router_resource(context.request.app, 'resource')
             route_url = route._formatter.format_map({'type': rid.type,
                                                      'id': rid.id})
             route_url = urllib.parse.urlunsplit(
@@ -252,7 +182,7 @@ class BaseSchema(SchemaABC):
         :arg BaseField field:
         :arg data:
             The input data for the field.
-        :arg JSONPointer sp:
+        :arg aiohttp_json_api.jsonpointer.JSONPointer sp:
             The pointer to *data* in the original document. If *None*, there
             was no input data for this field.
         """
@@ -277,7 +207,7 @@ class BaseSchema(SchemaABC):
                 field.pre_validate(self, data, sp, context)
 
             # Run custom pre-validators for field
-            validators = self._get_processors(Tag.VALIDATE, field, None)
+            validators = get_processors(self, Tag.VALIDATE, field, None)
             for validator, validator_kwargs in validators:
                 if validator_kwargs['step'] is not Step.BEFORE_DESERIALIZATION:
                     continue
@@ -318,7 +248,7 @@ class BaseSchema(SchemaABC):
             field.post_validate(self, field_data, field_sp, context)
 
             # Run custom post-validators for field
-            validators = self._get_processors(Tag.VALIDATE, field, None)
+            validators = get_processors(self, Tag.VALIDATE, field, None)
             for validator, validator_kwargs in validators:
                 if validator_kwargs['step'] is not Step.AFTER_DESERIALIZATION:
                     continue
@@ -389,98 +319,3 @@ class BaseSchema(SchemaABC):
         if 'id' in data:
             result['id'] = data['id']
         return result
-
-    async def create_resource(self, data, sp, context, **kwargs):
-        return self.map_data_to_schema(
-            await self.deserialize_resource(data, sp, context)
-        )
-
-    async def update_resource(self, resource_id, data, sp, context, **kwargs):
-        deserialized_data = \
-            await self.deserialize_resource(data, sp, context,
-                                            expected_id=resource_id)
-
-        resource = await self.fetch_resource(resource_id, context, **kwargs)
-
-        updated_resource = copy.deepcopy(resource)
-        for key, (data, sp) in deserialized_data.items():
-            field = self._declared_fields[key]
-            await self.set_value(field, updated_resource, data, sp,
-                                 context=context, **kwargs)
-
-        return resource, updated_resource
-
-    async def update_relationship(self, relation_name, resource_id,
-                                  data, sp, context, **kwargs):
-        field = self.get_relationship_field(relation_name)
-
-        await self._pre_validate_field(field, data, sp, context)
-        decoded = field.deserialize(self, data, sp, **kwargs)
-
-        resource = await self.fetch_resource(resource_id, context, **kwargs)
-
-        updated_resource = copy.deepcopy(resource)
-        await self.set_value(field, updated_resource, decoded, sp,
-                             context=context, **kwargs)
-        return resource, updated_resource
-
-    async def add_relationship(self, relation_name, resource_id,
-                               data, sp, context, **kwargs):
-        field = self.get_relationship_field(relation_name)
-        if field.relation is not Relation.TO_MANY:
-            raise RuntimeError('Wrong relationship field.'
-                               'Relation to-many is required.')
-
-        await self._pre_validate_field(field, data, sp, context)
-        decoded = field.deserialize(self, data, sp, **kwargs)
-
-        resource = await self.fetch_resource(resource_id, context, **kwargs)
-
-        updated_resource = copy.deepcopy(resource)
-        adder, adder_kwargs = first(
-            self._get_processors(Tag.ADD, field, self.default_add)
-        )
-        await adder(field, updated_resource, decoded, sp,
-                    context=context, **adder_kwargs, **kwargs)
-        return resource, updated_resource
-
-    async def remove_relationship(self, relation_name, resource_id,
-                                  data, sp, context, **kwargs):
-        field = self.get_relationship_field(relation_name)
-        if field.relation is not Relation.TO_MANY:
-            raise RuntimeError('Wrong relationship field.'
-                               'Relation to-many is required.')
-
-        await self._pre_validate_field(field, data, sp, context)
-        decoded = field.deserialize(self, data, sp, **kwargs)
-
-        resource = await self.fetch_resource(resource_id, context, **kwargs)
-
-        updated_resource = copy.deepcopy(resource)
-        remover, remover_kwargs = first(
-            self._get_processors(Tag.REMOVE, field, self.default_remove)
-        )
-        await remover(field, updated_resource, decoded, sp,
-                      context=context, **remover_kwargs, **kwargs)
-        return resource, updated_resource
-
-    async def query_relatives(self, relation_name, resource_id, context,
-                              **kwargs):
-        field = self.get_relationship_field(relation_name)
-
-        resource = await self.fetch_resource(resource_id, context, **kwargs)
-        query, query_kwargs = first(
-            self._get_processors(Tag.QUERY, field, self.default_query)
-        )
-        return await query(field, resource, context,
-                           **query_kwargs, **kwargs)
-
-    async def fetch_compound_documents(self, relation_name, resources, context,
-                                       **kwargs):
-        field = self.get_relationship_field(relation_name,
-                                            source_parameter='include')
-        include, include_kwargs = first(
-            self._get_processors(Tag.INCLUDE, field, self.default_include)
-        )
-        return await include(field, resources, context,
-                             **include_kwargs, **kwargs)

@@ -6,8 +6,8 @@ Relationships
 import typing
 from collections import Mapping, OrderedDict
 
-from .base_fields import Relationship
-from ..common import Relation
+from .base import Relationship
+from ..common import Relation, JSONAPI
 from ..errors import InvalidType
 from ..helpers import is_collection
 
@@ -38,7 +38,8 @@ class ToOne(Relationship):
             self.validate_resource_identifier(schema, data['data'],
                                               sp / 'data')
 
-    def serialize(self, schema, data, **kwargs) -> typing.MutableMapping:
+    def serialize(self, schema, data, context=None,
+                  **kwargs) -> typing.MutableMapping:
         """Composes the final relationships object."""
         document = OrderedDict()
 
@@ -50,8 +51,8 @@ class ToOne(Relationship):
                 document['data'] = data
         else:
             # the related resource instance
-            document['data'] = \
-                schema.registry.ensure_identifier(data, asdict=True)
+            registry = context.request.app[JSONAPI]['registry']
+            document['data'] = registry.ensure_identifier(data, asdict=True)
 
         links = kwargs.get('links')
         if links is not None:
@@ -81,8 +82,8 @@ class ToMany(Relationship):
         super(ToMany, self).__init__(**kwargs)
         self.pagination = pagination
 
-    def serialize(self, schema, data, links=None, pagination=None,
-                  **kwargs) -> typing.MutableMapping:
+    def serialize(self, schema, data, context=None, links=None,
+                  pagination=None, **kwargs) -> typing.MutableMapping:
         """Composes the final JSON API relationships object.
 
         :arg ~aiohttp_json_api.pagination.PaginationABC pagination:
@@ -90,10 +91,11 @@ class ToMany(Relationship):
             helper are added to the final JSON API relationship object.
         """
         document = OrderedDict()
+        registry = context.request.app[JSONAPI]['registry']
 
         if is_collection(data):
             document['data'] = [
-                schema.registry.ensure_identifier(item, asdict=True)
+                registry.ensure_identifier(item, asdict=True)
                 for item in data
             ]
 

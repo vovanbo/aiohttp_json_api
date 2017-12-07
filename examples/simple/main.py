@@ -33,8 +33,14 @@ def setup_fixtures(app):
 
 
 async def init() -> web.Application:
+    from examples.simple.controllers import (
+        SimpleController, CommentsController
+    )
     from examples.simple.schemas import (
         ArticleSchema, CommentSchema, PeopleSchema
+    )
+    from examples.simple.models import (
+        Article, Comment, People
     )
 
     app = web.Application(debug=True)
@@ -46,8 +52,15 @@ async def init() -> web.Application:
     # to each of Schema's method as RequestContext instance.
     # RequestContext instance created automatically in JSON API middleware
     # for each request. JSON API handlers use it in calls of Schema's methods.
-    setup_jsonapi(app, (ArticleSchema, CommentSchema, PeopleSchema),
-                  meta={'example': {'version': '0.0.1'}})
+    setup_jsonapi(
+        app,
+        (
+            SimpleController(app, ArticleSchema, Article),
+            CommentsController(app, CommentSchema, Comment),
+            SimpleController(app, PeopleSchema, People, 'people'),
+        ),
+        meta={'example': {'version': '0.0.1'}}
+    )
 
     # After setup of JSON API application fixtures able to use Registry
     # if needed. In setup_fixtures function, Registry will be used

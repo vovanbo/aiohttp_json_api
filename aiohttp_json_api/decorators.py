@@ -45,19 +45,20 @@ def jsonapi_handler(handler=None, resource_type=None,
             raise RuntimeError('Request route must be named and use namespace '
                                '"{}.*"'.format(namespace))
 
-        context_class = request.app[JSONAPI]['context_class']
         type_ = resource_type or request.match_info.get('type', None)
         if type_ is None:
             # If type is not found in URI, and type is not passed
             # via decorator to custom handler, then raise HTTP 404
             raise HTTPNotFound()
 
-        context = context_class(request, type_)
-        if context.schema is None:
-            logger.error('No schema for request %s', request.url)
+        controller = request.app[JSONAPI]['controllers'].get(type_)
+        if controller is None:
+            logger.error('No controller for request %s', request.url)
             raise HTTPNotFound()
 
+        context_class = request.app[JSONAPI]['context_class']
+        context = context_class(request, type_)
         request[JSONAPI] = context
-        return await handler(request, context, context.schema)
+        return await handler(request, context, controller)
 
     return wrapper

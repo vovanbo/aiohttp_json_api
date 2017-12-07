@@ -1,7 +1,6 @@
 from aiohttp_json_api.errors import ResourceNotFound
-from aiohttp_json_api.schema import BaseSchema, fields, relationships, sets, \
-    decorators
-from aiohttp_json_api.common import Event
+from aiohttp_json_api.schema import BaseSchema
+from aiohttp_json_api.fields import attributes, relationships, decorators
 
 import examples.fantasy.tables as tbl
 from examples.fantasy.models import Author, Store, Book, Series, Photo, Chapter
@@ -29,14 +28,14 @@ class CommonQueryMixin:
 
 
 class AuthorSchema(CommonQueryMixin, BaseSchema):
-    resource_class = Author
+    resource_cls = Author
     type = 'authors'
 
-    name = fields.String()
-    date_of_birth = fields.Date()
-    date_of_death = fields.Date(allow_none=True)
-    created_at = fields.DateTime()
-    updated_at = fields.DateTime(allow_none=True)
+    name = attributes.String()
+    date_of_birth = attributes.Date()
+    date_of_death = attributes.Date(allow_none=True)
+    created_at = attributes.DateTime()
+    updated_at = attributes.DateTime(allow_none=True)
 
     books = relationships.ToMany(foreign_types=('books',))
     photos = relationships.ToMany(foreign_types=('photos',), allow_none=True)
@@ -46,13 +45,13 @@ class AuthorSchema(CommonQueryMixin, BaseSchema):
 
 
 class BookSchema(CommonQueryMixin, BaseSchema):
-    resource_class = Book
+    resource_cls = Book
     type = 'books'
 
-    title = fields.String()
-    date_published = fields.Date()
-    created_at = fields.DateTime()
-    updated_at = fields.DateTime(allow_none=True)
+    title = attributes.String()
+    date_published = attributes.Date()
+    created_at = attributes.DateTime()
+    updated_at = attributes.DateTime(allow_none=True)
 
     author = relationships.ToOne(foreign_types=('author',))
     series = relationships.ToOne(foreign_types=('series',), allow_none=True)
@@ -78,13 +77,13 @@ class BookSchema(CommonQueryMixin, BaseSchema):
 
 
 class ChapterSchema(CommonQueryMixin, BaseSchema):
-    resource_class = Chapter
+    resource_cls = Chapter
     type = 'chapters'
 
-    title = fields.String()
-    ordering = fields.Integer()
-    created_at = fields.DateTime()
-    updated_at = fields.DateTime(allow_none=True)
+    title = attributes.String()
+    ordering = attributes.Integer()
+    created_at = attributes.DateTime()
+    updated_at = attributes.DateTime(allow_none=True)
 
     book = relationships.ToOne(foreign_types=('books',))
 
@@ -93,13 +92,13 @@ class ChapterSchema(CommonQueryMixin, BaseSchema):
 
 
 class PhotoSchema(CommonQueryMixin, BaseSchema):
-    resource_class = Photo
+    resource_cls = Photo
     type = 'photos'
 
-    title = fields.String()
-    uri = fields.String()
-    created_at = fields.DateTime()
-    updated_at = fields.DateTime(allow_none=True)
+    title = attributes.String()
+    uri = attributes.String()
+    created_at = attributes.DateTime()
+    updated_at = attributes.DateTime(allow_none=True)
 
     imageable = relationships.ToOne(
         foreign_types=('authors', 'books', 'series')  # polymorphic
@@ -110,12 +109,12 @@ class PhotoSchema(CommonQueryMixin, BaseSchema):
 
 
 class SeriesSchema(CommonQueryMixin, BaseSchema):
-    resource_class = Series
+    resource_cls = Series
     type = 'series'
 
-    title = fields.String()
-    created_at = fields.DateTime()
-    updated_at = fields.DateTime(allow_none=True)
+    title = attributes.String()
+    created_at = attributes.DateTime()
+    updated_at = attributes.DateTime(allow_none=True)
 
     books = relationships.ToMany(foreign_types=('books',))
     photos = relationships.ToMany(foreign_types=('photos',))
@@ -125,12 +124,12 @@ class SeriesSchema(CommonQueryMixin, BaseSchema):
 
 
 class StoreSchema(CommonQueryMixin, BaseSchema):
-    resource_class = Store
+    resource_cls = Store
     type = 'stores'
 
-    name = fields.String()
-    created_at = fields.DateTime()
-    updated_at = fields.DateTime(allow_none=True)
+    name = attributes.String()
+    created_at = attributes.DateTime()
+    updated_at = attributes.DateTime(allow_none=True)
     books = relationships.ToMany(foreign_types=('books',), allow_none=True)
 
     async def delete_resource(self, resource_id, context, **kwargs):

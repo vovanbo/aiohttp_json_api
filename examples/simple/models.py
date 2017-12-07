@@ -46,7 +46,7 @@ class People(BaseModel):
         person = mimesis.Personal()
 
         return (
-            People(id=person.cid(), first_name=person.name(),
+            People(id=int(person.identifier('####')), first_name=person.name(),
                    last_name=person.surname(), twitter=person.username())
             for _ in range(count)
         )

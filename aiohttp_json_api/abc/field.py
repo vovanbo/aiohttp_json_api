@@ -6,7 +6,7 @@ Field abstract base class
 import abc
 from typing import Optional
 
-from ...jsonpointer import JSONPointer
+from ..jsonpointer import JSONPointer
 
 
 class FieldABC(abc.ABC):

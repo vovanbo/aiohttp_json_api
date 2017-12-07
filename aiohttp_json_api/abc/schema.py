@@ -12,8 +12,8 @@ from types import MappingProxyType
 import inflection
 
 from .field import FieldABC
-from ...common import ALLOWED_MEMBER_NAME_REGEX
-from ...jsonpointer import JSONPointer
+from ..common import ALLOWED_MEMBER_NAME_REGEX
+from ..jsonpointer import JSONPointer
 
 _issubclass = issubclass
 
@@ -91,7 +91,7 @@ class SchemaMeta(abc.ABCMeta):
         """Sets the :attr:`BaseField.sp` (source pointer) property recursively
         for all child fields.
         """
-        from aiohttp_json_api.schema.base_fields import Relationship
+        from aiohttp_json_api.fields.base import Relationship
 
         for field in fields:
             field._sp = sp / field.name
@@ -104,7 +104,7 @@ class SchemaMeta(abc.ABCMeta):
         Returns an ordered dictionary, which maps the source pointer of a
         field to the field. Nested fields are listed before the parent.
         """
-        from aiohttp_json_api.schema.base_fields import Relationship
+        from aiohttp_json_api.fields.base import Relationship
 
         result = OrderedDict()
         for field in fields:
@@ -163,9 +163,7 @@ class SchemaMeta(abc.ABCMeta):
             A dictionary with all properties defined on the schema class
             (attributes, methods, ...)
         """
-        from aiohttp_json_api.schema.base_fields import (
-            Relationship, Attribute, Link
-        )
+        from aiohttp_json_api.fields.base import Relationship, Attribute, Link
 
         cls_fields = _get_fields(attrs, FieldABC, pop=True)
         klass = super(SchemaMeta, mcs).__new__(mcs, name, bases, attrs)
@@ -254,18 +252,6 @@ class SchemaMeta(abc.ABCMeta):
         # Create the source pointer map.
         klass._fields_by_sp = mcs._sp_to_field(toplevel)
 
-        # Determine 'type' name.
-        if not attrs.get('type') and attrs.get('resource_class'):
-            klass.type = inflection.dasherize(
-                inflection.tableize(attrs['resource_class'].__name__)
-            )
-
-        if not klass.type:
-            klass.type = name
-
-        if not ALLOWED_MEMBER_NAME_REGEX.fullmatch(klass.type):
-            raise ValueError('Type "{}" is not allowed.'.format(klass.type))
-
         klass._declared_fields = MappingProxyType(declared_fields)
         return klass
 
@@ -323,12 +309,40 @@ class SchemaMeta(abc.ABCMeta):
 
 
 class SchemaABC(abc.ABC, metaclass=SchemaMeta):
-    #: The JSON API *type*. (Leave it empty to derive it automatic from the
-    #: resource class name or the schema name).
-    type = None
-    resource_class = None
     opts = None
     inflect = None
+
+    def __init__(self, resource_cls, resource_type: str = None):
+        """
+        Initialize the schema.
+
+        :param resource_cls: Resource class (e.g. model)
+        :param resource_type: The JSON API *type*.
+            (Leave it empty to derive it automatic from the resource class
+            name or the schema name)
+        """
+        self.type = resource_type
+
+        if not inspect.isclass(resource_cls):
+            raise TypeError('Class (not instance) of resource is required.')
+
+        self.resource_cls = resource_cls
+
+        if self.opts is None:
+            self.opts = {'pagination': None}
+
+        # Determine 'resource_type' name.
+        if resource_type is None:
+            self.type = inflection.dasherize(
+                inflection.tableize(resource_cls.__name__)
+            )
+
+        if not self.type:
+            self.type = self.__class__.__name__
+
+        if not ALLOWED_MEMBER_NAME_REGEX.fullmatch(self.type):
+            raise ValueError(
+                'Resource type "{}" is not allowed.'.format(self.type))
 
     @abc.abstractmethod
     def default_getter(self, field, resource, **kwargs):

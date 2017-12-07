@@ -39,7 +39,7 @@ from collections import Mapping
 from typing import Optional, Sequence
 
 from ..abc.field import FieldABC
-from ..common import ALLOWED_MEMBER_NAME_REGEX, Event
+from ..common import ALLOWED_MEMBER_NAME_REGEX, Event, JSONAPI
 from ..errors import InvalidType, InvalidValue
 from ..jsonpointer import JSONPointer
 
@@ -250,8 +250,9 @@ class Link(BaseField):
 
     def serialize(self, schema, data, context=None, **kwargs):
         """Normalizes the links object if wished."""
-        rid = schema.registry.ensure_identifier(data)
-        route = schema.app.router[self.route]
+        registry = context.request.app[JSONAPI]['registry']
+        rid = registry.ensure_identifier(data)
+        route = context.request.app.router[self.route]
         route_url = route._formatter.format_map({'type': rid.type,
                                                  'id': rid.id,
                                                  'relation': self.link_of})

@@ -8,11 +8,10 @@ __email__ = 'vovanbo@gmail.com'
 __version__ = '0.33.1'
 
 
-def setup_app_registry(app, registry_class, schemas):
+def setup_app_registry(app, registry_class, controllers):
     """Set up JSON API application registry."""
-    from .common import logger
+    from .common import logger, JSONAPI
     from .registry import Registry
-    from .schema.abc.schema import SchemaABC
 
     if registry_class is not None:
         if not issubclass(registry_class, Registry):
@@ -22,33 +21,22 @@ def setup_app_registry(app, registry_class, schemas):
         registry_class = Registry
 
     app_registry = registry_class()
+    app[JSONAPI]['controllers'] = {}
 
-    for schema_cls in schemas:
-        if not inspect.isclass(schema_cls):
-            raise TypeError('Class (not instance) of schema is required.')
+    for controller in controllers:
+        app[JSONAPI]['controllers'].setdefault(controller.schema.type,
+                                               controller)
+        app_registry[controller.schema.type] = controller.schema
+        app_registry[controller.schema.resource_cls] = controller.schema
 
-        if not issubclass(schema_cls, SchemaABC):
-            raise TypeError('Subclass of SchemaABC is required. '
-                            'Got: {}'.format(schema_cls))
-
-        schema = schema_cls(app)
-        if not isinstance(schema.type, str):
-            raise TypeError('Schema type property must be a string.')
-
-        app_registry[schema.type] = schema
-        if schema.resource_class is None:
-            logger.warning('The schema "%s" is not bound to a resource class.',
-                           schema.type)
-        else:
-            if not inspect.isclass(schema.resource_class):
-                raise TypeError('Class (not instance) of resource '
-                                'is required.')
-            app_registry[schema.resource_class] = schema
-
-        logger.debug('Registered %s with resource class %s and type "%s"',
-                     schema_cls.__name__,
-                     schema.resource_class.__name__,
-                     schema.type)
+        logger.debug(
+            'Registered %s '
+            '(schema: %s, resource class: %s, type "%s")',
+            controller.__class__.__name__,
+            controller.schema.__class__.__name__,
+            controller.schema.resource_cls.__name__,
+            controller.schema.type
+        )
 
     return app_registry
 
@@ -128,7 +116,7 @@ def setup_resources(app, base_path, handlers, routes_namespace):
     related_resource.add_route('GET', handlers['get_related'])
 
 
-def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0',
+def setup_jsonapi(app, controllers, *, base_path='/api', version='1.0',
                   meta=None, context_class=None, registry_class=None,
                   custom_handlers=None, log_errors=True,
                   routes_namespace=None):
@@ -139,8 +127,8 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0',
 
     :param ~aiohttp.web.Application app:
         Application instance
-    :param ~typing.Sequence[BaseSchema] schemas:
-        List of schema classes to register in JSON API
+    :param ~typing.Sequence[BaseController] controllers:
+        List of controllers to register in JSON API
     :param str base_path:
         Prefix of JSON API routes paths
     :param str version:
@@ -199,18 +187,18 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0',
     else:
         context_class = RequestContext
 
-    app_registry = setup_app_registry(app, registry_class, schemas)
-
     app[JSONAPI] = {
+        'controllers': {},
         'context_class': context_class,
         'meta': meta,
         'jsonapi': {
             'version': version,
         },
-        'registry': app_registry,
         'log_errors': log_errors,
         'routes_namespace': routes_namespace
     }
+    app[JSONAPI]['registry'] = setup_app_registry(app, registry_class,
+                                                  controllers)
 
     handlers = setup_custom_handlers(custom_handlers)
 
