@@ -18,7 +18,7 @@ from typing import Dict, Optional
 import inflection
 from aiohttp import web
 
-from .abc.schema import SchemaABC
+from aiohttp_json_api.abc.schema import SchemaABC
 from .base_fields import Attribute, BaseField, Relationship
 from .decorators import Tag
 from ..common import Event, JSONAPI, Relation, Step, logger

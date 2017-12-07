@@ -38,7 +38,7 @@ import urllib.parse
 from collections import Mapping
 from typing import Optional, Sequence
 
-from .abc.field import FieldABC
+from ..abc.field import FieldABC
 from ..common import ALLOWED_MEMBER_NAME_REGEX, Event
 from ..errors import InvalidType, InvalidValue
 from ..jsonpointer import JSONPointer

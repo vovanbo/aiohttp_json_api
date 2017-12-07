@@ -4,7 +4,6 @@ Extended JSONPointer from python-json-pointer_
 
 .. _python-json-pointer: https://github.com/stefankoegl/python-json-pointer
 """
-
 import typing
 
 from jsonpointer import JsonPointer as BaseJsonPointer
