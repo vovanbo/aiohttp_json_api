@@ -1,55 +1,41 @@
 import abc
-import inspect
 
-from aiohttp import web
-
-from .schema import SchemaABC
-from ..common import JSONAPI
+from ..context import RequestContext
 
 
 class ControllerABC(abc.ABC):
-    def __init__(self, app: web.Application, schema_cls, resource_cls,
-                 resource_type: str = None):
-        self.app = app
+    def __init__(self, context: RequestContext):
+        self.ctx = context
 
-        if not inspect.isclass(schema_cls):
-            raise TypeError('Class (not instance) of schema is required.')
-
-        if not issubclass(schema_cls, SchemaABC):
-            raise TypeError('Subclass of SchemaABC is required. '
-                            'Got: {}'.format(schema_cls))
-
-        self.schema = schema_cls(resource_cls, resource_type)
-
-    @property
-    def registry(self):
-        return self.app[JSONAPI]['registry']
-
+    @staticmethod
     @abc.abstractmethod
-    async def default_include(self, field, resources, context, **kwargs):
+    async def default_include(field, resources, **kwargs):
         raise NotImplementedError
 
+    @staticmethod
     @abc.abstractmethod
-    async def default_query(self, field, resource, context, **kwargs):
+    async def default_query(field, resource, **kwargs):
         raise NotImplementedError
 
+    @staticmethod
     @abc.abstractmethod
-    async def default_add(self, field, resource, data, sp):
+    async def default_add(field, resource, data, sp, **kwargs):
         raise NotImplementedError
 
+    @staticmethod
     @abc.abstractmethod
-    async def default_remove(self, field, resource, data, sp):
+    async def default_remove(field, resource, data, sp, **kwargs):
         raise NotImplementedError
 
     # CRUD (resource)
     # ---------------
 
     @abc.abstractmethod
-    async def fetch_resource(self, resource_id, context, **kwargs):
+    async def fetch_resource(self, resource_id, **kwargs):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def create_resource(self, data, sp, context, **kwargs):
+    async def create_resource(self, data, sp, **kwargs):
         """
         .. seealso::
 
@@ -74,7 +60,7 @@ class ControllerABC(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def update_resource(self, resource_id, data, sp, context, **kwargs):
+    async def update_resource(self, resource_id, data, sp, **kwargs):
         """
         .. seealso::
 
@@ -100,7 +86,7 @@ class ControllerABC(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def delete_resource(self, resource_id, context, **kwargs):
+    async def delete_resource(self, resource_id, **kwargs):
         """
         .. seealso::
 
@@ -119,8 +105,8 @@ class ControllerABC(abc.ABC):
     # --------------------
 
     @abc.abstractmethod
-    async def update_relationship(self, relation_name, resource_id,
-                                  data, sp, context, **kwargs):
+    async def update_relationship(self, relation_name, resource_id, data, sp,
+                                  **kwargs):
         """
         .. seealso::
 
@@ -142,8 +128,8 @@ class ControllerABC(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def add_relationship(self, relation_name, resource_id,
-                               data, sp, context, **kwargs):
+    async def add_relationship(self, relation_name, resource_id, data, sp,
+                               **kwargs):
         """
         .. seealso::
 
@@ -167,7 +153,7 @@ class ControllerABC(abc.ABC):
 
     @abc.abstractmethod
     async def remove_relationship(self, relation_name, resource_id,
-                                  data, sp, context, **kwargs):
+                                  data, sp, **kwargs):
         """
         .. seealso::
 
@@ -193,7 +179,7 @@ class ControllerABC(abc.ABC):
     # --------
 
     @abc.abstractmethod
-    async def query_collection(self, context, **kwargs):
+    async def query_collection(self, **kwargs):
         """
         .. seealso::
 
@@ -208,7 +194,7 @@ class ControllerABC(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def query_resource(self, resource_id, context, **kwargs):
+    async def query_resource(self, resource_id, **kwargs):
         """
         .. seealso::
 
@@ -226,8 +212,7 @@ class ControllerABC(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def query_relatives(self, relation_name, resource_id, context,
-                              **kwargs):
+    async def query_relatives(self, relation_name, resource_id, **kwargs):
         """
         Controller for the *related* endpoint of the relationship with
         then name *relation_name*.
@@ -242,8 +227,8 @@ class ControllerABC(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def fetch_compound_documents(self, relation_name, resources, context,
-                                       *, rest_path=None, **kwargs):
+    async def fetch_compound_documents(self, relation_name, resources, *,
+                                       rest_path=None, **kwargs):
         """
         .. seealso::
 

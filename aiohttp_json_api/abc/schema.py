@@ -170,11 +170,15 @@ class SchemaMeta(abc.ABCMeta):
         inherited_fields = _get_fields_by_mro(klass, FieldABC)
         declared_fields = OrderedDict()
 
+        options = getattr(klass, 'Options')
+        klass.opts = klass.OPTIONS_CLASS(options)
+
         for key, field in inherited_fields + cls_fields:
             field._key = key
             field.name = (
-                field.name or
-                (klass.inflect(key) if callable(klass.inflect) else key)
+                field.name or (klass.opts.inflect(key)
+                               if callable(klass.opts.inflect)
+                               else key)
             )
             field.mapped_key = field.mapped_key or key
             declared_fields[field.key] = field
@@ -308,48 +312,39 @@ class SchemaMeta(abc.ABCMeta):
                 cls.__processors__[tag].append(attr_name)
 
 
-class SchemaABC(abc.ABC, metaclass=SchemaMeta):
-    opts = None
-    inflect = None
+class SchemaOpts(object):
+    """class Meta options for the :class:`SchemaABC`. Defines defaults."""
 
-    def __init__(self, resource_cls, resource_type: str = None):
+    def __init__(self, options):
+        self.resource_cls = getattr(options, 'resource_cls', None)
+        self.resource_type = getattr(options, 'resource_type', None)
+        self.pagination = getattr(options, 'pagination', None)
+        self.inflect = getattr(options, 'inflect', inflection.dasherize)
+
+
+class SchemaABC(abc.ABC, metaclass=SchemaMeta):
+    OPTIONS_CLASS = SchemaOpts
+
+    class Options:
+        pass
+
+    def __init__(self, context):
         """
         Initialize the schema.
 
-        :param resource_cls: Resource class (e.g. model)
-        :param resource_type: The JSON API *type*.
-            (Leave it empty to derive it automatic from the resource class
-            name or the schema name)
+        :param ~aiohttp_json_api.context.RequestContext context:
+            Resource context instance
         """
-        self.type = resource_type
+        self.ctx = context
 
-        if not inspect.isclass(resource_cls):
-            raise TypeError('Class (not instance) of resource is required.')
-
-        self.resource_cls = resource_cls
-
-        if self.opts is None:
-            self.opts = {'pagination': None}
-
-        # Determine 'resource_type' name.
-        if resource_type is None:
-            self.type = inflection.dasherize(
-                inflection.tableize(resource_cls.__name__)
-            )
-
-        if not self.type:
-            self.type = self.__class__.__name__
-
-        if not ALLOWED_MEMBER_NAME_REGEX.fullmatch(self.type):
-            raise ValueError(
-                'Resource type "{}" is not allowed.'.format(self.type))
-
+    @staticmethod
     @abc.abstractmethod
-    def default_getter(self, field, resource, **kwargs):
+    def default_getter(field, resource, **kwargs):
         raise NotImplementedError
 
+    @staticmethod
     @abc.abstractmethod
-    async def default_setter(self, field, resource, data, sp, **kwargs):
+    async def default_setter(field, resource, data, sp, **kwargs):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -394,8 +389,7 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def pre_validate_resource(self, data, sp, context,
-                                    *, expected_id=None):
+    async def pre_validate_resource(self, data, sp, *, expected_id=None):
         """
         Validates a JSON API resource object received from an API client::
 
@@ -416,7 +410,7 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def post_validate_resource(self, data, context):
+    async def post_validate_resource(self, data):
         """
         Validates the decoded *data* of JSON API resource object.
 
@@ -428,9 +422,8 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def deserialize_resource(self, data, sp, context, *,
-                                   expected_id=None, validate=True,
-                                   validation_steps=None):
+    async def deserialize_resource(self, data, sp, *, expected_id=None,
+                                   validate=True, validation_steps=None):
         """
         Decodes the JSON API resource object *data* and returns a dictionary
         which maps the key of a field to its decoded input data.

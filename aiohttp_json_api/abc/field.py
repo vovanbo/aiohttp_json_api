@@ -56,7 +56,7 @@ class FieldABC(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         """
         Validates the raw JSON API input for this field. This method is
         called before :meth:`deserialize`.
@@ -73,7 +73,7 @@ class FieldABC(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def post_validate(self, schema, data, sp, context):
+    def post_validate(self, schema, data, sp):
         """
         Validates the decoded input *data* for this field. This method is
         called after :meth:`deserialize`.

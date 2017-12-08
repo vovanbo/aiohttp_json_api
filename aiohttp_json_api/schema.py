@@ -40,7 +40,8 @@ class BaseSchema(SchemaABC):
     the schema for validation and serialization.
     """
 
-    inflect = partial(inflection.dasherize)
+    class Options:
+        inflect = partial(inflection.dasherize)
 
     @staticmethod
     def get_object_id(resource) -> str:
@@ -77,12 +78,14 @@ class BaseSchema(SchemaABC):
                 source_parameter=source_parameter
             )
 
-    def default_getter(self, field, resource, **kwargs):
+    @staticmethod
+    def default_getter(field, resource, **kwargs):
         if field.mapped_key:
             return getattr(resource, field.mapped_key)
         return None
 
-    async def default_setter(self, field, resource, data, sp, **kwargs):
+    @staticmethod
+    async def default_setter(field, resource, data, sp, **kwargs):
         if field.mapped_key:
             setattr(resource, field.mapped_key, data)
 
@@ -111,8 +114,7 @@ class BaseSchema(SchemaABC):
         :arg resource:
             A resource object
         """
-        context = kwargs['context']
-        fieldset = context.fields.get(self.type)
+        fieldset = self.ctx.fields.get(self.opts.resource_type)
 
         fields_map = (
             ('attributes', self._attributes),
@@ -122,7 +124,7 @@ class BaseSchema(SchemaABC):
         )
 
         result = OrderedDict((
-            ('type', self.type),
+            ('type', self.opts.resource_type),
             ('id', self.get_object_id(resource)),
         ))
 
@@ -148,14 +150,14 @@ class BaseSchema(SchemaABC):
 
         result.setdefault('links', OrderedDict())
         if 'self' not in result['links']:
-            registry = context.request.app[JSONAPI]['registry']
+            registry = self.ctx.request.app[JSONAPI]['registry']
             rid = registry.ensure_identifier(resource)
-            route = get_router_resource(context.request.app, 'resource')
+            route = get_router_resource(self.ctx.request.app, 'resource')
             route_url = route._formatter.format_map({'type': rid.type,
                                                      'id': rid.id})
             route_url = urllib.parse.urlunsplit(
-                (context.request.scheme, context.request.host, route_url,
-                 context.request.query_string, None)
+                (self.ctx.request.scheme, self.ctx.request.host, route_url,
+                 self.ctx.request.query_string, None)
             )
             result['links']['self'] = route_url
 
@@ -174,7 +176,7 @@ class BaseSchema(SchemaABC):
     # Validation (pre deserialize)
     # -----------------------
 
-    async def _pre_validate_field(self, field, data, sp, context):
+    async def _pre_validate_field(self, field, data, sp):
         """
         Validates the input data for a field, **before** it is deserialized.
         If the field has nested fields, the nested fields are validated first.
@@ -186,12 +188,13 @@ class BaseSchema(SchemaABC):
             The pointer to *data* in the original document. If *None*, there
             was no input data for this field.
         """
-        writable = field.writable in (Event.ALWAYS, context.event)
+        writable = field.writable in (Event.ALWAYS, self.ctx.event)
         if data is not MISSING and not writable:
             detail = "The field '{}' is readonly.".format(field.name)
             raise ValidationError(detail=detail, source_pointer=sp)
 
-        if data is MISSING and field.required in (Event.ALWAYS, context.event):
+        if data is MISSING and field.required in (Event.ALWAYS,
+                                                  self.ctx.event):
             if isinstance(field, Attribute):
                 detail = "Attribute '{}' is required.".format(field.name)
             elif isinstance(field, Relationship):
@@ -202,31 +205,32 @@ class BaseSchema(SchemaABC):
 
         if data is not MISSING:
             if asyncio.iscoroutinefunction(field.pre_validate):
-                await field.pre_validate(self, data, sp, context)
+                await field.pre_validate(self, data, sp)
             else:
-                field.pre_validate(self, data, sp, context)
+                field.pre_validate(self, data, sp)
 
             # Run custom pre-validators for field
             validators = get_processors(self, Tag.VALIDATE, field, None)
             for validator, validator_kwargs in validators:
                 if validator_kwargs['step'] is not Step.BEFORE_DESERIALIZATION:
                     continue
-                if validator_kwargs['on'] not in (Event.ALWAYS, context.event):
+                if validator_kwargs['on'] not in (Event.ALWAYS,
+                                                  self.ctx.event):
                     continue
 
                 if asyncio.iscoroutinefunction(validator):
-                    await validator(self, field, data, sp, context=context)
+                    await validator(self, field, data, sp)
                 else:
-                    validator(self, field, data, sp, context=context)
+                    validator(self, field, data, sp)
 
-    async def pre_validate_resource(self, data, sp, context,
-                                    *, expected_id=None):
+    async def pre_validate_resource(self, data, sp, *, expected_id=None):
         if not isinstance(data, MutableMapping):
             detail = 'Must be an object.'
             raise InvalidType(detail=detail, source_pointer=sp)
 
         # JSON API id
-        if (expected_id or context.event is Event.UPDATE) and 'id' not in data:
+        if ((expected_id or self.ctx.event is Event.UPDATE) and
+            'id' not in data):
             detail = "The 'id' member is missing."
             raise InvalidValue(detail=detail, source_pointer=sp / 'id')
 
@@ -234,44 +238,42 @@ class BaseSchema(SchemaABC):
             if str(data['id']) == str(expected_id):
                 if self._id is not None:
                     await self._pre_validate_field(self._id, data['id'],
-                                                   sp / 'id', context)
+                                                   sp / 'id')
             else:
                 detail = "The id '{}' does not match the endpoint id " \
                          "'{}'.".format(data['id'], expected_id)
                 raise HTTPConflict(detail=detail, source_pointer=sp / 'id')
 
-    async def post_validate_resource(self, data, context):
+    async def post_validate_resource(self, data):
         # NOTE: The fields in *data* are ordered, such that children are
         #       listed before their parent.
         for key, (field_data, field_sp) in data.items():
             field = self._declared_fields[key]
-            field.post_validate(self, field_data, field_sp, context)
+            field.post_validate(self, field_data, field_sp)
 
             # Run custom post-validators for field
             validators = get_processors(self, Tag.VALIDATE, field, None)
             for validator, validator_kwargs in validators:
                 if validator_kwargs['step'] is not Step.AFTER_DESERIALIZATION:
                     continue
-                if validator_kwargs['on'] not in (Event.ALWAYS, context.event):
+                if validator_kwargs['on'] not in (Event.ALWAYS,
+                                                  self.ctx.event):
                     continue
 
                 if asyncio.iscoroutinefunction(validator):
                     await validator(field, field_data, field_sp,
-                                    context=context)
+                                    context=self.ctx)
                 else:
-                    validator(field, field_data, field_sp, context=context)
+                    validator(field, field_data, field_sp, context=self.ctx)
 
-    async def deserialize_resource(self, data, sp, context, *,
-                                   expected_id=None, validate=True,
-                                   validation_steps=None):
+    async def deserialize_resource(self, data, sp, *, expected_id=None,
+                                   validate=True, validation_steps=None):
         if validation_steps is None:
             validation_steps = (Step.BEFORE_DESERIALIZATION,
                                 Step.AFTER_DESERIALIZATION)
 
         if validate and Step.BEFORE_DESERIALIZATION in validation_steps:
-            await self.pre_validate_resource(
-                data, sp, context, expected_id=expected_id
-            )
+            await self.pre_validate_resource(data, sp, expected_id=expected_id)
 
         result = OrderedDict()
         fields_map = (
@@ -295,9 +297,8 @@ class BaseSchema(SchemaABC):
 
                     if (validate and
                         Step.BEFORE_DESERIALIZATION in validation_steps):
-                        await self._pre_validate_field(
-                            field, field_data, field_sp, context
-                        )
+                        await self._pre_validate_field(field, field_data,
+                                                       field_sp)
 
                     if field_data is not MISSING:
                         result[field.key] = (
@@ -306,7 +307,7 @@ class BaseSchema(SchemaABC):
                         )
 
         if validate and Step.AFTER_DESERIALIZATION in validation_steps:
-            await self.post_validate_resource(result, context)
+            await self.post_validate_resource(result)
 
         return result
 

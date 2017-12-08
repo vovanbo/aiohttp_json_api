@@ -34,7 +34,7 @@ def jsonapi_response(data, *, status=web.HTTPOk.status_code,
                     headers=headers, content_type=JSONAPI_CONTENT_TYPE)
 
 
-async def get_compound_documents(resources, context):
+async def get_compound_documents(resources, ctx):
     """
     Get compound documents of resources.
 
@@ -47,7 +47,7 @@ async def get_compound_documents(resources, context):
     :param resources:
         A list with the primary data (resources) of the compound
         response document.
-    :param context:
+    :param ctx:
         A web Request context
 
     :returns:
@@ -55,54 +55,53 @@ async def get_compound_documents(resources, context):
         which maps each resource (primary and included) to a set with the
         names of the included relationships.
     """
-    registry = context.request.app[JSONAPI]['registry']
-    controllers = context.request.app[JSONAPI]['controllers']
     relationships = defaultdict(set)
     compound_documents = OrderedDict()
 
-    collection = (resources,) if type(resources) in registry else resources
-    for path in context.include:
+    collection = (resources,) if type(resources) in ctx.registry else resources
+    for path in ctx.include:
         if path and collection:
             rest_path = path
             nested_collection = collection
             while rest_path and nested_collection:
-                schema = registry[first(nested_collection)]
+                schema_cls, controller_cls = \
+                    ctx.registry[first(nested_collection)]
+                resource_type = schema_cls.opts.resource_type
 
-                if rest_path in relationships[schema.type]:
+                if rest_path in relationships[resource_type]:
                     break
 
-                controller = controllers[schema.type]
+                controller = controller_cls(ctx)
                 nested_collection = await controller.fetch_compound_documents(
                     relation_name=rest_path[0], resources=nested_collection,
-                    context=context, rest_path=rest_path[1:]
+                    rest_path=rest_path[1:]
                 )
 
                 for relative in nested_collection:
                     compound_documents.setdefault(
-                        registry.ensure_identifier(relative),
+                        ctx.registry.ensure_identifier(relative),
                         relative
                     )
 
-                relationships[schema.type].add(rest_path)
+                relationships[resource_type].add(rest_path)
                 rest_path = rest_path[1:]
 
     return compound_documents, relationships
 
 
-async def serialize_resource(resource, context):
+async def serialize_resource(resource, ctx):
     """
     Serialize resource by schema.
 
     :param resource: Resource instance
-    :param context: Request context
+    :param ctx: Request context
     :return: Serialized resource
     """
-    registry = context.request.app[JSONAPI]['registry']
-    schema = registry[resource]
-    return schema.serialize_resource(resource, context=context)
+    schema_cls, _ = ctx.registry[resource]
+    return schema_cls(ctx).serialize_resource(resource)
 
 
-async def render_document(data, included, context, *,
+async def render_document(data, included, ctx, *,
                           pagination=None,
                           links=None) -> typing.MutableMapping:
     """
@@ -110,33 +109,33 @@ async def render_document(data, included, context, *,
 
     :param data: One or many resources
     :param included: Compound documents
-    :param context: Request context
+    :param ctx: Request context
     :param pagination: Pagination instance
     :param links: Additional links
     :return: Rendered JSON API document
     """
     document = OrderedDict()
 
-    if is_collection(data, exclude=(context.schema.resource_cls,)):
+    if is_collection(data, exclude=(ctx.schema.opts.resource_cls,)):
         document['data'] = await asyncio.gather(
-            *[serialize_resource(r, context) for r in data]
+            *[serialize_resource(r, ctx) for r in data]
         )
     else:
         document['data'] = \
-            await serialize_resource(data, context) if data else None
+            await serialize_resource(data, ctx) if data else None
 
-    if context.include and included:
+    if ctx.include and included:
         document['included'] = await asyncio.gather(
-            *[serialize_resource(r, context) for r in included.values()]
+            *[serialize_resource(r, ctx) for r in included.values()]
         )
 
     document.setdefault('links', OrderedDict())
-    document['links']['self'] = str(context.request.url)
+    document['links']['self'] = str(ctx.request.url)
     if links is not None:
         document['links'].update(links)
 
-    meta_object = context.request.app[JSONAPI]['meta']
-    pagination = pagination or context.pagination
+    meta_object = ctx.request.app[JSONAPI]['meta']
+    pagination = pagination or ctx.pagination
 
     if pagination or meta_object:
         document.setdefault('meta', OrderedDict())
@@ -148,7 +147,7 @@ async def render_document(data, included, context, *,
     if meta_object:
         document['meta'].update(meta_object)
 
-    jsonapi_info = context.request.app[JSONAPI]['jsonapi']
+    jsonapi_info = ctx.request.app[JSONAPI]['jsonapi']
     if jsonapi_info:
         document['jsonapi'] = jsonapi_info
 

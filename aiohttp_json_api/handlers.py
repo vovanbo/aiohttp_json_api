@@ -5,7 +5,8 @@ from http import HTTPStatus
 
 from aiohttp import hdrs, web
 
-from .common import JSONAPI_CONTENT_TYPE, Relation, JSONAPI
+from .context import RequestContext
+from .common import Relation, JSONAPI
 from .decorators import jsonapi_handler
 from .errors import InvalidType
 from .helpers import get_router_resource
@@ -28,7 +29,7 @@ __all__ = (
 
 
 @jsonapi_handler
-async def get_collection(request: web.Request, context, controller):
+async def get_collection(request: web.Request):
     """
     Fetch resources collection, render JSON API document and return response.
 
@@ -37,20 +38,21 @@ async def get_collection(request: web.Request, context, controller):
 
     :seealso: http://jsonapi.org/format/#fetching
     """
-    resources = await controller.query_collection(context=context)
+    async with RequestContext(request) as ctx:
+        resources = await ctx.controller.query_collection()
 
-    compound_documents = None
-    if context.include and resources:
-        compound_documents, relationships = \
-            await get_compound_documents(resources, context)
+        compound_documents = None
+        if ctx.include and resources:
+            compound_documents, relationships = \
+                await get_compound_documents(resources, ctx)
 
-    result = await render_document(resources, compound_documents, context)
+        result = await render_document(resources, compound_documents, ctx)
 
     return jsonapi_response(result)
 
 
-@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
-async def post_resource(request: web.Request, context, controller):
+@jsonapi_handler
+async def post_resource(request: web.Request):
     """
     Create resource, render JSON API document and return response.
 
@@ -84,7 +86,7 @@ async def post_resource(request: web.Request, context, controller):
 
 
 @jsonapi_handler
-async def get_resource(request: web.Request, context, controller):
+async def get_resource(request: web.Request):
     """
     Get single resource, render JSON API document and return response.
 
@@ -108,8 +110,8 @@ async def get_resource(request: web.Request, context, controller):
     return jsonapi_response(result)
 
 
-@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
-async def patch_resource(request: web.Request, context, controller):
+@jsonapi_handler
+async def patch_resource(request: web.Request):
     """
     Update resource (via PATCH), render JSON API document and return response.
 
@@ -139,7 +141,7 @@ async def patch_resource(request: web.Request, context, controller):
 
 
 @jsonapi_handler
-async def delete_resource(request: web.Request, context, controller):
+async def delete_resource(request: web.Request):
     """
     Remove resource.
 
@@ -156,7 +158,7 @@ async def delete_resource(request: web.Request, context, controller):
 
 
 @jsonapi_handler
-async def get_relationship(request: web.Request, context, controller):
+async def get_relationship(request: web.Request):
     """
     Get relationships of resource.
 
@@ -185,8 +187,8 @@ async def get_relationship(request: web.Request, context, controller):
     return jsonapi_response(result)
 
 
-@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
-async def post_relationship(request: web.Request, context, controller):
+@jsonapi_handler
+async def post_relationship(request: web.Request):
     """
     Create relationships of resource.
 
@@ -224,8 +226,8 @@ async def post_relationship(request: web.Request, context, controller):
     return jsonapi_response(result)
 
 
-@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
-async def patch_relationship(request: web.Request, context, controller):
+@jsonapi_handler
+async def patch_relationship(request: web.Request):
     """
     Update relationships of resource.
 
@@ -262,8 +264,8 @@ async def patch_relationship(request: web.Request, context, controller):
     return jsonapi_response(result)
 
 
-@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
-async def delete_relationship(request: web.Request, context, controller):
+@jsonapi_handler
+async def delete_relationship(request: web.Request):
     """
     Remove relationships of resource.
 
@@ -301,7 +303,7 @@ async def delete_relationship(request: web.Request, context, controller):
 
 
 @jsonapi_handler
-async def get_related(request: web.Request, context, controller):
+async def get_related(request: web.Request):
     """
     Get related resources.
 

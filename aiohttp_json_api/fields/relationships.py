@@ -7,7 +7,7 @@ import typing
 from collections import Mapping, OrderedDict
 
 from .base import Relationship
-from ..common import Relation, JSONAPI
+from ..common import Relation
 from ..errors import InvalidType
 from ..helpers import is_collection
 
@@ -38,8 +38,7 @@ class ToOne(Relationship):
             self.validate_resource_identifier(schema, data['data'],
                                               sp / 'data')
 
-    def serialize(self, schema, data, context=None,
-                  **kwargs) -> typing.MutableMapping:
+    def serialize(self, schema, data, **kwargs) -> typing.MutableMapping:
         """Composes the final relationships object."""
         document = OrderedDict()
 
@@ -51,8 +50,8 @@ class ToOne(Relationship):
                 document['data'] = data
         else:
             # the related resource instance
-            registry = context.request.app[JSONAPI]['registry']
-            document['data'] = registry.ensure_identifier(data, asdict=True)
+            document['data'] = \
+                schema.ctx.registry.ensure_identifier(data, asdict=True)
 
         links = kwargs.get('links')
         if links is not None:
@@ -68,9 +67,9 @@ class ToMany(Relationship):
         *   http://jsonapi.org/format/#document-resource-object-relationships
         *   http://jsonapi.org/format/#document-resource-object-linkage
 
-    Describes how to serialize, deserialize and update a *to-many* relationship.
-    Additionally to *to-one* relationships, *to-many* relationships must also
-    support adding and removing relatives.
+    Describes how to serialize, deserialize and update a *to-many*
+    relationship. Additionally to *to-one* relationships, *to-many*
+    relationships must also support adding and removing relatives.
 
     :arg aiohttp_json_api.pagination.PaginationABC pagination:
         The pagination helper *class* used to paginate the *to-many*
@@ -82,8 +81,8 @@ class ToMany(Relationship):
         super(ToMany, self).__init__(**kwargs)
         self.pagination = pagination
 
-    def serialize(self, schema, data, context=None, links=None,
-                  pagination=None, **kwargs) -> typing.MutableMapping:
+    def serialize(self, schema, data, links=None, pagination=None,
+                  **kwargs) -> typing.MutableMapping:
         """Composes the final JSON API relationships object.
 
         :arg ~aiohttp_json_api.pagination.PaginationABC pagination:
@@ -91,11 +90,10 @@ class ToMany(Relationship):
             helper are added to the final JSON API relationship object.
         """
         document = OrderedDict()
-        registry = context.request.app[JSONAPI]['registry']
 
         if is_collection(data):
             document['data'] = [
-                registry.ensure_identifier(item, asdict=True)
+                schema.ctx.registry.ensure_identifier(item, asdict=True)
                 for item in data
             ]
 

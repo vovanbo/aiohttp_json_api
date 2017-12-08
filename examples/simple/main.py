@@ -27,7 +27,7 @@ def setup_fixtures(app):
             # Registry have a helper to return a ResourceID of instances
             # of registered resource classes
             resource_id = registry.ensure_identifier(resource)
-            app['storage'][resource.__class__][resource_id] = resource
+            app['storage'][resource_id.type][resource_id.id] = resource
 
     return app
 
@@ -38,9 +38,6 @@ async def init() -> web.Application:
     )
     from examples.simple.schemas import (
         ArticleSchema, CommentSchema, PeopleSchema
-    )
-    from examples.simple.models import (
-        Article, Comment, People
     )
 
     app = web.Application(debug=True)
@@ -54,11 +51,11 @@ async def init() -> web.Application:
     # for each request. JSON API handlers use it in calls of Schema's methods.
     setup_jsonapi(
         app,
-        (
-            SimpleController(app, ArticleSchema, Article),
-            CommentsController(app, CommentSchema, Comment),
-            SimpleController(app, PeopleSchema, People, 'people'),
-        ),
+        {
+            ArticleSchema: SimpleController,
+            CommentSchema: CommentsController,
+            PeopleSchema: SimpleController,
+        },
         meta={'example': {'version': '0.0.1'}}
     )
 

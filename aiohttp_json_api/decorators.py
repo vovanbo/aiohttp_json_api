@@ -1,24 +1,19 @@
 """Handlers decorators."""
-from functools import partial, wraps
+from functools import wraps
 
 from aiohttp import hdrs, web
 
-from .common import JSONAPI, JSONAPI_CONTENT_TYPE, logger
-from .errors import HTTPNotAcceptable, HTTPNotFound, HTTPUnsupportedMediaType
+from .common import JSONAPI, JSONAPI_CONTENT_TYPE
+from .errors import HTTPNotAcceptable, HTTPUnsupportedMediaType
 
 
-def jsonapi_handler(handler=None, resource_type=None,
-                    content_type=JSONAPI_CONTENT_TYPE):
+def jsonapi_handler(handler):
     """
     JSON API handler decorator.
 
     Used for content type negotiation, create request context,
-    check existence of schema for current request.
+    check existence of controller for current request.
     """
-    if handler is None:
-        return partial(jsonapi_handler,
-                       resource_type=resource_type, content_type=content_type)
-
     @wraps(handler)
     async def wrapper(request: web.Request):
         """JSON API handler wrapper."""
@@ -43,22 +38,8 @@ def jsonapi_handler(handler=None, resource_type=None,
 
         if not route_name or not route_name.startswith('%s.' % namespace):
             raise RuntimeError('Request route must be named and use namespace '
-                               '"{}.*"'.format(namespace))
+                               '"{0}.* (e.g. {0}.resource)"'.format(namespace))
 
-        type_ = resource_type or request.match_info.get('type', None)
-        if type_ is None:
-            # If type is not found in URI, and type is not passed
-            # via decorator to custom handler, then raise HTTP 404
-            raise HTTPNotFound()
-
-        controller = request.app[JSONAPI]['controllers'].get(type_)
-        if controller is None:
-            logger.error('No controller for request %s', request.url)
-            raise HTTPNotFound()
-
-        context_class = request.app[JSONAPI]['context_class']
-        context = context_class(request, type_)
-        request[JSONAPI] = context
-        return await handler(request, context, controller)
+        return await handler(request)
 
     return wrapper

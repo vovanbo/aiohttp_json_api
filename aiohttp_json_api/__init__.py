@@ -8,10 +8,12 @@ __email__ = 'vovanbo@gmail.com'
 __version__ = '0.33.1'
 
 
-def setup_app_registry(app, registry_class, controllers):
+def setup_app_registry(app, registry_class, config):
     """Set up JSON API application registry."""
-    from .common import logger, JSONAPI
+    from .common import ALLOWED_MEMBER_NAME_REGEX, logger, JSONAPI
     from .registry import Registry
+    from .abc.schema import SchemaABC
+    from .abc.contoller import ControllerABC
 
     if registry_class is not None:
         if not issubclass(registry_class, Registry):
@@ -21,21 +23,40 @@ def setup_app_registry(app, registry_class, controllers):
         registry_class = Registry
 
     app_registry = registry_class()
-    app[JSONAPI]['controllers'] = {}
 
-    for controller in controllers:
-        app[JSONAPI]['controllers'].setdefault(controller.schema.type,
-                                               controller)
-        app_registry[controller.schema.type] = controller.schema
-        app_registry[controller.schema.resource_cls] = controller.schema
+    for schema_cls, controller_cls in config.items():
+        resource_type = schema_cls.opts.resource_type
+        resource_cls = schema_cls.opts.resource_cls
+
+        if not inspect.isclass(controller_cls):
+            raise TypeError('Class (not instance) of controller is required.')
+
+        if not issubclass(controller_cls, ControllerABC):
+            raise TypeError('Subclass of ControllerABC is required. '
+                            'Got: {}'.format(controller_cls))
+
+        if not inspect.isclass(schema_cls):
+            raise TypeError('Class (not instance) of schema is required.')
+
+        if not issubclass(schema_cls, SchemaABC):
+            raise TypeError('Subclass of SchemaABC is required. '
+                            'Got: {}'.format(schema_cls))
+
+        if not inspect.isclass(schema_cls.opts.resource_cls):
+            raise TypeError('Class (not instance) of resource is required.')
+
+        if not ALLOWED_MEMBER_NAME_REGEX.fullmatch(resource_type):
+            raise ValueError('Resource type "{}" '
+                             'is not allowed.'.format(resource_type))
+
+        app_registry[resource_type] = schema_cls, controller_cls
+        app_registry[resource_cls] = schema_cls, controller_cls
 
         logger.debug(
-            'Registered %s '
-            '(schema: %s, resource class: %s, type "%s")',
-            controller.__class__.__name__,
-            controller.schema.__class__.__name__,
-            controller.schema.resource_cls.__name__,
-            controller.schema.type
+            'Registered %r '
+            '(schema: %r, resource class: %r, type %r)',
+            controller_cls.__name__, schema_cls.__name__,
+            resource_cls.__name__, resource_type
         )
 
     return app_registry
@@ -116,8 +137,8 @@ def setup_resources(app, base_path, handlers, routes_namespace):
     related_resource.add_route('GET', handlers['get_related'])
 
 
-def setup_jsonapi(app, controllers, *, base_path='/api', version='1.0',
-                  meta=None, context_class=None, registry_class=None,
+def setup_jsonapi(app, config, *, base_path='/api', version='1.0',
+                  meta=None, context_cls=None, registry_class=None,
                   custom_handlers=None, log_errors=True,
                   routes_namespace=None):
     """
@@ -127,7 +148,7 @@ def setup_jsonapi(app, controllers, *, base_path='/api', version='1.0',
 
     :param ~aiohttp.web.Application app:
         Application instance
-    :param ~typing.Sequence[BaseController] controllers:
+    :param ~typing.Sequence[DefaultController] controllers:
         List of controllers to register in JSON API
     :param str base_path:
         Prefix of JSON API routes paths
@@ -135,7 +156,7 @@ def setup_jsonapi(app, controllers, *, base_path='/api', version='1.0',
         JSON API version (used in ``jsonapi`` key of document)
     :param dict meta:
         Meta information will added to response (``meta`` key of document)
-    :param context_class:
+    :param context_cls:
         Override of RequestContext class
         (must be subclass of :class:`~aiohttp_json_api.context.RequestContext`)
     :param registry_class:
@@ -180,16 +201,16 @@ def setup_jsonapi(app, controllers, *, base_path='/api', version='1.0',
         if routes_namespace and isinstance(routes_namespace, str) \
         else JSONAPI
 
-    if context_class is not None:
-        if not issubclass(context_class, RequestContext):
+    if context_cls is not None:
+        if not issubclass(context_cls, RequestContext):
             raise TypeError('Subclass of RequestContext is required. '
-                            'Got: {}'.format(context_class))
+                            'Got: {}'.format(context_cls))
     else:
-        context_class = RequestContext
+        context_cls = RequestContext
 
     app[JSONAPI] = {
-        'controllers': {},
-        'context_class': context_class,
+        'registry': setup_app_registry(app, registry_class, config),
+        'context_cls': context_cls,
         'meta': meta,
         'jsonapi': {
             'version': version,
@@ -197,8 +218,6 @@ def setup_jsonapi(app, controllers, *, base_path='/api', version='1.0',
         'log_errors': log_errors,
         'routes_namespace': routes_namespace
     }
-    app[JSONAPI]['registry'] = setup_app_registry(app, registry_class,
-                                                  controllers)
 
     handlers = setup_custom_handlers(custom_handlers)
 

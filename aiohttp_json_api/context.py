@@ -10,8 +10,8 @@ from aiohttp import web
 from multidict import MultiDict
 
 from .common import Event, FilterRule, JSONAPI, logger, SortDirection
-from .errors import HTTPBadRequest
-from .schema import BaseSchema
+from .errors import HTTPBadRequest, HTTPNotFound
+from .abc.schema import SchemaABC
 from .typings import (
     RequestFields, RequestFilters, RequestIncludes, RequestSorting
 )
@@ -34,19 +34,40 @@ class RequestContext:
         :param request: Request instance
         :param resource_type: Resource type for current request
         """
-        self._pagination = None
-        self._resource_type = resource_type
-        self.request = request
+        self.__request = request
+        self.__resource_type = resource_type
+        self.__pagination = None
+        self.__filters = self.parse_request_filters(request)
+        self.__fields = self.parse_request_fields(request)
+        self.__include = self.parse_request_includes(request)
+        self.__sorting = self.parse_request_sorting(request)
 
-        self.filters = self.parse_request_filters(request)
-        self.fields = self.parse_request_fields(request)
-        self.include = self.parse_request_includes(request)
-        self.sorting = self.parse_request_sorting(request)
+        self.__event = None
+        if self.__request.method in Event.__members__:
+            self.__event = Event[self.__request.method]
 
-        if self.request.method in Event.__members__:
-            self.event = Event[self.request.method]
-        else:
-            self.event = None
+        self.__controller = None
+        self.__schema = None
+
+        self.__old_context = None
+
+    async def __aenter__(self):
+        self.__old_context = self.__request.get(JSONAPI)
+
+        if self.__resource_type is None:
+            self.__resource_type = self.__request.match_info.get('type', None)
+
+        if (self.__resource_type is None or
+            self.__resource_type not in self.registry):
+            # If type is not found in URI, and type is not passed
+            # via decorator to custom handler, then raise HTTP 404
+            raise HTTPNotFound()
+
+        self.__request[JSONAPI] = self
+
+        schema_cls, controller_cls = self.registry.get(self.resource_type)
+        self.__controller = controller_cls(self)
+        self.__schema = schema_cls(self)
 
         logger.debug('Request context info:\n'
                      'Filters: %s\n'
@@ -57,21 +78,70 @@ class RequestContext:
                      self.filters, self.fields, self.include, self.sorting,
                      self.event)
 
+        return self
+
+    async def __aexit__(self, *exc_info):
+        self.__request[JSONAPI] = self.__old_context
+
+        self.__controller = None
+        self.__schema = None
+
+        self.__old_context = None
+
     @property
-    def schema(self) -> Optional[BaseSchema]:
-        registry = self.request.app[JSONAPI]['registry']
-        return registry.get(self._resource_type, None)
+    def request(self):
+        return self.__request
+
+    @property
+    def app(self):
+        return self.__request.app
+
+    @property
+    def resource_type(self):
+        return self.__resource_type
+
+    @property
+    def registry(self):
+        return self.app[JSONAPI]['registry']
+
+    @property
+    def schema(self) -> Optional[SchemaABC]:
+        return self.__schema
+
+    @property
+    def controller(self):
+        return self.__controller
+
+    @property
+    def filters(self):
+        return self.__filters
+
+    @property
+    def fields(self):
+        return self.__fields
+
+    @property
+    def include(self):
+        return self.__include
+
+    @property
+    def sorting(self):
+        return self.__sorting
+
+    @property
+    def event(self):
+        return self.__event
 
     @property
     def pagination(self):
-        if self._pagination is not None:
-            return self._pagination
+        if self.__pagination is not None:
+            return self.__pagination
 
         if self.schema is not None:
-            pagination_type = self.schema.opts.get('pagination')
+            pagination_type = self.schema.opts.pagination
             if pagination_type:
-                self._pagination = pagination_type(self.request)
-                return self._pagination
+                self.__pagination = pagination_type(self.__request)
+                return self.__pagination
 
         return None
 
