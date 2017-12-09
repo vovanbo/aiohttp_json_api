@@ -33,10 +33,9 @@ setup(
     url='https://github.com/vovanbo/aiohttp_json_api',
     packages=[
         'aiohttp_json_api',
+        'aiohttp_json_api.abc',
         'aiohttp_json_api.compat',
-        'aiohttp_json_api.jsonpointer',
-        'aiohttp_json_api.schema',
-        'aiohttp_json_api.schema.abc',
+        'aiohttp_json_api.fields',
     ],
     package_dir={'aiohttp_json_api':
                  'aiohttp_json_api'},
