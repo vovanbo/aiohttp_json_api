@@ -6,13 +6,13 @@ Schema abstract base classes
 import abc
 import inspect
 import itertools
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from types import MappingProxyType
 
 import inflection
 
+from .processors import MetaProcessors
 from .field import FieldABC
-from ..common import ALLOWED_MEMBER_NAME_REGEX
 from ..jsonpointer import JSONPointer
 
 _issubclass = issubclass
@@ -85,7 +85,7 @@ def _get_fields_by_mro(klass, field_class):
     )
 
 
-class SchemaMeta(abc.ABCMeta):
+class SchemaMeta(abc.ABCMeta, MetaProcessors):
     @classmethod
     def _assign_sp(mcs, fields, sp: JSONPointer):
         """Sets the :attr:`BaseField.sp` (source pointer) property recursively
@@ -272,44 +272,6 @@ class SchemaMeta(abc.ABCMeta):
         """
         return super(SchemaMeta, cls).__call__(*args)
 
-    def _resolve_processors(cls):
-        """
-        Add in the decorated processors
-        By doing this after constructing the class, we let standard inheritance
-        do all the hard work.
-
-        Almost the same as https://github.com/marshmallow-code/marshmallow/blob/dev/marshmallow/schema.py#L139-L174
-        """
-        mro = inspect.getmro(cls)
-        cls._has_processors = False
-        cls.__processors__ = defaultdict(list)
-        for attr_name in dir(cls):
-            # Need to look up the actual descriptor, not whatever might be
-            # bound to the class. This needs to come from the __dict__ of the
-            # declaring class.
-            for parent in mro:
-                try:
-                    attr = parent.__dict__[attr_name]
-                except KeyError:
-                    continue
-                else:
-                    break
-            else:
-                # In case we didn't find the attribute and didn't break above.
-                # We should never hit this - it's just here for completeness
-                # to exclude the possibility of attr being undefined.
-                continue
-
-            try:
-                processor_tags = attr.__processing_tags__
-            except AttributeError:
-                continue
-
-            cls._has_processors = bool(processor_tags)
-            for tag in processor_tags:
-                # Use name here so we can get the bound method later, in case
-                # the processor was a descriptor or something.
-                cls.__processors__[tag].append(attr_name)
 
 
 class SchemaOpts(object):

@@ -1,9 +1,19 @@
 import abc
 
+from .processors import MetaProcessors
 from ..context import JSONAPIContext
 
 
-class ControllerABC(abc.ABC):
+class ControllerMeta(abc.ABCMeta, MetaProcessors):
+    def __init__(cls, name, bases, attrs):
+        """
+        Initialise a new schema class.
+        """
+        super(ControllerMeta, cls).__init__(name, bases, attrs)
+        cls._resolve_processors()
+
+
+class ControllerABC(abc.ABC, metaclass=ControllerMeta):
     def __init__(self, context: JSONAPIContext):
         self.ctx = context
 
