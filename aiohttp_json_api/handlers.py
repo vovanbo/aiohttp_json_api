@@ -28,7 +28,6 @@ __all__ = (
 )
 
 
-@jsonapi_handler
 async def get_collection(request: web.Request):
     """
     Fetch resources collection, render JSON API document and return response.
@@ -51,7 +50,6 @@ async def get_collection(request: web.Request):
     return jsonapi_response(result)
 
 
-@jsonapi_handler
 async def post_resource(request: web.Request):
     """
     Create resource, render JSON API document and return response.
@@ -85,7 +83,6 @@ async def post_resource(request: web.Request):
                             headers={hdrs.LOCATION: str(location)})
 
 
-@jsonapi_handler
 async def get_resource(request: web.Request):
     """
     Get single resource, render JSON API document and return response.
@@ -110,7 +107,6 @@ async def get_resource(request: web.Request):
     return jsonapi_response(result)
 
 
-@jsonapi_handler
 async def patch_resource(request: web.Request):
     """
     Update resource (via PATCH), render JSON API document and return response.
@@ -140,7 +136,6 @@ async def patch_resource(request: web.Request):
     return jsonapi_response(result)
 
 
-@jsonapi_handler
 async def delete_resource(request: web.Request):
     """
     Remove resource.
@@ -157,7 +152,6 @@ async def delete_resource(request: web.Request):
     return web.HTTPNoContent()
 
 
-@jsonapi_handler
 async def get_relationship(request: web.Request):
     """
     Get relationships of resource.
@@ -187,7 +181,6 @@ async def get_relationship(request: web.Request):
     return jsonapi_response(result)
 
 
-@jsonapi_handler
 async def post_relationship(request: web.Request):
     """
     Create relationships of resource.
@@ -226,7 +219,6 @@ async def post_relationship(request: web.Request):
     return jsonapi_response(result)
 
 
-@jsonapi_handler
 async def patch_relationship(request: web.Request):
     """
     Update relationships of resource.
@@ -264,7 +256,6 @@ async def patch_relationship(request: web.Request):
     return jsonapi_response(result)
 
 
-@jsonapi_handler
 async def delete_relationship(request: web.Request):
     """
     Remove relationships of resource.
@@ -302,7 +293,6 @@ async def delete_relationship(request: web.Request):
     return jsonapi_response(result)
 
 
-@jsonapi_handler
 async def get_related(request: web.Request):
     """
     Get related resources.
