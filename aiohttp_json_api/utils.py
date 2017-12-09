@@ -179,13 +179,12 @@ def error_to_response(request: web.Request,
     )
 
 
-def validate_uri_resource_id(schema, resource_id, context):
+def validate_uri_resource_id(schema, resource_id):
     """
     Validate resource ID from URI.
 
     :param schema: Resource schema
     :param resource_id: Resource ID
-    :param context: Request context
     """
     field = getattr(schema, '_id', None)
     if field is None:
@@ -196,7 +195,7 @@ def validate_uri_resource_id(schema, resource_id, context):
                                   source_parameter='id')
     else:
         try:
-            field.pre_validate(schema, resource_id, sp=None, context=context)
+            field.pre_validate(schema, resource_id, sp=None)
         except ValidationError as exc:
             exc.source_parameter = 'id'
             raise exc
