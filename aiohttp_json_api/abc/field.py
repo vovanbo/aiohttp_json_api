@@ -67,7 +67,7 @@ class FieldABC(abc.ABC):
             The raw input data
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.RequestContext context:
+        :arg ~aiohttp_json_api.context.JSONAPIContext context:
             A JSON API request context instance
         """
         raise NotImplementedError
@@ -84,7 +84,7 @@ class FieldABC(abc.ABC):
             The decoded input data
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.RequestContext context:
+        :arg ~aiohttp_json_api.context.JSONAPIContext context:
             A JSON API request context instance
         """
         raise NotImplementedError

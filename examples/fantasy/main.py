@@ -31,8 +31,8 @@ async def init(db_dsn: str, debug=False, loop=None) -> web.Application:
     # Note that we pass schema classes, not instances of them.
     # Schemas instances will be initialized application-wide.
     # Schema instance is stateless, therefore any request state must be passed
-    # to each of Schema's method as RequestContext instance.
-    # RequestContext instance created automatically in JSON API middleware
+    # to each of Schema's method as JSONAPIContext instance.
+    # JSONAPIContext instance created automatically in JSON API middleware
     # for each request. JSON API handlers use it in calls of Schema's methods.
     setup_jsonapi(app,
                   (AuthorSchema, BookSchema, ChapterSchema,

@@ -157,8 +157,8 @@ def setup_jsonapi(app, config, *, base_path='/api', version='1.0',
     :param dict meta:
         Meta information will added to response (``meta`` key of document)
     :param context_cls:
-        Override of RequestContext class
-        (must be subclass of :class:`~aiohttp_json_api.context.RequestContext`)
+        Override of JSONAPIContext class
+        (must be subclass of :class:`~aiohttp_json_api.context.JSONAPIContext`)
     :param registry_class:
         Override of Registry class
         (must be subclass of :class:`~aiohttp_json_api.registry.Registry`)
@@ -187,7 +187,7 @@ def setup_jsonapi(app, config, *, base_path='/api', version='1.0',
     :rtype: ~aiohttp.web.Application
     """
     from .common import JSONAPI, logger
-    from .context import RequestContext
+    from .context import JSONAPIContext
     from .middleware import jsonapi_middleware
 
     if JSONAPI in app:
@@ -202,11 +202,11 @@ def setup_jsonapi(app, config, *, base_path='/api', version='1.0',
         else JSONAPI
 
     if context_cls is not None:
-        if not issubclass(context_cls, RequestContext):
-            raise TypeError('Subclass of RequestContext is required. '
+        if not issubclass(context_cls, JSONAPIContext):
+            raise TypeError('Subclass of JSONAPIContext is required. '
                             'Got: {}'.format(context_cls))
     else:
-        context_cls = RequestContext
+        context_cls = JSONAPIContext
 
     app[JSONAPI] = {
         'registry': setup_app_registry(app, registry_class, config),

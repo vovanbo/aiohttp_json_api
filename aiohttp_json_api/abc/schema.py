@@ -332,7 +332,7 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
         """
         Initialize the schema.
 
-        :param ~aiohttp_json_api.context.RequestContext context:
+        :param ~aiohttp_json_api.context.JSONAPIContext context:
             Resource context instance
         """
         self.ctx = context
@@ -401,7 +401,7 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
             The received JSON API resource object
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
-        :arg RequestContext context:
+        :arg JSONAPIContext context:
             Request context instance
         :arg str expected_id:
             If passed, then ID of resrouce will be compared with this value.
@@ -416,7 +416,7 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
 
         :arg ~collections.OrderedDict data:
             The *memo* object returned from :meth:`deserialize_resource`.
-        :arg RequestContext context:
+        :arg JSONAPIContext context:
             Request context instance
         """
         raise NotImplementedError
@@ -432,7 +432,7 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
             The received JSON API resource object
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
-        :arg RequestContext context:
+        :arg JSONAPIContext context:
             Request context instance
         :arg str expected_id:
             If passed, then ID of resource will be compared with this value.

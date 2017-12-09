@@ -17,7 +17,7 @@ from .typings import (
 )
 
 
-class RequestContext:
+class JSONAPIContext:
     """JSON API request context."""
 
     FILTER_KEY = re.compile(r"filter\[(?P<field>\w[-\w_]*)\]")

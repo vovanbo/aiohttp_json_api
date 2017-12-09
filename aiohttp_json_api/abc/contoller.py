@@ -1,10 +1,10 @@
 import abc
 
-from ..context import RequestContext
+from ..context import JSONAPIContext
 
 
 class ControllerABC(abc.ABC):
-    def __init__(self, context: RequestContext):
+    def __init__(self, context: JSONAPIContext):
         self.ctx = context
 
     @staticmethod
@@ -54,7 +54,7 @@ class ControllerABC(abc.ABC):
             The JSON API resource object with the initial data.
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.RequestContext context:
+        :arg ~aiohttp_json_api.context.JSONAPIContext context:
             Request context instance
         """
         raise NotImplementedError
@@ -79,7 +79,7 @@ class ControllerABC(abc.ABC):
             The JSON API resource object with the update information
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.RequestContext context:
+        :arg ~aiohttp_json_api.context.JSONAPIContext context:
             Request context instance
         """
 
@@ -96,7 +96,7 @@ class ControllerABC(abc.ABC):
 
         :arg resource_id:
             The id of the resource or the resource instance
-        :arg ~aiohttp_json_api.context.RequestContext context:
+        :arg ~aiohttp_json_api.context.JSONAPIContext context:
             Request context instance
         """
         raise NotImplementedError
@@ -122,7 +122,7 @@ class ControllerABC(abc.ABC):
             The JSON API relationship object with the update information.
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.RequestContext context:
+        :arg ~aiohttp_json_api.context.JSONAPIContext context:
             Request context instance.
         """
         raise NotImplementedError
@@ -146,7 +146,7 @@ class ControllerABC(abc.ABC):
             The JSON API relationship object with the update information.
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.RequestContext context:
+        :arg ~aiohttp_json_api.context.JSONAPIContext context:
             Request context instance.
         """
         raise NotImplementedError
@@ -170,7 +170,7 @@ class ControllerABC(abc.ABC):
             The JSON API relationship object with the update information.
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.RequestContext context:
+        :arg ~aiohttp_json_api.context.JSONAPIContext context:
             Request context instance.
         """
         raise NotImplementedError
@@ -188,7 +188,7 @@ class ControllerABC(abc.ABC):
         Fetches a subset of the collection represented by this schema.
         **Must be overridden.**
 
-        :arg ~aiohttp_json_api.context.RequestContext context:
+        :arg ~aiohttp_json_api.context.JSONAPIContext context:
             Request context instance.
         """
         raise NotImplementedError
@@ -204,7 +204,7 @@ class ControllerABC(abc.ABC):
 
         :arg str resource_id:
             The id of the requested resource.
-        :arg RequestContext context:
+        :arg JSONAPIContext context:
             A request context instance
         :raises ~aiohttp_json_api.errors.ResourceNotFound:
             If there is no resource with the given *id_*.
@@ -221,7 +221,7 @@ class ControllerABC(abc.ABC):
             The name of a relationship.
         :arg str resource_id:
             The id of the resource_id or the resource_id instance.
-        :arg RequestContext context:
+        :arg JSONAPIContext context:
             A request context instance
         """
         raise NotImplementedError
@@ -242,7 +242,7 @@ class ControllerABC(abc.ABC):
             The name of the relationship.
         :arg resources:
             A list of resources.
-        :arg RequestContext context:
+        :arg JSONAPIContext context:
             Request context instance.
         :arg list rest_path:
             The name of the relationships of the returned relatives, which
