@@ -16,12 +16,11 @@ class SimpleController(DefaultController):
 
     async def fetch_resource(self, resource_id, **kwargs):
         rid = self.ctx.registry.ensure_identifier(
-            {'type': self.ctx.schema.type,
-             'id': resource_id}
+            {'type': self.ctx.resource_type, 'id': resource_id}
         )
         result = self.storage[rid.type].get(rid.id)
         if result is None:
-            raise ResourceNotFound(self.ctx.schema.type, resource_id)
+            raise ResourceNotFound(self.ctx.resource_type, resource_id)
 
         logger.debug('Fetch resource %r from storage.', result)
         return result
@@ -38,8 +37,9 @@ class SimpleController(DefaultController):
         initial_data = await super(SimpleController, self).create_resource(
             data, sp, **kwargs
         )
-        new_resource = self.ctx.schema.resource_cls(id=random.randint(1000, 9999),
-                                                **initial_data)
+        new_resource = \
+            self.ctx.schema.opts.resource_cls(id=random.randint(1000, 9999),
+                                              **initial_data)
 
         new_resource_id = self.ctx.registry.ensure_identifier(new_resource)
         self.storage[new_resource_id] = new_resource
@@ -62,11 +62,12 @@ class SimpleController(DefaultController):
     async def delete_resource(self, resource_id, **kwargs):
         try:
             removed_resource = self.storage.pop(
-                self.ctx.registry.ensure_identifier({'type': self.schema.type,
-                                                 'id': resource_id})
+                self.ctx.registry.ensure_identifier(
+                    {'type': self.ctx.resource_type, 'id': resource_id}
+                )
             )
         except KeyError:
-            raise ResourceNotFound(self.schema.type, resource_id)
+            raise ResourceNotFound(self.ctx.resource_type, resource_id)
 
         logger.debug('%r is removed.', removed_resource)
 
@@ -77,7 +78,7 @@ class CommentsController(SimpleController):
             data, sp, **kwargs
         )
 
-        author_resource_id = self.registry.ensure_identifier(
+        author_resource_id = self.ctx.registry.ensure_identifier(
             initial_data['author']['data']
         )
         author = self.ctx.app['storage'][People].get(author_resource_id)
@@ -85,7 +86,7 @@ class CommentsController(SimpleController):
             raise ResourceNotFound(author_resource_id.type,
                                    author_resource_id.id)
 
-        new_resource = self.schema.resource_cls(
+        new_resource = self.ctx.schema.opts.resource_cls(
             id=random.randint(1000, 9999), body=initial_data['body'],
             author=author
         )
