@@ -36,23 +36,6 @@ class JSONAPIContext:
         """
         self.__request = request
         self.__resource_type = resource_type
-        self.__pagination = None
-        self.__filters = self.parse_request_filters(request)
-        self.__fields = self.parse_request_fields(request)
-        self.__include = self.parse_request_includes(request)
-        self.__sorting = self.parse_request_sorting(request)
-
-        self.__event = None
-        if self.__request.method in Event.__members__:
-            self.__event = Event[self.__request.method]
-
-        self.__controller = None
-        self.__schema = None
-
-        self.__old_context = None
-
-    async def __aenter__(self):
-        self.__old_context = self.__request.get(JSONAPI)
 
         if self.__resource_type is None:
             self.__resource_type = self.__request.match_info.get('type', None)
@@ -63,7 +46,15 @@ class JSONAPIContext:
             # via decorator to custom handler, then raise HTTP 404
             raise HTTPNotFound()
 
-        self.__request[JSONAPI] = self
+        self.__pagination = None
+        self.__filters = self.parse_request_filters(request)
+        self.__fields = self.parse_request_fields(request)
+        self.__include = self.parse_request_includes(request)
+        self.__sorting = self.parse_request_sorting(request)
+
+        self.__event = None
+        if self.__request.method in Event.__members__:
+            self.__event = Event[self.__request.method]
 
         schema_cls, controller_cls = self.registry.get(self.resource_type)
         self.__controller = controller_cls(self)
@@ -77,16 +68,6 @@ class JSONAPIContext:
                      'Event: %s',
                      self.filters, self.fields, self.include, self.sorting,
                      self.event)
-
-        return self
-
-    async def __aexit__(self, *exc_info):
-        self.__request[JSONAPI] = self.__old_context
-
-        self.__controller = None
-        self.__schema = None
-
-        self.__old_context = None
 
     @property
     def request(self):
@@ -170,23 +151,23 @@ class JSONAPIContext:
 
         .. code-block:: python3
 
-            >>> from aiohttp_json_api.context import RequestContext
+            >>> from aiohttp_json_api.context import JSONAPIContext
             >>> from aiohttp.test_utils import make_mocked_request
 
             >>> request = make_mocked_request('GET', '/api/User/?filter[name]=endswith:"Simpson"')
-            >>> RequestContext.parse_request_filters(request)
+            >>> JSONAPIContext.parse_request_filters(request)
             <MultiDict('name': FilterRule(name='endswith', value='Simpson'))>
 
             >>> request = make_mocked_request('GET', '/api/User/?filter[name]=endswith:"Simpson"&filter[name]=in:["Some","Names"]')
-            >>> RequestContext.parse_request_filters(request)
+            >>> JSONAPIContext.parse_request_filters(request)
             <MultiDict('name': FilterRule(name='endswith', value='Simpson'), 'name': FilterRule(name='in', value=['Some', 'Names']))>
 
             >>> request = make_mocked_request('GET', '/api/User/?filter[name]=in:["Homer Simpson", "Darth Vader"]')
-            >>> RequestContext.parse_request_filters(request)
+            >>> JSONAPIContext.parse_request_filters(request)
             <MultiDict('name': FilterRule(name='in', value=['Homer Simpson', 'Darth Vader']))>
 
             >>> request = make_mocked_request('GET', '/api/User/?filter[some-field]=startswith:"lisa"&filter[another-field]=lt:20')
-            >>> RequestContext.parse_request_filters(request)
+            >>> JSONAPIContext.parse_request_filters(request)
             <MultiDict('some_field': FilterRule(name='startswith', value='lisa'), 'another_field': FilterRule(name='lt', value=20))>
 
         The general syntax is::
@@ -245,10 +226,10 @@ class JSONAPIContext:
 
         .. code-block:: python3
 
-            >>> from aiohttp_json_api.context import RequestContext
+            >>> from aiohttp_json_api.context import JSONAPIContext
             >>> from aiohttp.test_utils import make_mocked_request
             >>> request = make_mocked_request('GET', '/api/User?fields[User]=email,name&fields[Post]=comments')
-            >>> RequestContext.parse_request_fields(request)
+            >>> JSONAPIContext.parse_request_fields(request)
             OrderedDict([('User', ('email', 'name')), ('Post', ('comments',))])
 
         :seealso: http://jsonapi.org/format/#fetching-sparse-fieldsets
@@ -277,10 +258,10 @@ class JSONAPIContext:
 
         .. code-block:: python3
 
-            >>> from aiohttp_json_api.context import RequestContext
+            >>> from aiohttp_json_api.context import JSONAPIContext
             >>> from aiohttp.test_utils import make_mocked_request
             >>> request = make_mocked_request('GET', '/api/Post?include=author,comments.author,some-field.nested')
-            >>> RequestContext.parse_request_includes(request)
+            >>> JSONAPIContext.parse_request_includes(request)
             (('author',), ('comments', 'author'), ('some_field', 'nested'))
 
         :seealso: http://jsonapi.org/format/#fetching-includes
@@ -300,10 +281,10 @@ class JSONAPIContext:
 
         .. code-block:: python3
 
-            >>> from aiohttp_json_api.context import RequestContext
+            >>> from aiohttp_json_api.context import JSONAPIContext
             >>> from aiohttp.test_utils import make_mocked_request
             >>> request = make_mocked_request('GET', '/api/Post?sort=name,-age,+comments.count')
-            >>> RequestContext.parse_request_sorting(request)
+            >>> JSONAPIContext.parse_request_sorting(request)
             OrderedDict([(('name',), <SortDirection.ASC: '+'>), (('age',), <SortDirection.DESC: '-'>), (('comments', 'count'), <SortDirection.ASC: '+'>)])
 
         :seealso: http://jsonapi.org/format/#fetching-sorting
