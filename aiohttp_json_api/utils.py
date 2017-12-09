@@ -89,7 +89,7 @@ async def get_compound_documents(resources, ctx):
     return compound_documents, relationships
 
 
-async def serialize_resource(resource, ctx):
+def serialize_resource(resource, ctx):
     """
     Serialize resource by schema.
 
@@ -117,17 +117,13 @@ async def render_document(data, included, ctx, *,
     document = OrderedDict()
 
     if is_collection(data, exclude=(ctx.schema.opts.resource_cls,)):
-        document['data'] = await asyncio.gather(
-            *[serialize_resource(r, ctx) for r in data]
-        )
+        document['data'] = [serialize_resource(r, ctx) for r in data]
     else:
-        document['data'] = \
-            await serialize_resource(data, ctx) if data else None
+        document['data'] = serialize_resource(data, ctx) if data else None
 
     if ctx.include and included:
-        document['included'] = await asyncio.gather(
-            *[serialize_resource(r, ctx) for r in included.values()]
-        )
+        document['included'] = \
+            [serialize_resource(r, ctx) for r in included.values()]
 
     document.setdefault('links', OrderedDict())
     document['links']['self'] = str(ctx.request.url)
