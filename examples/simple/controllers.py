@@ -33,39 +33,33 @@ class SimpleController(DefaultController):
         # Without this, query_resource is almost the same as fetch_resource.
         return await self.fetch_resource(resource_id, **kwargs)
 
-    async def create_resource(self, data, sp, **kwargs):
-        initial_data = await super(SimpleController, self).create_resource(
-            data, sp, **kwargs
-        )
-        new_resource = \
-            self.ctx.schema.opts.resource_cls(id=random.randint(1000, 9999),
-                                              **initial_data)
+    async def create_resource(self, data, **kwargs):
+        resource_cls = self.ctx.schema.opts.resource_cls
+        new_resource = resource_cls(id=random.randint(1000, 9999), **data)
 
-        new_resource_id = self.ctx.registry.ensure_identifier(new_resource)
-        self.storage[new_resource_id] = new_resource
+        rid = self.ctx.registry.ensure_identifier(new_resource)
+        self.storage[rid.type][rid.id] = new_resource
 
         logger.debug('%r is created.', new_resource)
         return new_resource
 
-    async def update_resource(self, resource_id, data, sp, **kwargs):
+    async def update_resource(self, resource, data, sp, **kwargs):
         resource, updated_resource = \
             await super(SimpleController, self).update_resource(
-                resource_id, data, sp, **kwargs)
+                resource, data, sp, **kwargs)
 
-        updated_resource_id = \
-            self.ctx.registry.ensure_identifier(updated_resource)
-        self.storage[updated_resource_id] = updated_resource
+        rid = self.ctx.registry.ensure_identifier(updated_resource)
+        self.storage[rid.type][rid.id] = updated_resource
 
         logger.debug('%r is updated to %r.', resource, updated_resource)
         return resource, updated_resource
 
     async def delete_resource(self, resource_id, **kwargs):
         try:
-            removed_resource = self.storage.pop(
-                self.ctx.registry.ensure_identifier(
-                    {'type': self.ctx.resource_type, 'id': resource_id}
-                )
+            rid = self.ctx.registry.ensure_identifier(
+                {'type': self.ctx.resource_type, 'id': resource_id}
             )
+            removed_resource = self.storage[rid.type].pop(rid.id)
         except KeyError:
             raise ResourceNotFound(self.ctx.resource_type, resource_id)
 
@@ -73,26 +67,20 @@ class SimpleController(DefaultController):
 
 
 class CommentsController(SimpleController):
-    async def create_resource(self, data, sp, **kwargs):
-        initial_data = await super(SimpleController, self).create_resource(
-            data, sp, **kwargs
-        )
-
-        author_resource_id = self.ctx.registry.ensure_identifier(
-            initial_data['author']['data']
-        )
-        author = self.ctx.app['storage'][People].get(author_resource_id)
+    async def create_resource(self, data, **kwargs):
+        rid = self.ctx.registry.ensure_identifier(data['author']['data'])
+        author = self.storage[rid.type].get(rid.id)
         if author is None:
-            raise ResourceNotFound(author_resource_id.type,
-                                   author_resource_id.id)
+            raise ResourceNotFound(rid.type, rid.id)
 
-        new_resource = self.ctx.schema.opts.resource_cls(
-            id=random.randint(1000, 9999), body=initial_data['body'],
+        resource_cls = self.ctx.schema.opts.resource_cls
+        new_resource = resource_cls(
+            id=random.randint(1000, 9999), body=data['body'],
             author=author
         )
 
-        new_resource_id = self.ctx.registry.ensure_identifier(new_resource)
-        self.storage[new_resource_id] = new_resource
+        rid = self.ctx.registry.ensure_identifier(new_resource)
+        self.storage[rid.type][rid.id] = new_resource
 
         logger.debug('%r is created.', new_resource)
         return new_resource

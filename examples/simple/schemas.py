@@ -34,12 +34,11 @@ class CommentSchema(BaseSchema):
     @sets('author')
     async def set_author(self, field, resource, data, sp, context=None,
                          **kwargs):
-        registry = context.request.app[JSONAPI]['registry']
-        author_resource_id = registry.ensure_identifier(data['data'])
-        author = context.request.app['storage'][People].get(author_resource_id)
+        rid = self.ctx.registry.ensure_identifier(data['data'])
+        storage = self.ctx.app['storage']
+        author = storage[rid.type].get(rid.id)
         if author is None:
-            raise ResourceNotFound(author_resource_id.type,
-                                   author_resource_id.id)
+            raise ResourceNotFound(rid.type, rid.id)
 
         logger.debug('Set author of %r to %r.', resource, author)
 
