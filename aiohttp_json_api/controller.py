@@ -77,7 +77,7 @@ class DefaultController(ControllerABC):
                                   data, sp, **kwargs):
         field = self.ctx.schema.get_relationship_field(relation_name)
 
-        await self.ctx.schema._pre_validate_field(field, data, sp)
+        await self.ctx.schema.pre_validate_field(field, data, sp)
         decoded = field.deserialize(self, data, sp, **kwargs)
 
         resource = await self.fetch_resource(resource_id, **kwargs)
@@ -94,7 +94,7 @@ class DefaultController(ControllerABC):
             raise RuntimeError('Wrong relationship field.'
                                'Relation to-many is required.')
 
-        await self.ctx.schema._pre_validate_field(field, data, sp)
+        await self.ctx.schema.pre_validate_field(field, data, sp)
         decoded = field.deserialize(self, data, sp, **kwargs)
 
         resource = await self.fetch_resource(resource_id, **kwargs)
@@ -114,7 +114,7 @@ class DefaultController(ControllerABC):
             raise RuntimeError('Wrong relationship field.'
                                'Relation to-many is required.')
 
-        await self.ctx.schema._pre_validate_field(field, data, sp)
+        await self.ctx.schema.pre_validate_field(field, data, sp)
         decoded = field.deserialize(self, data, sp, **kwargs)
 
         resource = await self.fetch_resource(resource_id, **kwargs)

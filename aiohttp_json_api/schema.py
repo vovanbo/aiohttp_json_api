@@ -166,6 +166,9 @@ class BaseSchema(SchemaABC):
 
         return result
 
+    # Validation (pre deserialize)
+    # ----------------------------
+
     def serialize_relationship(self, relation_name, resource,
                                *, pagination=None):
         field = self.get_relationship_field(relation_name)
@@ -176,21 +179,7 @@ class BaseSchema(SchemaABC):
         field_data = self.get_value(field, resource, **kwargs)
         return field.serialize(self, field_data, **kwargs)
 
-    # Validation (pre deserialize)
-    # -----------------------
-
-    async def _pre_validate_field(self, field, data, sp):
-        """
-        Validates the input data for a field, **before** it is deserialized.
-        If the field has nested fields, the nested fields are validated first.
-
-        :arg BaseField field:
-        :arg data:
-            The input data for the field.
-        :arg aiohttp_json_api.jsonpointer.JSONPointer sp:
-            The pointer to *data* in the original document. If *None*, there
-            was no input data for this field.
-        """
+    async def pre_validate_field(self, field, data, sp):
         writable = field.writable in (Event.ALWAYS, self.ctx.event)
         if data is not MISSING and not writable:
             detail = "The field '{}' is readonly.".format(field.name)
@@ -226,6 +215,9 @@ class BaseSchema(SchemaABC):
                 else:
                     validator(self, field, data, sp)
 
+    # Validation (post deserialize)
+    # -----------------------------
+
     async def pre_validate_resource(self, data, sp, *, expected_id=None):
         if not isinstance(data, MutableMapping):
             detail = 'Must be an object.'
@@ -240,8 +232,8 @@ class BaseSchema(SchemaABC):
         if expected_id:
             if str(data['id']) == str(expected_id):
                 if self._id is not None:
-                    await self._pre_validate_field(self._id, data['id'],
-                                                   sp / 'id')
+                    await self.pre_validate_field(self._id, data['id'],
+                                                  sp / 'id')
             else:
                 detail = "The id '{}' does not match the endpoint id " \
                          "'{}'.".format(data['id'], expected_id)
@@ -300,8 +292,8 @@ class BaseSchema(SchemaABC):
 
                     if (validate and
                         Step.BEFORE_DESERIALIZATION in validation_steps):
-                        await self._pre_validate_field(field, field_data,
-                                                       field_sp)
+                        await self.pre_validate_field(field, field_data,
+                                                      field_sp)
 
                     if field_data is not MISSING:
                         result[field.key] = (

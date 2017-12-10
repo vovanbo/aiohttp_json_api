@@ -354,6 +354,24 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
         """
         raise NotImplementedError
 
+    # Validation (pre deserialize)
+    # -----------------------
+
+    @abc.abstractmethod
+    async def pre_validate_field(self, field, data, sp):
+        """
+        Validates the input data for a field, **before** it is deserialized.
+        If the field has nested fields, the nested fields are validated first.
+
+        :arg BaseField field:
+        :arg data:
+            The input data for the field.
+        :arg aiohttp_json_api.jsonpointer.JSONPointer sp:
+            The pointer to *data* in the original document. If *None*, there
+            was no input data for this field.
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     async def pre_validate_resource(self, data, sp, *, expected_id=None):
         """
@@ -374,6 +392,9 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
             This is required in update methods
         """
         raise NotImplementedError
+
+    # Validation (post deserialize)
+    # -----------------------------
 
     @abc.abstractmethod
     async def post_validate_resource(self, data):
