@@ -169,7 +169,7 @@ class BaseSchema(SchemaABC):
         field = self.get_relationship_field(relation_name)
 
         kwargs = dict()
-        if field.relation is Relation.TO_ONE and pagination:
+        if field.relation is Relation.TO_MANY and pagination:
             kwargs['pagination'] = pagination
         field_data = self.get_value(field, resource, **kwargs)
         return field.serialize(self, field_data, **kwargs)
@@ -246,8 +246,7 @@ class BaseSchema(SchemaABC):
             for validator, validator_kwargs in validators:
                 if validator_kwargs['step'] is not Step.AFTER_DESERIALIZATION:
                     continue
-                if validator_kwargs['on'] not in (Event.ALWAYS,
-                                                  self.ctx.event):
+                if validator_kwargs['on'] not in (Event.ALWAYS, self.ctx.event):
                     continue
 
                 if asyncio.iscoroutinefunction(validator):
