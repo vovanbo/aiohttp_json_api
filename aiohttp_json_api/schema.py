@@ -238,7 +238,7 @@ class BaseSchema(SchemaABC):
         # NOTE: The fields in *data* are ordered, such that children are
         #       listed before their parent.
         for key, (field_data, field_sp) in data.items():
-            field = self._declared_fields[key]
+            field = self.get_field(key)
             field.post_validate(self, field_data, field_sp)
 
             # Run custom post-validators for field
@@ -304,7 +304,7 @@ class BaseSchema(SchemaABC):
     def map_data_to_schema(self, data) -> Dict:
         # Map the property names on the resource instance to its initial data.
         result = {
-            self._declared_fields[key].mapped_key: field_data
+            self.get_field(key).mapped_key: field_data
             for key, (field_data, sp) in data.items()
         }
         if 'id' in data:

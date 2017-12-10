@@ -66,10 +66,10 @@ class DefaultController(ControllerABC):
         resource = await self.fetch_resource(resource_id, **kwargs)
 
         updated_resource = copy.deepcopy(resource)
-        for key, (data, sp) in deserialized_data.items():
-            field = self.ctx.schema._declared_fields[key]
-            await self.ctx.schema.set_value(field, updated_resource, data, sp,
-                                            **kwargs)
+        for key, (field_data, sp) in data.items():
+            field = self.ctx.schema.get_field(key)
+            await self.ctx.schema.set_value(field, updated_resource,
+                                            field_data, sp, **kwargs)
 
         return resource, updated_resource
 
