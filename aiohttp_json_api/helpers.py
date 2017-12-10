@@ -6,7 +6,7 @@ from typing import Optional
 
 from aiohttp import web
 
-from .fields.base import BaseField
+from .abc.field import FieldABC
 from .fields.decorators import Tag
 from .typings import Callee
 from .common import JSONAPI
@@ -135,7 +135,7 @@ def get_router_resource(app: web.Application, resource: str):
     ]
 
 
-def get_processors(obj, tag: Tag, field: BaseField,
+def get_processors(obj, tag: Tag, field: FieldABC,
                    default: Optional[Callee] = None):
     has_processors = getattr(obj, '_has_processors', False)
     if has_processors:
