@@ -322,6 +322,10 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def get_field(self, key) -> FieldABC:
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def serialize_resource(self, resource, **kwargs):
         raise NotImplementedError
 

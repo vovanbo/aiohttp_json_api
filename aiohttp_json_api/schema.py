@@ -105,6 +105,9 @@ class BaseSchema(SchemaABC):
         return await setter(field, resource, data, sp, **setter_kwargs,
                             **kwargs)
 
+    def get_field(self, key) -> FieldABC:
+        return self._declared_fields[key]
+
     def serialize_resource(self, resource, **kwargs) -> MutableMapping:
         """
         .. seealso::
