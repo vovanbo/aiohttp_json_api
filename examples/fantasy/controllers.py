@@ -7,6 +7,9 @@ from examples.fantasy.models import Author
 
 
 class CommonController(DefaultController):
+    async def create_resource(self, data, **kwargs):
+        pass
+
     async def fetch_resource(self, resource_id, **kwargs):
         model = self.ctx.schema.opts.resource_cls
         async with self.ctx.app['db'].acquire() as connection:

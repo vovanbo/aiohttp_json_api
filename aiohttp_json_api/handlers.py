@@ -58,17 +58,19 @@ async def post_resource(request: web.Request):
 
     :seealso: http://jsonapi.org/format/#crud-creating
     """
-    data = await request.json()
-    if not isinstance(data, collections.Mapping):
+    raw_data = await request.json()
+    if not isinstance(raw_data, collections.Mapping):
         detail = 'Must be an object.'
         raise InvalidType(detail=detail, source_pointer='')
 
     ctx = JSONAPIContext(request)
-    resource = await ctx.controller.create_resource(
-        data=data.get('data', {}),
-        sp=JSONPointer('/data'),
-    )
 
+    deserialized_data = await ctx.schema.deserialize_resource(
+        raw_data.get('data', {}), JSONPointer('/data')
+    )
+    data = ctx.schema.map_data_to_schema(deserialized_data)
+
+    resource = await ctx.controller.create_resource(data)
     result = await render_document(resource, None, ctx)
 
     location = request.url.join(
@@ -119,13 +121,19 @@ async def patch_resource(request: web.Request):
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(ctx.schema, resource_id)
 
-    data = await request.json()
-    if not isinstance(data, collections.Mapping):
+    raw_data = await request.json()
+    if not isinstance(raw_data, collections.Mapping):
         detail = 'Must be an object.'
         raise InvalidType(detail=detail, source_pointer='')
 
+    sp = JSONPointer('/data')
+    deserialized_data = await ctx.schema.deserialize_resource(
+        raw_data.get('data', {}), sp, expected_id=resource_id
+    )
+
+    resource = await ctx.controller.fetch_resource(resource_id)
     old_resource, new_resource = await ctx.controller.update_resource(
-        resource_id, data.get('data', {}), JSONPointer('/data')
+        resource, deserialized_data, sp
     )
 
     if old_resource == new_resource:
@@ -192,11 +200,11 @@ async def post_relationship(request: web.Request):
     ctx = JSONAPIContext(request)
     relation_field = ctx.schema.get_relationship_field(relation_name,
                                                        source_parameter='URI')
-    pagination = None
 
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(ctx.schema, resource_id)
 
+    pagination = None
     if relation_field.relation is Relation.TO_MANY:
         pagination_type = relation_field.pagination
         if pagination_type:

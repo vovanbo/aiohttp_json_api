@@ -53,18 +53,7 @@ class DefaultController(ControllerABC):
             except ValueError:
                 pass
 
-    async def create_resource(self, data, sp, **kwargs):
-        return self.ctx.schema.map_data_to_schema(
-            await self.ctx.schema.deserialize_resource(data, sp)
-        )
-
-    async def update_resource(self, resource_id, data, sp, **kwargs):
-        deserialized_data = \
-            await self.ctx.schema.deserialize_resource(data, sp,
-                                                       expected_id=resource_id)
-
-        resource = await self.fetch_resource(resource_id, **kwargs)
-
+    async def update_resource(self, resource, data, sp, **kwargs):
         updated_resource = copy.deepcopy(resource)
         for key, (field_data, sp) in data.items():
             field = self.ctx.schema.get_field(key)

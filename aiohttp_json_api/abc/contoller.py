@@ -45,7 +45,7 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def create_resource(self, data, sp, **kwargs):
+    async def create_resource(self, data, **kwargs):
         """
         .. seealso::
 
@@ -61,11 +61,7 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
         passed to the constructor.
 
         :arg dict data:
-            The JSON API resource object with the initial data.
-        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
-            The JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.JSONAPIContext context:
-            Request context instance
+            The JSON API deserialized data by schema.
         """
         raise NotImplementedError
 
