@@ -21,9 +21,8 @@ async def jsonapi_middleware(app, handler):
                 content_type_error = \
                     "Content-Type '{}' is required.".format(
                         JSONAPI_CONTENT_TYPE)
-                mutation_methods = ('POST', 'PATCH', 'DELETE')
 
-                if request_ct is None and request.method in mutation_methods:
+                if request_ct is None and request.has_body:
                     raise HTTPUnsupportedMediaType(detail=content_type_error)
 
                 if (request_ct is not None and
