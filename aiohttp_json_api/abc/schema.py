@@ -282,6 +282,7 @@ class SchemaOpts(object):
         self.resource_type = getattr(options, 'resource_type', None)
         self.pagination = getattr(options, 'pagination', None)
         self.inflect = getattr(options, 'inflect', inflection.dasherize)
+        self.deflect = getattr(options, 'deflect', inflection.underscore)
 
 
 class SchemaABC(abc.ABC, metaclass=SchemaMeta):

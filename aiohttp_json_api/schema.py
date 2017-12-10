@@ -11,13 +11,11 @@ validation and update operations based on
 import asyncio
 import urllib.parse
 from collections import MutableMapping, OrderedDict
-from functools import partial
 from typing import Dict
 
-import inflection
-
+from .abc.field import FieldABC
 from .abc.schema import SchemaABC
-from .fields.base import Attribute, BaseField, Relationship
+from .fields.base import Attribute, Relationship
 from .fields.decorators import Tag
 from .common import Event, Relation, Step, JSONAPI
 from .errors import (
@@ -39,9 +37,6 @@ class BaseSchema(SchemaABC):
     If you want, you can implement your own request handlers and only use
     the schema for validation and serialization.
     """
-
-    class Options:
-        inflect = partial(inflection.dasherize)
 
     @staticmethod
     def get_object_id(resource) -> str:
@@ -71,7 +66,7 @@ class BaseSchema(SchemaABC):
 
     def get_relationship_field(self, relation_name, source_parameter=None):
         try:
-            return self._relationships[inflection.underscore(relation_name)]
+            return self._relationships[self.opts.deflect(relation_name)]
         except KeyError:
             raise HTTPBadRequest(
                 detail="Wrong relationship name '{}'.".format(relation_name),
