@@ -2,6 +2,23 @@
 History
 =======
 
+0.35.0 (2017-12-11)
+-------------------
+
+**BREAKING CHANGES!**
+
+* Schema is separated into Schema (marshaller) and Controller
+* Request context instantiated in handlers and was renamed to ``JSONAPIContext``
+* Change signature of setup JSON API method in application (now we should pass a mapping between schemas and controllers)
+* New abstract base class for Controller
+* Schema and Controller must be initialized with only one parameter — ``JSONAPIContext``
+* Passing a context to almost each method of Schema no more required (context is accessible from Schema or Controller instance directly)
+* Remove decorator for JSON API handlers (content negotiation moved to middleware)
+* Refactored fields and schema modules
+* Improved fetching of compound documents
+* Examples are updated to conform with all changes in this release
+
+
 0.33.1 (2017-12-06)
 -------------------
 
