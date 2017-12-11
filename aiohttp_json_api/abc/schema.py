@@ -310,8 +310,14 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
     async def default_setter(field, resource, data, sp, **kwargs):
         raise NotImplementedError
 
+    @classmethod
     @abc.abstractmethod
-    def get_relationship_field(self, relation_name, source_parameter=None):
+    def get_field(cls, key) -> FieldABC:
+        raise NotImplementedError
+
+    @classmethod
+    @abc.abstractmethod
+    def get_relationship_field(cls, relation_name, source_parameter=None):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -320,10 +326,6 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
 
     @abc.abstractmethod
     async def set_value(self, field, resource, data, sp, **kwargs):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get_field(self, key) -> FieldABC:
         raise NotImplementedError
 
     @abc.abstractmethod

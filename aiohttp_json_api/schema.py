@@ -64,9 +64,14 @@ class BaseSchema(SchemaABC):
             raise Exception('Could not determine the resource id.')
         return str(resource_id)
 
-    def get_relationship_field(self, relation_name, source_parameter=None):
+    @classmethod
+    def get_field(cls, key) -> FieldABC:
+        return cls._declared_fields[key]
+
+    @classmethod
+    def get_relationship_field(cls, relation_name, source_parameter=None):
         try:
-            return self._relationships[self.opts.deflect(relation_name)]
+            return cls._relationships[cls.opts.deflect(relation_name)]
         except KeyError:
             raise HTTPBadRequest(
                 detail="Wrong relationship name '{}'.".format(relation_name),
@@ -99,9 +104,6 @@ class BaseSchema(SchemaABC):
         )
         return await setter(field, resource, data, sp, **setter_kwargs,
                             **kwargs)
-
-    def get_field(self, key) -> FieldABC:
-        return self._declared_fields[key]
 
     def serialize_resource(self, resource, **kwargs) -> MutableMapping:
         """
