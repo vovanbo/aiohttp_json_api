@@ -65,9 +65,11 @@ class JSONAPIContext:
                      'Fields: %s\n'
                      'Includes: %s\n'
                      'Sorting: %s\n'
-                     'Event: %s',
+                     'Event: %s\n'
+                     'Schema: %s\n'
+                     'Controller: %s\n',
                      self.filters, self.fields, self.include, self.sorting,
-                     self.event)
+                     self.event, schema_cls.__name__, controller_cls.__name__)
 
     @property
     def request(self):
