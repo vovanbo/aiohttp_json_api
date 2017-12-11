@@ -71,10 +71,13 @@ async def get_compound_documents(resources, ctx):
                 if rest_path in relationships[resource_type]:
                     break
 
+                field = schema_cls.get_relationship_field(
+                    rest_path[0], source_parameter='include'
+                )
+
                 controller = controller_cls(ctx)
                 nested_collection = await controller.fetch_compound_documents(
-                    relation_name=rest_path[0], resources=nested_collection,
-                    rest_path=rest_path[1:]
+                    field, nested_collection, rest_path=rest_path[1:]
                 )
 
                 for relative in nested_collection:

@@ -62,74 +62,37 @@ class DefaultController(ControllerABC):
 
         return resource, updated_resource
 
-    async def update_relationship(self, relation_name, resource_id,
-                                  data, sp, **kwargs):
-        field = self.ctx.schema.get_relationship_field(relation_name)
-
-        await self.ctx.schema.pre_validate_field(field, data, sp)
-        decoded = field.deserialize(self, data, sp, **kwargs)
-
-        resource = await self.fetch_resource(resource_id, **kwargs)
-
+    async def update_relationship(self, field, resource, data, sp, **kwargs):
         updated_resource = copy.deepcopy(resource)
-        await self.ctx.schema.set_value(field, updated_resource, decoded, sp,
+        await self.ctx.schema.set_value(field, updated_resource, data, sp,
                                         **kwargs)
         return resource, updated_resource
 
-    async def add_relationship(self, relation_name, resource_id,
-                               data, sp, **kwargs):
-        field = self.ctx.schema.get_relationship_field(relation_name)
-        if field.relation is not Relation.TO_MANY:
-            raise RuntimeError('Wrong relationship field.'
-                               'Relation to-many is required.')
-
-        await self.ctx.schema.pre_validate_field(field, data, sp)
-        decoded = field.deserialize(self, data, sp, **kwargs)
-
-        resource = await self.fetch_resource(resource_id, **kwargs)
-
+    async def add_relationship(self, field, resource, data, sp, **kwargs):
         updated_resource = copy.deepcopy(resource)
         adder, adder_kwargs = first(
             get_processors(self, Tag.ADD, field, self.default_add)
         )
-        await adder(field, updated_resource, decoded, sp,
+        await adder(field, updated_resource, data, sp,
                     **adder_kwargs, **kwargs)
         return resource, updated_resource
 
-    async def remove_relationship(self, relation_name, resource_id,
-                                  data, sp, **kwargs):
-        field = self.ctx.schema.get_relationship_field(relation_name)
-        if field.relation is not Relation.TO_MANY:
-            raise RuntimeError('Wrong relationship field.'
-                               'Relation to-many is required.')
-
-        await self.ctx.schema.pre_validate_field(field, data, sp)
-        decoded = field.deserialize(self, data, sp, **kwargs)
-
-        resource = await self.fetch_resource(resource_id, **kwargs)
-
+    async def remove_relationship(self, field, resource, data, sp, **kwargs):
         updated_resource = copy.deepcopy(resource)
         remover, remover_kwargs = first(
             get_processors(self, Tag.REMOVE, field, self.default_remove)
         )
-        await remover(field, updated_resource, decoded, sp,
+        await remover(field, updated_resource, data, sp,
                       **remover_kwargs, **kwargs)
         return resource, updated_resource
 
-    async def query_relatives(self, relation_name, resource_id, **kwargs):
-        field = self.ctx.schema.get_relationship_field(relation_name)
-
-        resource = await self.fetch_resource(resource_id, **kwargs)
+    async def query_relatives(self, field, resource, **kwargs):
         query, query_kwargs = first(
             get_processors(self, Tag.QUERY, field, self.default_query)
         )
         return await query(field, resource, **query_kwargs, **kwargs)
 
-    async def fetch_compound_documents(self, relation_name, resources,
-                                       **kwargs):
-        field = self.ctx.schema.get_relationship_field(
-            relation_name, source_parameter='include'
-        )
+    async def fetch_compound_documents(self, field, resources, **kwargs):
         include, include_kwargs = first(
             get_processors(self, Tag.INCLUDE, field, self.default_include)
         )

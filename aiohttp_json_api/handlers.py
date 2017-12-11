@@ -212,9 +212,20 @@ async def post_relationship(request: web.Request):
 
     data = await request.json()
 
-    old_resource, new_resource = await ctx.controller.add_relationship(
-        relation_name, resource_id, data, JSONPointer('')
-    )
+    sp = JSONPointer('')
+    field = ctx.schema.get_relationship_field(relation_name)
+    if field.relation is not Relation.TO_MANY:
+        raise RuntimeError('Wrong relationship field.'
+                           'Relation to-many is required.')
+
+    await ctx.schema.pre_validate_field(field, data, sp)
+    deserialized_data = field.deserialize(ctx.schema, data, sp)
+
+    resource = await ctx.controller.fetch_resource(resource_id)
+
+    old_resource, new_resource = \
+        await ctx.controller.add_relationship(field, resource,
+                                              deserialized_data, sp)
 
     if old_resource == new_resource:
         return web.HTTPNoContent()
@@ -248,9 +259,18 @@ async def patch_relationship(request: web.Request):
             pagination = pagination_type(request)
 
     data = await request.json()
-    old_resource, new_resource = await ctx.controller.update_relationship(
-        relation_name, resource_id, data, JSONPointer('')
-    )
+
+    field = ctx.schema.get_relationship_field(relation_name)
+    sp = JSONPointer('')
+
+    await ctx.schema.pre_validate_field(field, data, sp)
+    deserialized_data = field.deserialize(ctx.schema, data, sp)
+
+    resource = await ctx.controller.fetch_resource(resource_id)
+
+    old_resource, new_resource = \
+        await ctx.controller.update_relationship(field, resource,
+                                                 deserialized_data, sp)
 
     if old_resource == new_resource:
         return web.HTTPNoContent()
@@ -284,9 +304,21 @@ async def delete_relationship(request: web.Request):
             pagination = pagination_type(request)
 
     data = await request.json()
-    old_resource, new_resource = await ctx.controller.remove_relationship(
-        relation_name, resource_id, data, JSONPointer('')
-    )
+
+    sp = JSONPointer('')
+    field = ctx.schema.get_relationship_field(relation_name)
+    if field.relation is not Relation.TO_MANY:
+        raise RuntimeError('Wrong relationship field.'
+                           'Relation to-many is required.')
+
+    await ctx.schema.pre_validate_field(field, data, sp)
+    deserialized_data = field.deserialize(ctx.schema, data, sp)
+
+    resource = await ctx.controller.fetch_resource(resource_id)
+
+    old_resource, new_resource = \
+        await ctx.controller.remove_relationship(field, resource,
+                                                 deserialized_data, sp)
 
     if old_resource == new_resource:
         return web.HTTPNoContent()
@@ -320,7 +352,10 @@ async def get_related(request: web.Request):
         if pagination_type:
             pagination = pagination_type(request)
 
-    relatives = await ctx.controller.query_relatives(relation_name, resource_id)
+    field = ctx.schema.get_relationship_field(relation_name)
+    resource = await ctx.controller.fetch_resource(resource_id)
+
+    relatives = await ctx.controller.query_relatives(field, resource)
 
     if ctx.include and relatives:
         compound_documents, relationships = \

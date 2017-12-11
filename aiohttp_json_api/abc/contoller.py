@@ -111,8 +111,7 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
     # --------------------
 
     @abc.abstractmethod
-    async def update_relationship(self, relation_name, resource_id, data, sp,
-                                  **kwargs):
+    async def update_relationship(self, field, resource, data, sp, **kwargs):
         """
         .. seealso::
 
@@ -120,22 +119,19 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
 
         Updates the relationship with the JSON API name *relation_name*.
 
-        :arg str relation_name:
-            The name of the relationship.
-        :arg resource_id:
-            The id of the resource or the resource instance.
+        :arg FieldABC field:
+            Relationship field.
+        :arg resource:
+            Resource instance fetched by :meth:`~fetch_resource` in handler.
         :arg str data:
             The JSON API relationship object with the update information.
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.JSONAPIContext context:
-            Request context instance.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def add_relationship(self, relation_name, resource_id, data, sp,
-                               **kwargs):
+    async def add_relationship(self, field, resource, data, sp, **kwargs):
         """
         .. seealso::
 
@@ -144,22 +140,19 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
         Adds the members specified in the JSON API relationship object *data*
         to the relationship, unless the relationships already exist.
 
-        :arg str relation_name:
-            The name of the relationship.
-        :arg resource_id:
-            The id of the resource or the resource instance.
+        :arg FieldABC field:
+            Relationship field.
+        :arg resource:
+            Resource instance fetched by :meth:`~fetch_resource` in handler.
         :arg str data:
             The JSON API relationship object with the update information.
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.JSONAPIContext context:
-            Request context instance.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def remove_relationship(self, relation_name, resource_id,
-                                  data, sp, **kwargs):
+    async def remove_relationship(self, field, resource, data, sp, **kwargs):
         """
         .. seealso::
 
@@ -168,10 +161,10 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
         Deletes the members specified in the JSON API relationship object
         *data* from the relationship.
 
-        :arg str relation_name:
-            The name of the relationship.
-        :arg resource_id:
-            The id of the resource or the resource instance.
+        :arg FieldABC field:
+            Relationship field.
+        :arg resource:
+            Resource instance fetched by :meth:`~fetch_resource` in handler.
         :arg str data:
             The JSON API relationship object with the update information.
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
@@ -218,22 +211,20 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def query_relatives(self, relation_name, resource_id, **kwargs):
+    async def query_relatives(self, field, resource, **kwargs):
         """
         Controller for the *related* endpoint of the relationship with
         then name *relation_name*.
 
-        :arg str relation_name:
-            The name of a relationship.
-        :arg str resource_id:
-            The id of the resource_id or the resource_id instance.
-        :arg JSONAPIContext context:
-            A request context instance
+        :arg FieldABC field:
+            Relationship field.
+        :arg resource:
+            Resource instance fetched by :meth:`~fetch_resource` in handler.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def fetch_compound_documents(self, relation_name, resources, *,
+    async def fetch_compound_documents(self, field, resources, *,
                                        rest_path=None, **kwargs):
         """
         .. seealso::
@@ -241,11 +232,11 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
             http://jsonapi.org/format/#fetching-includes
 
         Fetches the related resources. The default method uses the
-        :meth:`~aiohttp_json_api.schema.base_fields.Relationship.include`
-        method of the *Relationship* fields. **Can be overridden.**
+        controller's :meth:`~default_include`.
+        **Can be overridden.**
 
-        :arg str relation_name:
-            The name of the relationship.
+        :arg FieldABC field:
+            Relationship field.
         :arg resources:
             A list of resources.
         :arg JSONAPIContext context:
