@@ -10,14 +10,14 @@ from aiohttp import web
 from multidict import MultiDict
 
 from .common import Event, FilterRule, JSONAPI, logger, SortDirection
-from .errors import HTTPBadRequest
-from .schema import BaseSchema
+from .errors import HTTPBadRequest, HTTPNotFound
+from .abc.schema import SchemaABC
 from .typings import (
     RequestFields, RequestFilters, RequestIncludes, RequestSorting
 )
 
 
-class RequestContext:
+class JSONAPIContext:
     """JSON API request context."""
 
     FILTER_KEY = re.compile(r"filter\[(?P<field>\w[-\w_]*)\]")
@@ -34,44 +34,97 @@ class RequestContext:
         :param request: Request instance
         :param resource_type: Resource type for current request
         """
-        self._pagination = None
-        self._resource_type = resource_type
-        self.request = request
+        self.__request = request
+        self.__resource_type = resource_type
 
-        self.filters = self.parse_request_filters(request)
-        self.fields = self.parse_request_fields(request)
-        self.include = self.parse_request_includes(request)
-        self.sorting = self.parse_request_sorting(request)
+        if self.__resource_type is None:
+            self.__resource_type = self.__request.match_info.get('type', None)
 
-        if self.request.method in Event.__members__:
-            self.event = Event[self.request.method]
-        else:
-            self.event = None
+        if (self.__resource_type is None or
+            self.__resource_type not in self.registry):
+            # If type is not found in URI, and type is not passed
+            # via decorator to custom handler, then raise HTTP 404
+            raise HTTPNotFound()
+
+        self.__pagination = None
+        self.__filters = self.parse_request_filters(request)
+        self.__fields = self.parse_request_fields(request)
+        self.__include = self.parse_request_includes(request)
+        self.__sorting = self.parse_request_sorting(request)
+
+        self.__event = None
+        if self.__request.method in Event.__members__:
+            self.__event = Event[self.__request.method]
+
+        schema_cls, controller_cls = self.registry.get(self.resource_type)
+        self.__controller = controller_cls(self)
+        self.__schema = schema_cls(self)
 
         logger.debug('Request context info:\n'
                      'Filters: %s\n'
                      'Fields: %s\n'
                      'Includes: %s\n'
                      'Sorting: %s\n'
-                     'Event: %s',
+                     'Event: %s\n'
+                     'Schema: %s\n'
+                     'Controller: %s\n',
                      self.filters, self.fields, self.include, self.sorting,
-                     self.event)
+                     self.event, schema_cls.__name__, controller_cls.__name__)
 
     @property
-    def schema(self) -> Optional[BaseSchema]:
-        registry = self.request.app[JSONAPI]['registry']
-        return registry.get(self._resource_type, None)
+    def request(self):
+        return self.__request
+
+    @property
+    def app(self):
+        return self.__request.app
+
+    @property
+    def resource_type(self):
+        return self.__resource_type
+
+    @property
+    def registry(self):
+        return self.app[JSONAPI]['registry']
+
+    @property
+    def schema(self) -> Optional[SchemaABC]:
+        return self.__schema
+
+    @property
+    def controller(self):
+        return self.__controller
+
+    @property
+    def filters(self):
+        return self.__filters
+
+    @property
+    def fields(self):
+        return self.__fields
+
+    @property
+    def include(self):
+        return self.__include
+
+    @property
+    def sorting(self):
+        return self.__sorting
+
+    @property
+    def event(self):
+        return self.__event
 
     @property
     def pagination(self):
-        if self._pagination is not None:
-            return self._pagination
+        if self.__pagination is not None:
+            return self.__pagination
 
         if self.schema is not None:
-            pagination_type = self.schema.opts.get('pagination')
+            pagination_type = self.schema.opts.pagination
             if pagination_type:
-                self._pagination = pagination_type(self.request)
-                return self._pagination
+                self.__pagination = pagination_type(self.__request)
+                return self.__pagination
 
         return None
 
@@ -100,23 +153,23 @@ class RequestContext:
 
         .. code-block:: python3
 
-            >>> from aiohttp_json_api.context import RequestContext
+            >>> from aiohttp_json_api.context import JSONAPIContext
             >>> from aiohttp.test_utils import make_mocked_request
 
             >>> request = make_mocked_request('GET', '/api/User/?filter[name]=endswith:"Simpson"')
-            >>> RequestContext.parse_request_filters(request)
+            >>> JSONAPIContext.parse_request_filters(request)
             <MultiDict('name': FilterRule(name='endswith', value='Simpson'))>
 
             >>> request = make_mocked_request('GET', '/api/User/?filter[name]=endswith:"Simpson"&filter[name]=in:["Some","Names"]')
-            >>> RequestContext.parse_request_filters(request)
+            >>> JSONAPIContext.parse_request_filters(request)
             <MultiDict('name': FilterRule(name='endswith', value='Simpson'), 'name': FilterRule(name='in', value=['Some', 'Names']))>
 
             >>> request = make_mocked_request('GET', '/api/User/?filter[name]=in:["Homer Simpson", "Darth Vader"]')
-            >>> RequestContext.parse_request_filters(request)
+            >>> JSONAPIContext.parse_request_filters(request)
             <MultiDict('name': FilterRule(name='in', value=['Homer Simpson', 'Darth Vader']))>
 
             >>> request = make_mocked_request('GET', '/api/User/?filter[some-field]=startswith:"lisa"&filter[another-field]=lt:20')
-            >>> RequestContext.parse_request_filters(request)
+            >>> JSONAPIContext.parse_request_filters(request)
             <MultiDict('some_field': FilterRule(name='startswith', value='lisa'), 'another_field': FilterRule(name='lt', value=20))>
 
         The general syntax is::
@@ -175,10 +228,10 @@ class RequestContext:
 
         .. code-block:: python3
 
-            >>> from aiohttp_json_api.context import RequestContext
+            >>> from aiohttp_json_api.context import JSONAPIContext
             >>> from aiohttp.test_utils import make_mocked_request
             >>> request = make_mocked_request('GET', '/api/User?fields[User]=email,name&fields[Post]=comments')
-            >>> RequestContext.parse_request_fields(request)
+            >>> JSONAPIContext.parse_request_fields(request)
             OrderedDict([('User', ('email', 'name')), ('Post', ('comments',))])
 
         :seealso: http://jsonapi.org/format/#fetching-sparse-fieldsets
@@ -207,10 +260,10 @@ class RequestContext:
 
         .. code-block:: python3
 
-            >>> from aiohttp_json_api.context import RequestContext
+            >>> from aiohttp_json_api.context import JSONAPIContext
             >>> from aiohttp.test_utils import make_mocked_request
             >>> request = make_mocked_request('GET', '/api/Post?include=author,comments.author,some-field.nested')
-            >>> RequestContext.parse_request_includes(request)
+            >>> JSONAPIContext.parse_request_includes(request)
             (('author',), ('comments', 'author'), ('some_field', 'nested'))
 
         :seealso: http://jsonapi.org/format/#fetching-includes
@@ -230,10 +283,10 @@ class RequestContext:
 
         .. code-block:: python3
 
-            >>> from aiohttp_json_api.context import RequestContext
+            >>> from aiohttp_json_api.context import JSONAPIContext
             >>> from aiohttp.test_utils import make_mocked_request
             >>> request = make_mocked_request('GET', '/api/Post?sort=name,-age,+comments.count')
-            >>> RequestContext.parse_request_sorting(request)
+            >>> JSONAPIContext.parse_request_sorting(request)
             OrderedDict([(('name',), <SortDirection.ASC: '+'>), (('age',), <SortDirection.DESC: '-'>), (('comments', 'count'), <SortDirection.ASC: '+'>)])
 
         :seealso: http://jsonapi.org/format/#fetching-sorting

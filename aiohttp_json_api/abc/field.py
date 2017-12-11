@@ -6,7 +6,7 @@ Field abstract base class
 import abc
 from typing import Optional
 
-from ...jsonpointer import JSONPointer
+from ..jsonpointer import JSONPointer
 
 
 class FieldABC(abc.ABC):
@@ -56,7 +56,7 @@ class FieldABC(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         """
         Validates the raw JSON API input for this field. This method is
         called before :meth:`deserialize`.
@@ -67,13 +67,13 @@ class FieldABC(abc.ABC):
             The raw input data
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.RequestContext context:
+        :arg ~aiohttp_json_api.context.JSONAPIContext context:
             A JSON API request context instance
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def post_validate(self, schema, data, sp, context):
+    def post_validate(self, schema, data, sp):
         """
         Validates the decoded input *data* for this field. This method is
         called after :meth:`deserialize`.
@@ -84,7 +84,7 @@ class FieldABC(abc.ABC):
             The decoded input data
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.RequestContext context:
+        :arg ~aiohttp_json_api.context.JSONAPIContext context:
             A JSON API request context instance
         """
         raise NotImplementedError

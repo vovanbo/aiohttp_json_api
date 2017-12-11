@@ -30,7 +30,7 @@ self-implemented Request/Response classes.
 
 Some of base entities of **py-jsonapi** was replaced with **aiohttp**
 server's objects, some of it was divided into new separate entities
-(e.g. `RequestContext` or `Registry`).
+(e.g. `JSONAPIContext` or `Registry`).
 
 * Free software: MIT license
 * Documentation: https://aiohttp-json-api.readthedocs.io

@@ -2,9 +2,13 @@
 
 import inspect
 from collections import Iterable, Mapping
+from typing import Optional
 
 from aiohttp import web
 
+from .abc.field import FieldABC
+from .fields.decorators import Tag
+from .typings import Callee
 from .common import JSONAPI
 
 
@@ -129,6 +133,26 @@ def get_router_resource(app: web.Application, resource: str):
     return app.router[
         '{}.{}'.format(app[JSONAPI]['routes_namespace'], resource)
     ]
+
+
+def get_processors(obj, tag: Tag, field: FieldABC,
+                   default: Optional[Callee] = None):
+    has_processors = getattr(obj, '_has_processors', False)
+    if has_processors:
+        processor_tag = tag, field.key
+        processors = obj.__processors__.get(processor_tag)
+        if processors:
+            for processor_name in processors:
+                processor = getattr(obj, processor_name)
+                processor_kwargs = \
+                    processor.__processing_kwargs__.get(processor_tag)
+                yield processor, processor_kwargs
+            return
+
+    if not callable(default):
+        return
+
+    yield default, {}
 
 
 MISSING = make_sentinel()

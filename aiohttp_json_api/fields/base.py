@@ -38,8 +38,8 @@ import urllib.parse
 from collections import Mapping
 from typing import Optional, Sequence
 
-from .abc.field import FieldABC
-from ..common import ALLOWED_MEMBER_NAME_REGEX, Event
+from ..abc.field import FieldABC
+from ..common import ALLOWED_MEMBER_NAME_REGEX, Event, JSONAPI
 from ..errors import InvalidType, InvalidValue
 from ..jsonpointer import JSONPointer
 
@@ -65,7 +65,8 @@ class BaseField(FieldABC):
         The inheritance of fields is currently implemented using the
         :func:`~copy.deepcopy` function from the standard library. This means,
         that in some rare cases, it is necessarily that you implement a
-        custom :meth:`__deepcopy__` method when you subclass :class:`BaseField`.
+        custom :meth:`__deepcopy__` method when you subclass
+        :class:`BaseField`.
 
     :arg str name:
         The name of the field in the JSON API document. If not explicitly
@@ -144,10 +145,10 @@ class BaseField(FieldABC):
     def deserialize(self, schema, data, sp, **kwargs):
         return data
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         pass
 
-    def post_validate(self, schema, data, sp, context):
+    def post_validate(self, schema, data, sp):
         pass
 
 
@@ -235,8 +236,8 @@ class Link(BaseField):
         key *link_of* and appears otherwise in the resource object's links
         objects. E.g.: ``link_of = "author"``.
     :arg bool normalize:
-        If true, the *serialize* method normalizes the link so that it is always
-        an object.
+        If true, the *serialize* method normalizes the link so that it is
+        always an object.
     """
 
     def __init__(self, route: str, link_of: str, *, name: str = None,
@@ -248,16 +249,17 @@ class Link(BaseField):
         self.route = route
         self.link_of = link_of
 
-    def serialize(self, schema, data, context=None, **kwargs):
+    def serialize(self, schema, data, **kwargs):
         """Normalizes the links object if wished."""
-        rid = schema.registry.ensure_identifier(data)
-        route = schema.app.router[self.route]
+        registry = schema.ctx.request.app[JSONAPI]['registry']
+        rid = registry.ensure_identifier(data)
+        route = schema.ctx.request.app.router[self.route]
         route_url = route._formatter.format_map({'type': rid.type,
                                                  'id': rid.id,
                                                  'relation': self.link_of})
-        if context is not None and self.absolute:
+        if schema.ctx is not None and self.absolute:
             result = urllib.parse.urlunsplit(
-                (context.request.scheme, context.request.host, route_url,
+                (schema.ctx.request.scheme, schema.ctx.request.host, route_url,
                  None, None)
             )
         else:
@@ -351,7 +353,7 @@ class Relationship(BaseField):
             raise InvalidValue(detail=detail, source_pointer=sp / 'type')
 
         if self.id_field is not None:
-            self.id_field.pre_validate(self, data['id'], sp / 'id', None)
+            self.id_field.pre_validate(self, data['id'], sp / 'id')
 
     def validate_relationship_object(self, schema, data, sp):
         """
@@ -380,6 +382,6 @@ class Relationship(BaseField):
             detail = 'The "data" member is required.'
             raise InvalidValue(detail=detail, source_pointer=sp)
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         self.validate_relationship_object(schema, data, sp)
-        super(Relationship, self).pre_validate(schema, data, sp, context)
+        super(Relationship, self).pre_validate(schema, data, sp)

@@ -6,7 +6,7 @@ Relationships
 import typing
 from collections import Mapping, OrderedDict
 
-from .base_fields import Relationship
+from .base import Relationship
 from ..common import Relation
 from ..errors import InvalidType
 from ..helpers import is_collection
@@ -51,7 +51,7 @@ class ToOne(Relationship):
         else:
             # the related resource instance
             document['data'] = \
-                schema.registry.ensure_identifier(data, asdict=True)
+                schema.ctx.registry.ensure_identifier(data, asdict=True)
 
         links = kwargs.get('links')
         if links is not None:
@@ -67,9 +67,9 @@ class ToMany(Relationship):
         *   http://jsonapi.org/format/#document-resource-object-relationships
         *   http://jsonapi.org/format/#document-resource-object-linkage
 
-    Describes how to serialize, deserialize and update a *to-many* relationship.
-    Additionally to *to-one* relationships, *to-many* relationships must also
-    support adding and removing relatives.
+    Describes how to serialize, deserialize and update a *to-many*
+    relationship. Additionally to *to-one* relationships, *to-many*
+    relationships must also support adding and removing relatives.
 
     :arg aiohttp_json_api.pagination.PaginationABC pagination:
         The pagination helper *class* used to paginate the *to-many*
@@ -93,7 +93,7 @@ class ToMany(Relationship):
 
         if is_collection(data):
             document['data'] = [
-                schema.registry.ensure_identifier(item, asdict=True)
+                schema.ctx.registry.ensure_identifier(item, asdict=True)
                 for item in data
             ]
 

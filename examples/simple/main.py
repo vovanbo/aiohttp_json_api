@@ -27,12 +27,15 @@ def setup_fixtures(app):
             # Registry have a helper to return a ResourceID of instances
             # of registered resource classes
             resource_id = registry.ensure_identifier(resource)
-            app['storage'][resource.__class__][resource_id] = resource
+            app['storage'][resource_id.type][resource_id.id] = resource
 
     return app
 
 
 async def init() -> web.Application:
+    from examples.simple.controllers import (
+        SimpleController, CommentsController
+    )
     from examples.simple.schemas import (
         ArticleSchema, CommentSchema, PeopleSchema
     )
@@ -43,11 +46,18 @@ async def init() -> web.Application:
     # Note that we pass schema classes, not instances of them.
     # Schemas instances will be initialized application-wide.
     # Schema instance is stateless, therefore any request state must be passed
-    # to each of Schema's method as RequestContext instance.
-    # RequestContext instance created automatically in JSON API middleware
+    # to each of Schema's method as JSONAPIContext instance.
+    # JSONAPIContext instance created automatically in JSON API middleware
     # for each request. JSON API handlers use it in calls of Schema's methods.
-    setup_jsonapi(app, (ArticleSchema, CommentSchema, PeopleSchema),
-                  meta={'example': {'version': '0.0.1'}})
+    setup_jsonapi(
+        app,
+        {
+            ArticleSchema: SimpleController,
+            CommentSchema: CommentsController,
+            PeopleSchema: SimpleController,
+        },
+        meta={'example': {'version': '0.0.1'}}
+    )
 
     # After setup of JSON API application fixtures able to use Registry
     # if needed. In setup_fixtures function, Registry will be used

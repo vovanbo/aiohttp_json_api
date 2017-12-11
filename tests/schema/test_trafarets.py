@@ -1,7 +1,7 @@
 import trafaret as t
 import decimal
 
-from aiohttp_json_api.schema.trafarets import DecimalTrafaret
+from aiohttp_json_api.fields.trafarets import DecimalTrafaret
 
 
 def test_decimal_repr():

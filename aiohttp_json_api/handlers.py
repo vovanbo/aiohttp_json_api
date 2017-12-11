@@ -5,8 +5,8 @@ from http import HTTPStatus
 
 from aiohttp import hdrs, web
 
-from .common import JSONAPI_CONTENT_TYPE, Relation
-from .decorators import jsonapi_handler
+from .context import JSONAPIContext
+from .common import Relation
 from .errors import InvalidType
 from .helpers import get_router_resource
 from .jsonpointer import JSONPointer
@@ -27,8 +27,7 @@ __all__ = (
 )
 
 
-@jsonapi_handler
-async def get_collection(request: web.Request, context, schema):
+async def get_collection(request: web.Request):
     """
     Fetch resources collection, render JSON API document and return response.
 
@@ -37,20 +36,20 @@ async def get_collection(request: web.Request, context, schema):
 
     :seealso: http://jsonapi.org/format/#fetching
     """
-    resources = await schema.query_collection(context=context)
+    ctx = JSONAPIContext(request)
+    resources = await ctx.controller.query_collection()
 
     compound_documents = None
-    if context.include and resources:
+    if ctx.include and resources:
         compound_documents, relationships = \
-            await get_compound_documents(resources, context)
+            await get_compound_documents(resources, ctx)
 
-    result = await render_document(resources, compound_documents, context)
+    result = await render_document(resources, compound_documents, ctx)
 
     return jsonapi_response(result)
 
 
-@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
-async def post_resource(request: web.Request, context, schema):
+async def post_resource(request: web.Request):
     """
     Create resource, render JSON API document and return response.
 
@@ -59,22 +58,24 @@ async def post_resource(request: web.Request, context, schema):
 
     :seealso: http://jsonapi.org/format/#crud-creating
     """
-    data = await request.json()
-    if not isinstance(data, collections.Mapping):
+    raw_data = await request.json()
+    if not isinstance(raw_data, collections.Mapping):
         detail = 'Must be an object.'
         raise InvalidType(detail=detail, source_pointer='')
 
-    resource = await schema.create_resource(
-        data=data.get('data', {}),
-        sp=JSONPointer('/data'),
-        context=context
-    )
+    ctx = JSONAPIContext(request)
 
-    result = await render_document(resource, None, context)
+    deserialized_data = await ctx.schema.deserialize_resource(
+        raw_data.get('data', {}), JSONPointer('/data')
+    )
+    data = ctx.schema.map_data_to_schema(deserialized_data)
+
+    resource = await ctx.controller.create_resource(data)
+    result = await render_document(resource, None, ctx)
 
     location = request.url.join(
         get_router_resource(request.app, 'resource').url_for(
-            **schema.registry.ensure_identifier(resource, asdict=True)
+            **ctx.registry.ensure_identifier(resource, asdict=True)
         )
     )
 
@@ -82,8 +83,7 @@ async def post_resource(request: web.Request, context, schema):
                             headers={hdrs.LOCATION: str(location)})
 
 
-@jsonapi_handler
-async def get_resource(request: web.Request, context, schema):
+async def get_resource(request: web.Request):
     """
     Get single resource, render JSON API document and return response.
 
@@ -92,23 +92,23 @@ async def get_resource(request: web.Request, context, schema):
 
     :seealso: http://jsonapi.org/format/#fetching-resources
     """
+    ctx = JSONAPIContext(request)
     resource_id = request.match_info.get('id')
-    validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(ctx.schema, resource_id)
 
-    resource = await schema.query_resource(resource_id, context)
+    resource = await ctx.controller.query_resource(resource_id)
 
     compound_documents = None
-    if context.include and resource:
+    if ctx.include and resource:
         compound_documents, relationships = \
-            await get_compound_documents(resource, context)
+            await get_compound_documents(resource, ctx)
 
-    result = await render_document(resource, compound_documents, context)
+    result = await render_document(resource, compound_documents, ctx)
 
     return jsonapi_response(result)
 
 
-@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
-async def patch_resource(request: web.Request, context, schema):
+async def patch_resource(request: web.Request):
     """
     Update resource (via PATCH), render JSON API document and return response.
 
@@ -117,28 +117,33 @@ async def patch_resource(request: web.Request, context, schema):
 
     :seealso: http://jsonapi.org/format/#crud-updating
     """
+    ctx = JSONAPIContext(request)
     resource_id = request.match_info.get('id')
-    validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(ctx.schema, resource_id)
 
-    data = await request.json()
-    if not isinstance(data, collections.Mapping):
+    raw_data = await request.json()
+    if not isinstance(raw_data, collections.Mapping):
         detail = 'Must be an object.'
         raise InvalidType(detail=detail, source_pointer='')
 
-    old_resource, new_resource = await schema.update_resource(
-        resource_id, data.get('data', {}), JSONPointer('/data'),
-        context=context
+    sp = JSONPointer('/data')
+    deserialized_data = await ctx.schema.deserialize_resource(
+        raw_data.get('data', {}), sp, expected_id=resource_id
+    )
+
+    resource = await ctx.controller.fetch_resource(resource_id)
+    old_resource, new_resource = await ctx.controller.update_resource(
+        resource, deserialized_data, sp
     )
 
     if old_resource == new_resource:
         return web.HTTPNoContent()
 
-    result = await render_document(new_resource, None, context)
+    result = await render_document(new_resource, None, ctx)
     return jsonapi_response(result)
 
 
-@jsonapi_handler
-async def delete_resource(request: web.Request, context, schema):
+async def delete_resource(request: web.Request):
     """
     Remove resource.
 
@@ -147,30 +152,28 @@ async def delete_resource(request: web.Request, context, schema):
 
     :seealso: http://jsonapi.org/format/#crud-deleting
     """
+    ctx = JSONAPIContext(request)
     resource_id = request.match_info.get('id')
-    validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(ctx.schema, resource_id)
 
-    await schema.delete_resource(resource_id, context)
+    await ctx.controller.delete_resource(resource_id)
     return web.HTTPNoContent()
 
 
-@jsonapi_handler
-async def get_relationship(request: web.Request, context, schema):
+async def get_relationship(request: web.Request):
     """
     Get relationships of resource.
 
     :param request: Request instance
-    :param context: Request context instance
-    :param schema: Schema instance
     :return: Response
     """
     relation_name = request.match_info['relation']
-    relation_field = schema.get_relationship_field(
-        relation_name, source_parameter='URI'
-    )
+    ctx = JSONAPIContext(request)
 
+    relation_field = ctx.schema.get_relationship_field(relation_name,
+                                                       source_parameter='URI')
     resource_id = request.match_info.get('id')
-    validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(ctx.schema, resource_id)
 
     pagination = None
     if relation_field.relation is Relation.TO_MANY:
@@ -178,14 +181,13 @@ async def get_relationship(request: web.Request, context, schema):
         if pagination_type:
             pagination = pagination_type(request)
 
-    resource = await schema.query_resource(resource_id, context)
-    result = schema.serialize_relationship(relation_name, resource,
-                                           pagination=pagination)
+    resource = await ctx.controller.query_resource(resource_id)
+    result = ctx.schema.serialize_relationship(relation_name, resource,
+                                               pagination=pagination)
     return jsonapi_response(result)
 
 
-@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
-async def post_relationship(request: web.Request, context, schema):
+async def post_relationship(request: web.Request):
     """
     Create relationships of resource.
 
@@ -195,14 +197,14 @@ async def post_relationship(request: web.Request, context, schema):
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
     """
     relation_name = request.match_info['relation']
-    relation_field = schema.get_relationship_field(
-        relation_name, source_parameter='URI'
-    )
-    pagination = None
+    ctx = JSONAPIContext(request)
+    relation_field = ctx.schema.get_relationship_field(relation_name,
+                                                       source_parameter='URI')
 
     resource_id = request.match_info.get('id')
-    validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(ctx.schema, resource_id)
 
+    pagination = None
     if relation_field.relation is Relation.TO_MANY:
         pagination_type = relation_field.pagination
         if pagination_type:
@@ -210,20 +212,30 @@ async def post_relationship(request: web.Request, context, schema):
 
     data = await request.json()
 
-    old_resource, new_resource = await schema.add_relationship(
-        relation_name, resource_id, data, JSONPointer(''), context
-    )
+    sp = JSONPointer('')
+    field = ctx.schema.get_relationship_field(relation_name)
+    if field.relation is not Relation.TO_MANY:
+        raise RuntimeError('Wrong relationship field.'
+                           'Relation to-many is required.')
+
+    await ctx.schema.pre_validate_field(field, data, sp)
+    deserialized_data = field.deserialize(ctx.schema, data, sp)
+
+    resource = await ctx.controller.fetch_resource(resource_id)
+
+    old_resource, new_resource = \
+        await ctx.controller.add_relationship(field, resource,
+                                              deserialized_data, sp)
 
     if old_resource == new_resource:
         return web.HTTPNoContent()
 
-    result = schema.serialize_relationship(relation_name, new_resource,
-                                           pagination=pagination)
+    result = ctx.schema.serialize_relationship(relation_name, new_resource,
+                                               pagination=pagination)
     return jsonapi_response(result)
 
 
-@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
-async def patch_relationship(request: web.Request, context, schema):
+async def patch_relationship(request: web.Request):
     """
     Update relationships of resource.
 
@@ -233,12 +245,12 @@ async def patch_relationship(request: web.Request, context, schema):
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
     """
     relation_name = request.match_info['relation']
-    relation_field = schema.get_relationship_field(
-        relation_name, source_parameter='URI'
-    )
+    ctx = JSONAPIContext(request)
+    relation_field = ctx.schema.get_relationship_field(relation_name,
+                                                       source_parameter='URI')
 
     resource_id = request.match_info.get('id')
-    validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(ctx.schema, resource_id)
 
     pagination = None
     if relation_field.relation is Relation.TO_MANY:
@@ -247,20 +259,28 @@ async def patch_relationship(request: web.Request, context, schema):
             pagination = pagination_type(request)
 
     data = await request.json()
-    old_resource, new_resource = await schema.update_relationship(
-        relation_name, resource_id, data, JSONPointer(''), context
-    )
+
+    field = ctx.schema.get_relationship_field(relation_name)
+    sp = JSONPointer('')
+
+    await ctx.schema.pre_validate_field(field, data, sp)
+    deserialized_data = field.deserialize(ctx.schema, data, sp)
+
+    resource = await ctx.controller.fetch_resource(resource_id)
+
+    old_resource, new_resource = \
+        await ctx.controller.update_relationship(field, resource,
+                                                 deserialized_data, sp)
 
     if old_resource == new_resource:
         return web.HTTPNoContent()
 
-    result = schema.serialize_relationship(relation_name, new_resource,
-                                           pagination=pagination)
+    result = ctx.schema.serialize_relationship(relation_name, new_resource,
+                                               pagination=pagination)
     return jsonapi_response(result)
 
 
-@jsonapi_handler(content_type=JSONAPI_CONTENT_TYPE)
-async def delete_relationship(request: web.Request, context, schema):
+async def delete_relationship(request: web.Request):
     """
     Remove relationships of resource.
 
@@ -270,12 +290,12 @@ async def delete_relationship(request: web.Request, context, schema):
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
     """
     relation_name = request.match_info['relation']
-    relation_field = schema.get_relationship_field(
-        relation_name, source_parameter='URI'
-    )
+    ctx = JSONAPIContext(request)
+    relation_field = ctx.schema.get_relationship_field(relation_name,
+                                                       source_parameter='URI')
 
     resource_id = request.match_info.get('id')
-    validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(ctx.schema, resource_id)
 
     pagination = None
     if relation_field.relation is Relation.TO_MANY:
@@ -284,20 +304,31 @@ async def delete_relationship(request: web.Request, context, schema):
             pagination = pagination_type(request)
 
     data = await request.json()
-    old_resource, new_resource = await schema.remove_relationship(
-        relation_name, resource_id, data, JSONPointer(''), context
-    )
+
+    sp = JSONPointer('')
+    field = ctx.schema.get_relationship_field(relation_name)
+    if field.relation is not Relation.TO_MANY:
+        raise RuntimeError('Wrong relationship field.'
+                           'Relation to-many is required.')
+
+    await ctx.schema.pre_validate_field(field, data, sp)
+    deserialized_data = field.deserialize(ctx.schema, data, sp)
+
+    resource = await ctx.controller.fetch_resource(resource_id)
+
+    old_resource, new_resource = \
+        await ctx.controller.remove_relationship(field, resource,
+                                                 deserialized_data, sp)
 
     if old_resource == new_resource:
         return web.HTTPNoContent()
 
-    result = schema.serialize_relationship(relation_name, new_resource,
-                                           pagination=pagination)
+    result = ctx.schema.serialize_relationship(relation_name, new_resource,
+                                               pagination=pagination)
     return jsonapi_response(result)
 
 
-@jsonapi_handler
-async def get_related(request: web.Request, context, schema):
+async def get_related(request: web.Request):
     """
     Get related resources.
 
@@ -307,28 +338,30 @@ async def get_related(request: web.Request, context, schema):
     :seealso: http://jsonapi.org/format/#fetching
     """
     relation_name = request.match_info['relation']
-    relation_field = schema.get_relationship_field(
-        relation_name, source_parameter='URI'
-    )
+    ctx = JSONAPIContext(request)
+    relation_field = ctx.schema.get_relationship_field(relation_name,
+                                                       source_parameter='URI')
     compound_documents = None
     pagination = None
 
     resource_id = request.match_info.get('id')
-    validate_uri_resource_id(schema, resource_id, context)
+    validate_uri_resource_id(ctx.schema, resource_id)
 
     if relation_field.relation is Relation.TO_MANY:
         pagination_type = relation_field.pagination
         if pagination_type:
             pagination = pagination_type(request)
 
-    relatives = await schema.query_relatives(relation_name, resource_id,
-                                             context)
+    field = ctx.schema.get_relationship_field(relation_name)
+    resource = await ctx.controller.fetch_resource(resource_id)
 
-    if context.include and relatives:
+    relatives = await ctx.controller.query_relatives(field, resource)
+
+    if ctx.include and relatives:
         compound_documents, relationships = \
-            await get_compound_documents(relatives, context)
+            await get_compound_documents(relatives, ctx)
 
-    result = await render_document(relatives, compound_documents, context,
+    result = await render_document(relatives, compound_documents, ctx,
                                    pagination=pagination)
 
     return jsonapi_response(result)

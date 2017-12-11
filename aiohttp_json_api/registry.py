@@ -51,7 +51,13 @@ class Registry(collections.UserDict):
         elif isinstance(obj, collections.Mapping):
             result = ResourceID(str(obj['type']), str(obj['id']))
         else:
-            schema = self.data[type(obj)]
-            result = ResourceID(schema.type, schema.get_object_id(obj))
+            try:
+                schema_cls, _ = self.data[type(obj)]
+                result = ResourceID(schema_cls.opts.resource_type,
+                                    schema_cls.get_object_id(obj))
+            except KeyError:
+                raise RuntimeError(
+                    'Schema for %s is not found.' % obj.__class__.__name__
+                )
 
         return result._asdict() if asdict and result else result

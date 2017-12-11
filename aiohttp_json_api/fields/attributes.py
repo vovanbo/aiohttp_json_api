@@ -4,8 +4,8 @@ Fields
 
 .. note::
 
-    Always remember that you can model the JSON API completly with the fields in
-    :mod:`~aiohttp_json_api.schema.base_fields`.
+    Always remember that you can model the JSON API completly with the fields
+    in :mod:`~aiohttp_json_api.schema.base_fields`.
 
 .. sidebar:: Index
 
@@ -40,7 +40,7 @@ import trafaret as t
 from trafaret.contrib import rfc_3339
 from yarl import URL
 
-from .base_fields import Attribute
+from .base import Attribute
 from .trafarets import DecimalTrafaret
 from ..errors import InvalidType, InvalidValue
 from ..helpers import is_collection
@@ -88,7 +88,7 @@ class String(Attribute):
         if self.allow_none:
             self._trafaret |= t.Null()
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
@@ -120,7 +120,7 @@ class Integer(Attribute):
         if self.allow_none:
             self._trafaret |= t.Null()
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
@@ -140,7 +140,7 @@ class Float(Attribute):
         if self.allow_none:
             self._trafaret |= t.Null()
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
@@ -161,7 +161,7 @@ class Complex(Attribute):
         {"real": 1.2, "imag": 42}
     """
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         detail = "Must be an object with a 'real' and 'imag' member.'"
 
         if not isinstance(data, collections.Mapping):
@@ -197,7 +197,7 @@ class Decimal(Attribute):
         if self.allow_none:
             self._trafaret |= t.Null()
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
@@ -238,7 +238,7 @@ class Fraction(Attribute):
         self.min = min
         self.max = max
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         if not isinstance(data, dict):
             detail = "Must be an object with " \
                      "a 'numerator' and 'denominator' member."
@@ -289,7 +289,7 @@ class DateTime(Attribute):
         if self.allow_none:
             self._trafaret |= t.Null()
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
@@ -317,7 +317,7 @@ class Date(Attribute):
         if self.allow_none:
             self._trafaret |= t.Null()
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
@@ -351,7 +351,7 @@ class TimeDelta(Attribute):
         self.min = min
         self.max = max
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         try:
             data = float(data)
         except TypeError:
@@ -385,7 +385,7 @@ class UUID(Attribute):
         super(UUID, self).__init__(**kwargs)
         self.version = version
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         if self.allow_none and data is None:
             return
 
@@ -426,7 +426,7 @@ class Boolean(Attribute):
         if self.allow_none:
             self._trafaret |= t.Null()
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         try:
             self._trafaret.check(data)
         except t.DataError as error:
@@ -439,7 +439,7 @@ class Boolean(Attribute):
 class URI(Attribute):
     """Parses the URI with :func:`rfc3986.urlparse` and returns the result."""
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         if not isinstance(data, str):
             detail = "Must be a string."
             raise InvalidType(detail=detail, source_pointer=sp)
@@ -465,7 +465,7 @@ class Email(Attribute):
         if self.allow_none:
             self._trafaret |= t.Null
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         try:
             self._trafaret.check(data)
         except t.DataError:
@@ -541,7 +541,7 @@ class List(Attribute):
         if self.allow_none:
             self._trafaret |= t.Null
 
-    def pre_validate(self, schema, data, sp, context):
+    def pre_validate(self, schema, data, sp):
         try:
             self._trafaret.check(data)
         except t.DataError as error:

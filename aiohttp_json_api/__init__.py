@@ -8,11 +8,12 @@ __email__ = 'vovanbo@gmail.com'
 __version__ = '0.33.1'
 
 
-def setup_app_registry(app, registry_class, schemas):
+def setup_app_registry(app, registry_class, config):
     """Set up JSON API application registry."""
-    from .common import logger
+    from .common import ALLOWED_MEMBER_NAME_REGEX, logger, JSONAPI
     from .registry import Registry
-    from .schema.abc.schema import SchemaABC
+    from .abc.schema import SchemaABC
+    from .abc.contoller import ControllerABC
 
     if registry_class is not None:
         if not issubclass(registry_class, Registry):
@@ -23,7 +24,17 @@ def setup_app_registry(app, registry_class, schemas):
 
     app_registry = registry_class()
 
-    for schema_cls in schemas:
+    for schema_cls, controller_cls in config.items():
+        resource_type = schema_cls.opts.resource_type
+        resource_cls = schema_cls.opts.resource_cls
+
+        if not inspect.isclass(controller_cls):
+            raise TypeError('Class (not instance) of controller is required.')
+
+        if not issubclass(controller_cls, ControllerABC):
+            raise TypeError('Subclass of ControllerABC is required. '
+                            'Got: {}'.format(controller_cls))
+
         if not inspect.isclass(schema_cls):
             raise TypeError('Class (not instance) of schema is required.')
 
@@ -31,24 +42,22 @@ def setup_app_registry(app, registry_class, schemas):
             raise TypeError('Subclass of SchemaABC is required. '
                             'Got: {}'.format(schema_cls))
 
-        schema = schema_cls(app)
-        if not isinstance(schema.type, str):
-            raise TypeError('Schema type property must be a string.')
+        if not inspect.isclass(schema_cls.opts.resource_cls):
+            raise TypeError('Class (not instance) of resource is required.')
 
-        app_registry[schema.type] = schema
-        if schema.resource_class is None:
-            logger.warning('The schema "%s" is not bound to a resource class.',
-                           schema.type)
-        else:
-            if not inspect.isclass(schema.resource_class):
-                raise TypeError('Class (not instance) of resource '
-                                'is required.')
-            app_registry[schema.resource_class] = schema
+        if not ALLOWED_MEMBER_NAME_REGEX.fullmatch(resource_type):
+            raise ValueError('Resource type "{}" '
+                             'is not allowed.'.format(resource_type))
 
-        logger.debug('Registered %s with resource class %s and type "%s"',
-                     schema_cls.__name__,
-                     schema.resource_class.__name__,
-                     schema.type)
+        app_registry[resource_type] = schema_cls, controller_cls
+        app_registry[resource_cls] = schema_cls, controller_cls
+
+        logger.debug(
+            'Registered %r '
+            '(schema: %r, resource class: %r, type %r)',
+            controller_cls.__name__, schema_cls.__name__,
+            resource_cls.__name__, resource_type
+        )
 
     return app_registry
 
@@ -128,8 +137,8 @@ def setup_resources(app, base_path, handlers, routes_namespace):
     related_resource.add_route('GET', handlers['get_related'])
 
 
-def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0',
-                  meta=None, context_class=None, registry_class=None,
+def setup_jsonapi(app, config, *, base_path='/api', version='1.0',
+                  meta=None, context_cls=None, registry_class=None,
                   custom_handlers=None, log_errors=True,
                   routes_namespace=None):
     """
@@ -139,17 +148,17 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0',
 
     :param ~aiohttp.web.Application app:
         Application instance
-    :param ~typing.Sequence[BaseSchema] schemas:
-        List of schema classes to register in JSON API
+    :param ~typing.Sequence[DefaultController] controllers:
+        List of controllers to register in JSON API
     :param str base_path:
         Prefix of JSON API routes paths
     :param str version:
         JSON API version (used in ``jsonapi`` key of document)
     :param dict meta:
         Meta information will added to response (``meta`` key of document)
-    :param context_class:
-        Override of RequestContext class
-        (must be subclass of :class:`~aiohttp_json_api.context.RequestContext`)
+    :param context_cls:
+        Override of JSONAPIContext class
+        (must be subclass of :class:`~aiohttp_json_api.context.JSONAPIContext`)
     :param registry_class:
         Override of Registry class
         (must be subclass of :class:`~aiohttp_json_api.registry.Registry`)
@@ -178,7 +187,7 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0',
     :rtype: ~aiohttp.web.Application
     """
     from .common import JSONAPI, logger
-    from .context import RequestContext
+    from .context import JSONAPIContext
     from .middleware import jsonapi_middleware
 
     if JSONAPI in app:
@@ -192,22 +201,20 @@ def setup_jsonapi(app, schemas, *, base_path='/api', version='1.0',
         if routes_namespace and isinstance(routes_namespace, str) \
         else JSONAPI
 
-    if context_class is not None:
-        if not issubclass(context_class, RequestContext):
-            raise TypeError('Subclass of RequestContext is required. '
-                            'Got: {}'.format(context_class))
+    if context_cls is not None:
+        if not issubclass(context_cls, JSONAPIContext):
+            raise TypeError('Subclass of JSONAPIContext is required. '
+                            'Got: {}'.format(context_cls))
     else:
-        context_class = RequestContext
-
-    app_registry = setup_app_registry(app, registry_class, schemas)
+        context_cls = JSONAPIContext
 
     app[JSONAPI] = {
-        'context_class': context_class,
+        'registry': setup_app_registry(app, registry_class, config),
+        'context_cls': context_cls,
         'meta': meta,
         'jsonapi': {
             'version': version,
         },
-        'registry': app_registry,
         'log_errors': log_errors,
         'routes_namespace': routes_namespace
     }
