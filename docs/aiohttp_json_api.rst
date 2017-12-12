@@ -6,9 +6,9 @@ Subpackages
 
 .. toctree::
 
+    aiohttp_json_api.abc
     aiohttp_json_api.compat
-    aiohttp_json_api.jsonpointer
-    aiohttp_json_api.schema
+    aiohttp_json_api.fields
 
 Submodules
 ----------
@@ -23,7 +23,7 @@ Submodules
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: aiohttp_json_api.decorators
+.. automodule:: aiohttp_json_api.controller
     :members:
     :undoc-members:
     :show-inheritance:
@@ -48,6 +48,11 @@ Submodules
     :undoc-members:
     :show-inheritance:
 
+.. automodule:: aiohttp_json_api.jsonpointer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 .. automodule:: aiohttp_json_api.middleware
     :members:
     :undoc-members:
@@ -59,6 +64,11 @@ Submodules
     :show-inheritance:
 
 .. automodule:: aiohttp_json_api.registry
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: aiohttp_json_api.schema
     :members:
     :undoc-members:
     :show-inheritance:
