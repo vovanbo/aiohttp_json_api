@@ -11,7 +11,9 @@ aiohttp = ">=2.0.0"
 inflection = ">=0.3.1"
 jsonpointer = ">=1.10"
 python-dateutil = ">=2.6.0"
-trafaret = {git = "https://github.com/Deepwalker/trafaret.git", editable = true, ref = "master"}
+trafaret = ">=1.0.2"
+multidict = ">=3.3.0"
+yarl = ">=0.13.0"
 
 
 [dev-packages]
