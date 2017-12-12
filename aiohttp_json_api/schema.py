@@ -150,8 +150,7 @@ class BaseSchema(SchemaABC):
 
         result.setdefault('links', OrderedDict())
         if 'self' not in result['links']:
-            registry = self.ctx.request.app[JSONAPI]['registry']
-            rid = registry.ensure_identifier(resource)
+            rid = self.ctx.registry.ensure_identifier(resource)
             route = get_router_resource(self.ctx.request.app, 'resource')
             route_url = route._formatter.format_map({'type': rid.type,
                                                      'id': rid.id})
