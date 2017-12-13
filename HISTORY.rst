@@ -2,6 +2,12 @@
 History
 =======
 
+0.35.2 (2017-12-13)
+-------------------
+
+* Fix bug with wrong query parameters of links in compound documents
+
+
 0.35.1 (2017-12-12)
 -------------------
 
