@@ -156,7 +156,7 @@ class BaseSchema(SchemaABC):
                                                      'id': rid.id})
             route_url = urllib.parse.urlunsplit(
                 (self.ctx.request.scheme, self.ctx.request.host, route_url,
-                 self.ctx.request.query_string, None)
+                 None, None)
             )
             result['links']['self'] = route_url
 
