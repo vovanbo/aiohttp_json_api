@@ -15,6 +15,7 @@ requirements = [
     'multidict>=3.3.0',
     'jsonpointer>=1.10',
     'python-dateutil>=2.6.0',
+    'python-mimeparse>=1.6.0',
     'trafaret>=1.0.2',
     'yarl>=0.13.0',
 ]

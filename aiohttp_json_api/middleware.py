@@ -1,4 +1,5 @@
 """Middleware."""
+import mimeparse
 from aiohttp import hdrs
 
 from .common import JSONAPI, JSONAPI_CONTENT_TYPE, logger
@@ -30,8 +31,10 @@ async def jsonapi_middleware(app, handler):
                     raise HTTPUnsupportedMediaType(detail=content_type_error)
 
                 request_accept = request.headers.get(hdrs.ACCEPT, '*/*')
-                if (request_accept != '*/*' and
-                    request_accept != JSONAPI_CONTENT_TYPE):
+                accept_match = mimeparse.best_match(
+                    (JSONAPI_CONTENT_TYPE,), request_accept
+                )
+                if accept_match != JSONAPI_CONTENT_TYPE:
                     raise HTTPNotAcceptable()
 
             return await handler(request)
