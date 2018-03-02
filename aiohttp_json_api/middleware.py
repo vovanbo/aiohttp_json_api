@@ -29,7 +29,7 @@ async def jsonapi_middleware(app, handler):
                     request_ct != JSONAPI_CONTENT_TYPE):
                     raise HTTPUnsupportedMediaType(detail=content_type_error)
 
-                request_accept = request.headers.get(hdrs.ACCEPT, '*/*').split(',')
+                request_accept = request.headers.get(hdrs.ACCEPT, ALL_CONTENT_TYPES).split(',')
                 if not any(accept_ct == JSONAPI_CONTENT_TYPE or
                            accept_ct.split(';', 1)[0] == ALL_CONTENT_TYPES
                            for accept_ct in request_accept):
