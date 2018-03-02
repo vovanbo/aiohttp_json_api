@@ -43,7 +43,7 @@ class People(BaseModel):
     def populate(count=100) -> Generator['People', None, None]:
         import mimesis
 
-        person = mimesis.Personal()
+        person = mimesis.Person()
 
         return (
             People(id=int(person.identifier('####')), first_name=person.name(),
