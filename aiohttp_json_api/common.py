@@ -19,6 +19,7 @@ JSONAPI = 'jsonapi'
 
 #: JSON API Content-Type by specification
 JSONAPI_CONTENT_TYPE = 'application/vnd.api+json'
+ALL_CONTENT_TYPES = '*/*'
 
 #: Regular expression rule for check allowed fields and types names
 ALLOWED_MEMBER_NAME_RULE = \
