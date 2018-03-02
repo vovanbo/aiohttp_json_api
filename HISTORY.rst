@@ -2,6 +2,13 @@
 History
 =======
 
+0.36.0 (2018-03-02)
+-------------------
+
+* Improve content negotiation (fix #185) with python-mimeparse
+* Update requirements
+
+
 0.35.2 (2017-12-13)
 -------------------
 
