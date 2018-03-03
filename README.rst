@@ -39,7 +39,7 @@ server's objects, some of it was divided into new separate entities
 Requirements
 ------------
 
-* **Python 3.5** or newer
+* **Python 3.6** or newer
 * aiohttp_
 * inflection_
 * multidict_
