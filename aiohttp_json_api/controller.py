@@ -1,7 +1,7 @@
 import copy
 
 from .abc.contoller import ControllerABC
-from .common import Relation, logger
+from .common import logger
 from .fields.decorators import Tag
 from .helpers import first, get_processors
 
