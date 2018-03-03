@@ -35,7 +35,6 @@ setup(
     packages=[
         'aiohttp_json_api',
         'aiohttp_json_api.abc',
-        'aiohttp_json_api.compat',
         'aiohttp_json_api.fields',
     ],
     package_dir={'aiohttp_json_api':

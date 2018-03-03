@@ -3,15 +3,10 @@
 import collections
 import logging
 import re
-import sys
 from collections import namedtuple
+from enum import Enum, Flag, auto
 
 from mimeparse import parse_media_range
-
-if sys.version_info < (3, 6):
-    from .compat.enum import Enum, Flag, auto
-else:
-    from enum import Enum, Flag, auto
 
 #: Logger instance
 logger = logging.getLogger('aiohttp-json-api')
