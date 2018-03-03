@@ -46,6 +46,7 @@ Requirements
 * jsonpointer_
 * dateutil_
 * trafaret_
+* python-mimeparse_
 
 
 Todo
@@ -80,3 +81,4 @@ This package was created with Cookiecutter_ and the
 .. _dateutil: https://dateutil.readthedocs.io/en/stable/
 .. _trafaret: http://trafaret.readthedocs.io/en/latest/
 .. _multidict: http://multidict.readthedocs.io/en/stable/
+.. _python-mimeparse: https://pypi.python.org/pypi/python-mimeparse
