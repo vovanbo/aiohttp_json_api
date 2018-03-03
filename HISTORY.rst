@@ -2,6 +2,13 @@
 History
 =======
 
+0.36.1 (2018-03-03)
+-------------------
+
+* Fix bug with content negotiation
+* Add cherry-picked and improved helpers from python-mimeparse_
+
+
 0.36.0 (2018-03-02)
 -------------------
 
@@ -514,3 +521,4 @@ History
 .. _yarl: https://yarl.readthedocs.io
 .. _multidict: http://multidict.readthedocs.io/en/stable/
 .. _cachetools: https://github.com/tkem/cachetools
+.. _python-mimeparse: https://pypi.python.org/pypi/python-mimeparse
