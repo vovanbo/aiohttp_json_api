@@ -1,11 +1,14 @@
 """Middleware."""
-import mimeparse
 from aiohttp import hdrs
 
-from .common import JSONAPI, JSONAPI_CONTENT_TYPE, logger
+from .common import (
+    JSONAPI, JSONAPI_CONTENT_TYPE, JSONAPI_CONTENT_TYPE_PARSED,
+    logger
+)
 from .errors import (
     Error, ErrorList, HTTPUnsupportedMediaType, HTTPNotAcceptable
 )
+from .helpers import best_match, get_mime_type_params
 from .utils import error_to_response
 
 
@@ -30,12 +33,25 @@ async def jsonapi_middleware(app, handler):
                     request_ct != JSONAPI_CONTENT_TYPE):
                     raise HTTPUnsupportedMediaType(detail=content_type_error)
 
-                request_accept = request.headers.get(hdrs.ACCEPT, '*/*')
-                accept_match = mimeparse.best_match(
-                    (JSONAPI_CONTENT_TYPE,), request_accept
+                accept_header = request.headers.get(hdrs.ACCEPT, '*/*')
+                matched_mt, parsed_mt = best_match(
+                    (JSONAPI_CONTENT_TYPE,), accept_header
                 )
-                if accept_match != JSONAPI_CONTENT_TYPE:
+                if matched_mt != JSONAPI_CONTENT_TYPE:
                     raise HTTPNotAcceptable()
+
+                if JSONAPI_CONTENT_TYPE_PARSED[:2] == parsed_mt[:2]:
+                    additional_params = get_mime_type_params(parsed_mt)
+                    if additional_params:
+                        formatted = ','.join(
+                            '{}={}'.format(k, v)
+                            for k, v in additional_params.items()
+                        )
+                        detail = (
+                            'JSON API media type is modified with media '
+                            'type parameters. ({})'.format(formatted)
+                        )
+                        raise HTTPNotAcceptable(detail=detail)
 
             return await handler(request)
         except Exception as exc:

@@ -6,6 +6,8 @@ import re
 import sys
 from collections import namedtuple
 
+from mimeparse import parse_media_range
+
 if sys.version_info < (3, 6):
     from .compat.enum import Enum, Flag, auto
 else:
@@ -19,6 +21,7 @@ JSONAPI = 'jsonapi'
 
 #: JSON API Content-Type by specification
 JSONAPI_CONTENT_TYPE = 'application/vnd.api+json'
+JSONAPI_CONTENT_TYPE_PARSED = parse_media_range(JSONAPI_CONTENT_TYPE)
 
 #: Regular expression rule for check allowed fields and types names
 ALLOWED_MEMBER_NAME_RULE = \
