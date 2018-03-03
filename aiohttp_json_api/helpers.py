@@ -131,9 +131,7 @@ def make_sentinel(name='_MISSING', var_name=None):
 
 def get_router_resource(app: web.Application, resource: str):
     """Return route of JSON API application for resource."""
-    return app.router[
-        '{}.{}'.format(app[JSONAPI]['routes_namespace'], resource)
-    ]
+    return app.router[f"{app[JSONAPI]['routes_namespace']}.{resource}"]
 
 
 def get_processors(obj, tag: Tag, field: FieldABC,

@@ -194,8 +194,7 @@ class JSONAPIContext:
             if key_match and not value_match:
                 field = key_match.group('field')
                 raise HTTPBadRequest(
-                    detail="The filter '{}' "
-                           "is not correct applied.".format(field),
+                    detail=f"The filter '{field}' is not correct applied.",
                     source_parameter=key
                 )
 
@@ -209,8 +208,7 @@ class JSONAPIContext:
                 except Exception as err:
                     logger.debug(str(err), exc_info=False)
                     raise HTTPBadRequest(
-                        detail="The value '{}' "
-                               "is not JSON serializable".format(value),
+                        detail=f"The value '{value}' is not JSON serializable",
                         source_parameter=key
                     )
                 filters.add(cls.convert_field_name(field),

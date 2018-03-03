@@ -264,10 +264,10 @@ class Fraction(Attribute):
 
         val = data["numerator"] / data["denominator"]
         if self.min is not None and self.min > val:
-            detail = "Must be >= {}.".format(self.min)
+            detail = f'Must be >= {self.min}.'
             raise InvalidValue(detail=detail, source_pointer=sp)
         if self.max is not None and self.max < val:
-            detail = "Must be <= {}.".format(self.max)
+            detail = f'Must be <= {self.max}.'
             raise InvalidValue(detail=detail, source_pointer=sp)
 
     def deserialize(self, schema, data, sp, **kwargs):
@@ -361,10 +361,10 @@ class TimeDelta(Attribute):
         data = datetime.timedelta(seconds=data)
 
         if self.min is not None and self.min > data:
-            detail = "The timedelta must be >= {}.".format(self.min)
+            detail = f'The timedelta must be >= {self.min}.'
             raise InvalidValue(detail=detail, source_pointer=sp)
         if self.max is not None and self.max < data:
-            detail = "The timedelta must be <= {}.".format(self.max)
+            detail = f'The timedelta must be <= {self.max}.'
             raise InvalidValue(detail=detail, source_pointer=sp)
 
     def deserialize(self, schema, data, sp, **kwargs):
@@ -401,7 +401,7 @@ class UUID(Attribute):
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if self.version is not None and self.version != data.version:
-            detail = "Not a UUID{}.".format(self.version)
+            detail = f'Not a UUID{self.version}.'
             raise InvalidValue(detail=detail, source_pointer=sp)
 
     def deserialize(self, schema, data, sp, **kwargs):

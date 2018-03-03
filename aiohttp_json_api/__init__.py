@@ -17,8 +17,8 @@ def setup_app_registry(app, registry_class, config):
 
     if registry_class is not None:
         if not issubclass(registry_class, Registry):
-            raise TypeError('Subclass of Registry is required. '
-                            'Got: {}'.format(registry_class))
+            raise TypeError(f'Subclass of Registry is required. '
+                            f'Got: {registry_class}')
     else:
         registry_class = Registry
 
@@ -32,22 +32,21 @@ def setup_app_registry(app, registry_class, config):
             raise TypeError('Class (not instance) of controller is required.')
 
         if not issubclass(controller_cls, ControllerABC):
-            raise TypeError('Subclass of ControllerABC is required. '
-                            'Got: {}'.format(controller_cls))
+            raise TypeError(f'Subclass of ControllerABC is required. '
+                            f'Got: {controller_cls}')
 
         if not inspect.isclass(schema_cls):
             raise TypeError('Class (not instance) of schema is required.')
 
         if not issubclass(schema_cls, SchemaABC):
-            raise TypeError('Subclass of SchemaABC is required. '
-                            'Got: {}'.format(schema_cls))
+            raise TypeError(f'Subclass of SchemaABC is required. '
+                            f'Got: {schema_cls}')
 
         if not inspect.isclass(schema_cls.opts.resource_cls):
             raise TypeError('Class (not instance) of resource is required.')
 
         if not ALLOWED_MEMBER_NAME_REGEX.fullmatch(resource_type):
-            raise ValueError('Resource type "{}" '
-                             'is not allowed.'.format(resource_type))
+            raise ValueError(f"Resource type '{resource_type}' is not allowed.")
 
         app_registry[resource_type] = schema_cls, controller_cls
         app_registry[resource_cls] = schema_cls, controller_cls
@@ -106,24 +105,20 @@ def setup_resources(app, base_path, handlers, routes_namespace):
     type_part = '{type:' + ALLOWED_MEMBER_NAME_RULE + '}'
     relation_part = '{relation:' + ALLOWED_MEMBER_NAME_RULE + '}'
     collection_resource = app.router.add_resource(
-        '{base}/{type}'.format(base=base_path, type=type_part),
-        name='{}.collection'.format(routes_namespace)
+        f'{base_path}/{type_part}',
+        name=f'{routes_namespace}.collection'
     )
     resource_resource = app.router.add_resource(
-        '{base}/{type}/{{id}}'.format(base=base_path, type=type_part),
-        name='{}.resource'.format(routes_namespace)
+        f'{base_path}/{type_part}/{{id}}',
+        name=f'{routes_namespace}.resource'
     )
     relationships_resource = app.router.add_resource(
-        '{base}/{type}/{{id}}/relationships/{relation}'.format(
-            base=base_path, type=type_part, relation=relation_part
-        ),
-        name='{}.relationships'.format(routes_namespace)
+        f'{base_path}/{type_part}/{{id}}/relationships/{relation_part}',
+        name=f'{routes_namespace}.relationships'
     )
     related_resource = app.router.add_resource(
-        '{base}/{type}/{{id}}/{relation}'.format(
-            base=base_path, type=type_part, relation=relation_part
-        ),
-        name='{}.related'.format(routes_namespace)
+        f'{base_path}/{type_part}/{{id}}/{relation_part}',
+        name=f'{routes_namespace}.related'
     )
     collection_resource.add_route('GET', handlers['get_collection'])
     collection_resource.add_route('POST', handlers['post_resource'])
@@ -203,8 +198,8 @@ def setup_jsonapi(app, config, *, base_path='/api', version='1.0',
 
     if context_cls is not None:
         if not issubclass(context_cls, JSONAPIContext):
-            raise TypeError('Subclass of JSONAPIContext is required. '
-                            'Got: {}'.format(context_cls))
+            raise TypeError(f'Subclass of JSONAPIContext is required. '
+                            f'Got: {context_cls}')
     else:
         context_cls = JSONAPIContext
 

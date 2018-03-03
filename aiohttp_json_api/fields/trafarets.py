@@ -22,14 +22,13 @@ class DecimalTrafaret(t.Float):
 
     def _converter(self, value):
         if not isinstance(value, self.convertable):
-            self._failure('value is not {}'.format(self.value_type.__name__),
+            self._failure(f'value is not {self.value_type.__name__}',
                           value=value)
         try:
             return self.value_type(value)
         except (ValueError, decimal.InvalidOperation):
             self._failure(
-                "value can't be converted "
-                "to {}".format(self.value_type.__name__),
+                f"value can't be converted to {self.value_type.__name__}",
                 value=value
             )
 

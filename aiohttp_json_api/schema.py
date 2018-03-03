@@ -74,7 +74,7 @@ class BaseSchema(SchemaABC):
             return cls._relationships[cls.opts.deflect(relation_name)]
         except KeyError:
             raise HTTPBadRequest(
-                detail="Wrong relationship name '{}'.".format(relation_name),
+                detail=f"Wrong relationship name '{relation_name}'.",
                 source_parameter=source_parameter
             )
 
@@ -178,17 +178,17 @@ class BaseSchema(SchemaABC):
     async def pre_validate_field(self, field, data, sp):
         writable = field.writable in (Event.ALWAYS, self.ctx.event)
         if data is not MISSING and not writable:
-            detail = "The field '{}' is readonly.".format(field.name)
+            detail = f"The field '{field.name}' is readonly."
             raise ValidationError(detail=detail, source_pointer=sp)
 
         if data is MISSING and field.required in (Event.ALWAYS,
                                                   self.ctx.event):
             if isinstance(field, Attribute):
-                detail = "Attribute '{}' is required.".format(field.name)
+                detail = f"Attribute '{field.name}' is required."
             elif isinstance(field, Relationship):
-                detail = "Relationship '{}' is required.".format(field.name)
+                detail = f"Relationship '{field.name}' is required."
             else:
-                detail = "The field '{}' is required.".format(field.name)
+                detail = f"The field '{field.name}' is required."
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if data is not MISSING:
@@ -231,8 +231,10 @@ class BaseSchema(SchemaABC):
                     await self.pre_validate_field(self._id, data['id'],
                                                   sp / 'id')
             else:
-                detail = "The id '{}' does not match the endpoint id " \
-                         "'{}'.".format(data['id'], expected_id)
+                detail = (
+                    f"The id '{data['id']}' does not match "
+                    f"the endpoint id '{expected_id}'."
+                )
                 raise HTTPConflict(detail=detail, source_pointer=sp / 'id')
 
     async def post_validate_resource(self, data):

@@ -19,7 +19,7 @@ class JSONPointer(BaseJsonPointer):
 
         if isinstance(path, str):
             if not path.startswith('/'):
-                path = '/{}'.format(path)
+                path = f'/{path}'
             new_parts = JSONPointer(path).parts.pop(0)
             parts.append(new_parts)
         else:

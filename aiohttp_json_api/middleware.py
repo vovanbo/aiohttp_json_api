@@ -23,8 +23,7 @@ async def jsonapi_middleware(app, handler):
                 request_ct = request.headers.get(hdrs.CONTENT_TYPE)
 
                 content_type_error = \
-                    "Content-Type '{}' is required.".format(
-                        JSONAPI_CONTENT_TYPE)
+                    f"Content-Type '{JSONAPI_CONTENT_TYPE}' is required."
 
                 if request_ct is None and request.has_body:
                     raise HTTPUnsupportedMediaType(detail=content_type_error)
@@ -44,13 +43,10 @@ async def jsonapi_middleware(app, handler):
                     additional_params = get_mime_type_params(parsed_mt)
                     if additional_params:
                         formatted = ','.join(
-                            '{}={}'.format(k, v)
-                            for k, v in additional_params.items()
+                            f'{k}={v}' for k, v in additional_params.items()
                         )
-                        detail = (
-                            'JSON API media type is modified with media '
-                            'type parameters. ({})'.format(formatted)
-                        )
+                        detail = (f'JSON API media type is modified '
+                                  f'with media type parameters. ({formatted})')
                         raise HTTPNotAcceptable(detail=detail)
 
             return await handler(request)

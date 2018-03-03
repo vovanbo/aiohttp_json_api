@@ -17,7 +17,7 @@ class BaseModel(abc.ABC):
         fields = ', '.join(
             '{}={!r}'.format(field, getattr(self, field)) for field in fields
         )
-        return '{0}({1})'.format(self.__class__.__name__, fields)
+        return f'{self.__class__.__name__}({fields})'
 
     @property
     def id(self):

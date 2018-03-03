@@ -51,7 +51,7 @@ async def test_fetch_collection(fantasy_client):
     data = await response.json(content_type=JSONAPI_CONTENT_TYPE)
     books = resolve_pointer(data, '/data')
     for index in range(len(books)):
-        assert resolve_pointer(data, '/data/{}/type'.format(index)) == 'books'
+        assert resolve_pointer(data, f'/data/{index}/type') == 'books'
 
 
 async def test_fetch_single_resource_with_includes(fantasy_client):
@@ -92,7 +92,7 @@ async def test_fetch_single_resource_with_includes_and_fields(fantasy_client):
 
     for relationships in ('author', 'series'):
         assert resolve_pointer(
-            data, '/data/relationships/{}'.format(relationships), MISSING
+            data, f'/data/relationships/{relationships}', MISSING
         ) is MISSING
 
     author = resolve_pointer(data, '/included/0')

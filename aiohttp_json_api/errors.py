@@ -524,7 +524,7 @@ class MissingField(ValidationError):
     def __init__(self, type, field, **kwargs):
         kwargs.setdefault(
             'detail',
-            "The field '{}.{}' is required.".format(type, field)
+            f"The field '{type}.{field}' is required."
         )
         super(MissingField, self).__init__(**kwargs)
 
@@ -552,7 +552,7 @@ class UnresolvableIncludePath(HTTPBadRequest):
 
         kwargs.setdefault(
             'detail',
-            "The include path '{}' does not exist.".format(path)
+            f"The include path '{path}' does not exist."
         )
         kwargs.setdefault('source_parameter', 'include')
         super(UnresolvableIncludePath, self).__init__(**kwargs)
@@ -577,8 +577,7 @@ class UnsortableField(HTTPBadRequest):
         """
         kwargs.setdefault(
             'detail',
-            "The field '{}.{}' can not be used "
-            "for sorting.".format(type, field)
+            f"The field '{type}.{field}' can not be used for sorting."
         )
         kwargs.setdefault('source_parameter', 'sort')
         super(UnsortableField, self).__init__(**kwargs)
@@ -605,10 +604,10 @@ class UnfilterableField(HTTPBadRequest):
         """
         kwargs.setdefault(
             "detail",
-            "The field '{}.{}' does not support "
-            "the '{}' filter.".format(type, field, filtername)
+            f"The field '{type}.{field}' does not support "
+            f"the '{filtername}' filter."
         )
-        kwargs.setdefault('source_parameter', 'filter[{}]'.format(field))
+        kwargs.setdefault('source_parameter', f'filter[{field}]')
         super(UnfilterableField, self).__init__(**kwargs)
 
 
@@ -629,7 +628,6 @@ class ResourceNotFound(HTTPNotFound):
         """
         kwargs.setdefault(
             "detail",
-            "The resource (type='{}', id='{}') "
-            "does not exist.".format(type, id)
+            f"The resource (type='{type}', id='{id}') does not exist."
         )
         super(ResourceNotFound, self).__init__(**kwargs)

@@ -126,7 +126,7 @@ class PaginationABC(ABC):
         """
         query = self.request.query.copy()
         query.update({
-            'page[{}]'.format(key): str(value)
+            f'page[{key}]': str(value)
             for key, value in kwargs.items()
         })
 

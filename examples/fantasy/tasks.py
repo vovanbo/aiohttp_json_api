@@ -14,7 +14,7 @@ def populate_db(ctx, data_folder=FANTASY_DATA_FOLDER, dsn=None):
 
     data_file = data_folder / 'data.json'
     if not Path(data_file).exists():
-        sys.exit('Invalid data file: {}'.format(data_file))
+        sys.exit(f'Invalid data file: {data_file}')
 
     with data_file.open() as f:
         data = json.load(f)

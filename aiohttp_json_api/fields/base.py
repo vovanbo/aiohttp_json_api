@@ -126,9 +126,7 @@ class BaseField(FieldABC):
     @name.setter
     def name(self, value: Optional[str]):
         if not ALLOWED_MEMBER_NAME_REGEX.fullmatch(value):
-            raise ValueError(
-                'Field name "{}" is not allowed.'.format(value)
-            )
+            raise ValueError(f"Field name '{value}' is not allowed.")
         self._name = value
 
     @property
@@ -349,7 +347,7 @@ class Relationship(BaseField):
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if self.foreign_types and not data['type'] in self.foreign_types:
-            detail = 'Unexpected type: "{}".'.format(data["type"])
+            detail = f'Unexpected type: "{data["type"]}".'
             raise InvalidValue(detail=detail, source_pointer=sp / 'type')
 
         if self.id_field is not None:
@@ -375,7 +373,7 @@ class Relationship(BaseField):
 
         if not (data.keys() <= {'links', 'data', 'meta'}):
             unexpected = (data.keys() - {'links', 'data', 'meta'}).pop()
-            detail = "Unexpected member: '{}'.".format(unexpected)
+            detail = f"Unexpected member: '{unexpected}'."
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if (self.dereference or self.require_data) and 'data' not in data:
