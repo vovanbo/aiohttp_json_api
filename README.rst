@@ -28,7 +28,7 @@ was a great, but not finished implementation of JSON API with
 *schema controllers*. Also, py-jsonapi_ is not asynchronous and use inside
 self-implemented Request/Response classes.
 
-Some of base entities of **py-jsonapi** was replaced with **aiohttp**
+Some of base entities of py-jsonapi_ was replaced with aiohttp_
 server's objects, some of it was divided into new separate entities
 (e.g. `JSONAPIContext` or `Registry`).
 

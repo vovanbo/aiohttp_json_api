@@ -1,5 +1,5 @@
-aiohttp\_json\_api\.abc package
-===============================
+aiohttp\_json\_api.abc package
+==============================
 
 Submodules
 ----------

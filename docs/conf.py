@@ -62,7 +62,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'aiohttp JSON API'
-copyright = u"2017, Vladimir Bolshakov"
+copyright = u"2018, Vladimir Bolshakov"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -130,7 +130,7 @@ body_default_font = 'system-ui, -apple-system, BlinkMacSystemFont, ' \
 code_default_font = '"SFMono-Regular", "SF Mono", Consolas, ' \
                     '"Liberation Mono", Menlo, Courier, monospace;'
 html_theme_options = {
-    'logo': 'pwa-512x512.png',
+    'logo': 'logo-1024x1024.png',
     'logo_name': False,
     'github_user': 'vovanbo',
     'github_repo': 'aiohttp_json_api',
@@ -138,12 +138,6 @@ html_theme_options = {
     'github_type': 'star',
     'github_banner': True,
     'travis_button': True,
-    'pre_bg': '#FFF6E5',
-    'note_bg': '#E5ECD1',
-    'note_border': '#BFCF8C',
-    'body_text': '#482C0A',
-    'sidebar_text': '#49443E',
-    'sidebar_header': '#4B4032',
     'font_family': body_default_font,
     'font_size': '16px',
     'head_font_family': body_default_font,

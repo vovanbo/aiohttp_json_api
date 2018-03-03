@@ -12,7 +12,7 @@ Contents:
    contributing
    authors
    history
-   aiohttp_json_api
+   api
 
 Indices and tables
 ==================

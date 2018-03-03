@@ -5,7 +5,7 @@ from collections import MutableMapping, Sequence
 
 __author__ = """Vladimir Bolshakov"""
 __email__ = 'vovanbo@gmail.com'
-__version__ = '0.36.1'
+__version__ = '0.37.0'
 
 
 def setup_app_registry(app, registry_class, config):

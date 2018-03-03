@@ -1,15 +1,6 @@
 aiohttp\_json\_api package
 ==========================
 
-Subpackages
------------
-
-.. toctree::
-
-    aiohttp_json_api.abc
-    aiohttp_json_api.compat
-    aiohttp_json_api.fields
-
 Submodules
 ----------
 

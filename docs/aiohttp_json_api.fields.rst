@@ -1,5 +1,5 @@
-aiohttp\_json\_api\.fields package
-==================================
+aiohttp\_json\_api.fields package
+=================================
 
 Submodules
 ----------
