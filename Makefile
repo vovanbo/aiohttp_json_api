@@ -91,7 +91,7 @@ pipenv-update:
 generate-requirements:
 	pipenv lock -r 1> requirements.txt 2> /dev/null
 	pipenv lock -r -d 1> requirements_dev.txt 2> /dev/null
-	sort -u requirements.txt requirements_dev.txt -o requirements_dev.txt
+	awk 'NR==1{printf "-r requirements.txt\n"}RS{print $$0}' requirements_dev.txt > tmp && mv tmp requirements_dev.txt
 
 update-requirements: pipenv-update generate-requirements
 
