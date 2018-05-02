@@ -65,7 +65,7 @@ sphinxcontrib-websupport==1.0.1
 sqlalchemy==1.2.7
 tox-pyenv==1.1.0
 tox==3.0.0
-tqdm==4.23.1
+tqdm==4.23.2
 twine==1.11.0
 typed-ast==1.1.0
 urllib3==1.22
