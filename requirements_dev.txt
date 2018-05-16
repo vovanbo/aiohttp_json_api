@@ -49,7 +49,7 @@ pycparser==2.18
 pydocstyle==2.1.1
 pyflakes==1.6.0
 pygments==2.2.0
-pylint==1.8.4
+pylint==1.9.1
 pyparsing==2.2.0
 pytest-aiohttp==0.3.0
 pytest==3.5.1
