@@ -71,6 +71,6 @@ typed-ast==1.1.0
 urllib3==1.22
 virtualenv==15.2.0
 watchdog==0.8.3
-websocket-client==0.47.0
+websocket-client==0.48.0
 wrapt==1.10.11
 yarl==1.2.2
