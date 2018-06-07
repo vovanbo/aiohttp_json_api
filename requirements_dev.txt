@@ -73,4 +73,4 @@ virtualenv==15.2.0
 watchdog==0.8.3
 websocket-client==0.47.0
 wrapt==1.10.11
-yarl==1.2.2
+yarl==1.2.5
