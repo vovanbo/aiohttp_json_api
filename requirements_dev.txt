@@ -53,7 +53,7 @@ pylint==1.8.4
 pyparsing==2.2.0
 pytest-aiohttp==0.3.0
 pytest==3.5.1
-pytz==2018.4
+pytz==2018.5
 pyyaml==3.12
 requests-toolbelt==0.8.0
 requests==2.18.4
