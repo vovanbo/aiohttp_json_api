@@ -20,10 +20,6 @@ requirements = [
     'yarl>=0.13.0',
 ]
 
-test_requirements = [
-    # TODO: put package test requirements here
-]
-
 setup(
     name='aiohttp_json_api',
     version='0.37.0',
@@ -55,5 +51,4 @@ setup(
         'Topic :: Internet :: WWW/HTTP',
     ],
     test_suite='tests',
-    tests_require=test_requirements
 )

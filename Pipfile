@@ -1,49 +1,47 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
+[requires]
+python_version = "3.7"
 
 [packages]
-
 aiohttp = ">=2.0.0"
 inflection = ">=0.3.1"
 jsonpointer = ">=1.10"
-python-dateutil = ">=2.6.0"
-trafaret = ">=1.0.2"
 multidict = ">=3.3.0"
-yarl = ">=0.13.0"
+python-dateutil = ">=2.6.0"
 python-mimeparse = ">=1.6.0"
-
+trafaret = ">=1.0.2"
+yarl = ">=0.13.0"
+aiohttp-json-api = {editable = true,path = "."}
 
 [dev-packages]
-
+aiopg = "*"
 alabaster = "*"
+attrs = "*"
+autopep8 = "*"
 coverage = "*"
 cryptography = "*"
-"flake8" = "*"
-"flake8-docstrings" = "*"
-"punch.py" = "*"
+diff-cover = "*"
+docker = "*"
+flake8 = "*"
+flake8-docstrings = "*"
+flake8-import-order = "*"
+invoke = "*"
+jsonschema = "*"
+mimesis = "*"
+mypy = "*"
+pep8 = "*"
+pylint = "*"
 pytest = "*"
+pytest-aiohttp = "*"
+pytest-cov = "*"
 pyyaml = "*"
 sphinx = "*"
 sphinx-autodoc-typehints = "*"
-tox = "*"
+sqlalchemy = "*"
 twine = "*"
 watchdog = "*"
-pylint = "*"
-mimesis = "*"
-"pep8" = "*"
-"autopep8" = "*"
-mypy = "*"
-tox-pyenv = "*"
-aiopg = "*"
-sqlalchemy = "*"
-docker = "*"
-invoke = "*"
-attrs = "*"
-jsonschema = "*"
-aiohttp = "*"
-pytest-aiohttp = "*"
-"flake8-import-order" = "*"
+punch-py = {editable = true,git = "https://github.com/lgiordani/punch.git",ref = "1.6.1"}
