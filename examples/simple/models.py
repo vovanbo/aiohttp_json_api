@@ -97,7 +97,7 @@ class Article(BaseModel):
         article = mimesis.Text()
         answers = list(comments)
 
-        def get_random_answers(max):
+        def get_random_answers(max: int) -> Generator[Comment, None, None]:
             counter = 0
             while answers and counter < max:
                 yield answers.pop(random.randint(0, len(answers) - 1))

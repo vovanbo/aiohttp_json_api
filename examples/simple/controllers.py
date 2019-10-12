@@ -3,7 +3,6 @@ import random
 
 from aiohttp_json_api.errors import ResourceNotFound
 from aiohttp_json_api.controller import BaseController
-from examples.simple.models import People
 
 logger = logging.getLogger()
 

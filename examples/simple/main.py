@@ -12,7 +12,7 @@ from aiohttp_json_api import setup_jsonapi
 from aiohttp_json_api.common import JSONAPI
 
 
-def setup_fixtures(app):
+def setup_fixtures(app: web.Application) -> web.Application:
     from examples.simple.models import Article, People, Comment
 
     registry = app[JSONAPI]['registry']
@@ -66,7 +66,7 @@ async def init() -> web.Application:
     return app
 
 
-def main():
+def main() -> None:
     loop = asyncio.get_event_loop()
 
     root = logging.getLogger()
