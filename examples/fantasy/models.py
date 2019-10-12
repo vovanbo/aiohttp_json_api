@@ -14,101 +14,6 @@ import examples.fantasy.tables as tbl
 from aiohttp_json_api.helpers import first, make_sentinel
 
 NON_POPULATED = make_sentinel(name='NON_POPULATED')
-ImageableType = Union['Author', 'Book', 'Series']
-
-
-class Author(NamedTuple):
-    id: int
-    name: str
-    date_of_birth: datetime.datetime
-    date_of_death: Optional[datetime.datetime]
-    created_at: datetime.datetime
-    updated_at: Optional[datetime.datetime]
-    books: List['Book']
-    photos: List['Photo']
-    is_populated: bool = False
-
-    class Options:
-        db_table = tbl.authors
-
-    @classmethod
-    def from_row(cls, row, books: List['Book'], photos: List['Photo'],
-                 alias=None):
-        table = cls.Options.db_table if alias is None else alias
-        return cls(
-            id=t.Int().check(row[table.c.id]),
-            name=t.String().check(row[table.c.name]),
-            date_of_birth=Date().check(row[table.c.date_of_birth]),
-            date_of_death=t.Or(Date, t.Null).check(row[table.c.date_of_death]),
-            books=t.List(t.Type(Book)).check(books),
-            photos=t.List(t.Type(Photo)).check(photos),
-            created_at=DateTime().check(row[table.c.created_at]),
-            updated_at=t.Or(DateTime, t.Null).check(row[table.c.updated_at]),
-            is_populated=True
-        )
-
-    @classmethod
-    def not_populated(cls, id):
-        return cls(id=id,
-                   name=NON_POPULATED,
-                   date_of_birth=NON_POPULATED,
-                   date_of_death=NON_POPULATED,
-                   books=NON_POPULATED,
-                   photos=NON_POPULATED,
-                   created_at=NON_POPULATED,
-                   updated_at=NON_POPULATED)
-
-    @classmethod
-    async def fetch_many(cls, conn: SAConnection, cte: CTE = None):
-        results = OrderedDict()
-
-        if cte is None:
-            cte = cls.Options.db_table
-
-        query = (
-            cte
-            .outerjoin(tbl.books,
-                       tbl.books.c.author_id == cte.c.id)
-            .outerjoin(tbl.photos,
-                       sa.and_(
-                           tbl.photos.c.imageable_id == cte.c.id,
-                           tbl.photos.c.imageable_type == 'authors'
-                       ))
-            .select(use_labels=True)
-        )
-
-        books = {}
-        photos = {}
-
-        async for row in conn.execute(query):
-            author_id = row[cte.c.id]
-            author = results.get(author_id)
-            if author is None:
-                author = Author.from_row(row, books=[], photos=[], alias=cte)
-                results[author_id] = author
-
-            book_id = row[tbl.books.c.id]
-            if book_id:
-                book = books.get(book_id, Book.not_populated(book_id))
-
-                if book not in author.books:
-                    author.books.append(book)
-
-            photo_id = row[tbl.photos.c.id]
-            if photo_id:
-                photo = photos.get(photo_id, Photo.not_populated(photo_id))
-
-                if photo not in author.photos:
-                    author.photos.append(photo)
-
-        return results
-
-    @classmethod
-    async def fetch_one(cls, conn: SAConnection, author_id):
-        cte = cls.cte(where=(cls.Options.db_table.c.id == author_id),
-                      limit=1)
-        results = await cls.fetch_many(conn, cte=cte)
-        return first(results.values())
 
 
 class Book(NamedTuple):
@@ -290,7 +195,7 @@ class Photo(NamedTuple):
     id: int
     title: str
     uri: str
-    imageable: ImageableType
+    imageable: 'ImageableType'
     created_at: datetime.datetime
     updated_at: Optional[datetime.datetime]
     is_populated: bool = False
@@ -299,7 +204,7 @@ class Photo(NamedTuple):
         db_table = tbl.photos
 
     @classmethod
-    def from_row(cls, row, imageable: ImageableType, alias=None):
+    def from_row(cls, row, imageable: 'ImageableType', alias=None):
         table = cls.Options.db_table if alias is None else alias
         return cls(
             id=t.Int().check(row[table.c.id]),
@@ -466,3 +371,6 @@ def cte_constructor(cls, where=None, limit=None, offset=None, name=None) -> CTE:
 # so use classmethod() call directly
 for model in (Author, Book, Photo, Series, Store):
     model.cte = classmethod(cte_constructor)
+
+
+ImageableType = Union[Author, Book, Series]

@@ -3,7 +3,8 @@ from aiohttp_json_api.errors import ResourceNotFound
 from aiohttp_json_api.fields.decorators import includes
 
 import examples.fantasy.tables as tbl
-from examples.fantasy.models import Author
+from examples.fantasy.entities import Author
+from examples.fantasy.repositories import authors
 
 
 class CommonController(BaseController):
@@ -32,6 +33,22 @@ class CommonController(BaseController):
 
     async def delete_resource(self, resource_id, **kwargs):
         pass
+
+
+class AuthorsController(CommonController):
+    async def fetch_resource(self, resource_id, **kwargs):
+        async with self.ctx.app['db'].acquire() as connection:
+            result = await authors.fetch_one(connection, resource_id)
+
+        if result is None:
+            raise ResourceNotFound(type=self.ctx.resource_type, id=resource_id)
+
+        return result
+
+    async def query_collection(self, **kwargs):
+        async with self.ctx.app['db'].acquire() as connection:
+            results = await authors.fetch_many(connection)
+        return results.values()
 
 
 class BooksController(CommonController):

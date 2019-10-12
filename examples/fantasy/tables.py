@@ -12,8 +12,7 @@ authors = Table(
     Column('name', Text, nullable=False),
     Column('date_of_birth', Date, nullable=False),
     Column('date_of_death', Date),
-    Column('created_at', DateTime, nullable=False,
-           server_default=text('CURRENT_TIMESTAMP')),
+    Column('created_at', DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP')),
     Column('updated_at', DateTime),
     CheckConstraint("name <> ''::text")
 )
@@ -25,8 +24,7 @@ books = Table(
     Column('series_id', ForeignKey('series.id')),
     Column('date_published', Date, nullable=False),
     Column('title', Text, nullable=False),
-    Column('created_at', DateTime, nullable=False,
-           server_default=text('CURRENT_TIMESTAMP')),
+    Column('created_at', DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP')),
     Column('updated_at', DateTime),
     CheckConstraint("title <> ''::text")
 )
@@ -43,8 +41,7 @@ chapters = Table(
     Column('book_id', ForeignKey('books.id'), nullable=False),
     Column('title', Text, nullable=False),
     Column('ordering', Integer, nullable=False),
-    Column('created_at', DateTime, nullable=False,
-           server_default=text("CURRENT_TIMESTAMP")),
+    Column('created_at', DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")),
     Column('updated_at', DateTime),
     CheckConstraint("title <> ''::text")
 )
@@ -56,8 +53,7 @@ photos = Table(
     Column('uri', Text, nullable=False),
     Column('imageable_id', Integer, nullable=False),
     Column('imageable_type', Text, nullable=False),
-    Column('created_at', DateTime, nullable=False,
-           server_default=text("CURRENT_TIMESTAMP")),
+    Column('created_at', DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")),
     Column('updated_at', DateTime),
     CheckConstraint("imageable_type <> ''::text"),
     CheckConstraint("title <> ''::text"),
@@ -69,8 +65,7 @@ series = Table(
     Column('id', Integer, primary_key=True),
     Column('title', Text, nullable=False),
     Column('photo_id', ForeignKey('photos.id'), nullable=False),
-    Column('created_at', DateTime, nullable=False,
-           server_default=text("CURRENT_TIMESTAMP")),
+    Column('created_at', DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")),
     Column('updated_at', DateTime),
     CheckConstraint("title <> ''::text")
 )
@@ -79,8 +74,7 @@ stores = Table(
     'stores', metadata,
     Column('id', Integer, primary_key=True),
     Column('name', Text, nullable=False),
-    Column('created_at', DateTime, nullable=False,
-           server_default=text("CURRENT_TIMESTAMP")),
+    Column('created_at', DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")),
     Column('updated_at', DateTime),
     CheckConstraint("name <> ''::text")
 )
