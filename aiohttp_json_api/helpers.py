@@ -7,7 +7,7 @@ from typing import Optional, Tuple, List, Iterable as IterableType, Any, Type, C
 from aiohttp import web
 from mimeparse import parse_media_range, _filter_blank
 
-from aiohttp_json_api.abc.processors import ProcessorsMeta
+from aiohttp_json_api.processors import ProcessorsMeta
 from aiohttp_json_api.fields.decorators import Tag
 from aiohttp_json_api.typings import Callee, MimeTypeComponents, QFParsed
 from aiohttp_json_api.common import JSONAPI

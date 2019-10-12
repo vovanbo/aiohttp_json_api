@@ -1,7 +1,7 @@
 import abc
 import copy
 
-from aiohttp_json_api.abc.processors import ProcessorsMeta
+from aiohttp_json_api.processors import ProcessorsMeta
 from aiohttp_json_api.common import logger
 from aiohttp_json_api.fields.decorators import Tag
 from aiohttp_json_api.helpers import first, get_processors

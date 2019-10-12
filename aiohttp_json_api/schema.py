@@ -19,7 +19,7 @@ from typing import Dict, Any, Optional, Collection, Iterable, Mapping, Tuple, Ty
 
 import inflection
 
-from aiohttp_json_api.abc.processors import ProcessorsMeta
+from aiohttp_json_api.processors import ProcessorsMeta
 from aiohttp_json_api.context import JSONAPIContext
 
 from aiohttp_json_api.fields.base import Attribute, Relationship, BaseField
