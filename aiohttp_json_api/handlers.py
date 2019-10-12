@@ -61,7 +61,7 @@ async def post_resource(request: web.Request):
     raw_data = await request.json()
     if not isinstance(raw_data, collections.Mapping):
         detail = 'Must be an object.'
-        raise InvalidType(detail=detail, source_pointer='')
+        raise InvalidType(detail=detail)
 
     ctx = JSONAPIContext(request)
 
@@ -73,8 +73,9 @@ async def post_resource(request: web.Request):
     resource = await ctx.controller.create_resource(data)
     result = await render_document(resource, None, ctx)
 
+    rid = ctx.registry.ensure_identifier(resource)
     location = request.url.join(
-        get_router_resource(request.app, 'resource').url_for(**ctx.registry.ensure_identifier(resource, asdict=True))
+        get_router_resource(request.app, 'resource').url_for(**rid._asdict())
     )
 
     return jsonapi_response(result, status=HTTPStatus.CREATED, headers={hdrs.LOCATION: str(location)})
@@ -120,7 +121,7 @@ async def patch_resource(request: web.Request):
     raw_data = await request.json()
     if not isinstance(raw_data, collections.Mapping):
         detail = 'Must be an object.'
-        raise InvalidType(detail=detail, source_pointer='')
+        raise InvalidType(detail=detail)
 
     sp = JSONPointer('/data')
     deserialized_data = await ctx.schema.deserialize_resource(raw_data.get('data', {}), sp, expected_id=resource_id)

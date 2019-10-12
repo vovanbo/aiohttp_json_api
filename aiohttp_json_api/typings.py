@@ -4,11 +4,12 @@
 from typing import Callable, Coroutine, Dict, MutableMapping, Tuple, Union, Optional, Awaitable
 
 from aiohttp import web
+from multidict import MutableMultiMapping
 
 from aiohttp_json_api.common import FilterRule, ResourceID, SortDirection
 
 #: Type for Request filters
-RequestFilters = MutableMapping[str, FilterRule]
+RequestFilters = MutableMultiMapping[FilterRule]
 
 #: Type for Request fields
 RequestFields = MutableMapping[str, Tuple[str, ...]]
@@ -18,9 +19,6 @@ RequestIncludes = Tuple[Tuple[str, ...], ...]
 
 #: Type for Request sorting parameters
 RequestSorting = MutableMapping[Tuple[str, ...], SortDirection]
-
-#: Type for Resource identifier
-ResourceIdentifier = Union[ResourceID, Dict[str, str]]
 
 #: Type for callable or co-routine
 Callee = Union[Callable, Coroutine]

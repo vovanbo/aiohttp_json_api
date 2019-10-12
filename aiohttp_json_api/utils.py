@@ -1,19 +1,18 @@
 """Utilities related to JSON API."""
 
 from collections import defaultdict, OrderedDict
-from typing import Optional, Dict, Any, Union, Callable, Set
+from typing import Optional, Dict, Any, Union, Callable, Set, Collection, Tuple
 
 import trafaret
 from aiohttp import web
 from aiohttp.typedefs import LooseHeaders
 
-from aiohttp_json_api.common import JSONAPI, JSONAPI_CONTENT_TYPE
+from aiohttp_json_api.common import JSONAPI, JSONAPI_CONTENT_TYPE, ResourceID
 from aiohttp_json_api.context import JSONAPIContext
 from aiohttp_json_api.encoder import json_dumps
 from aiohttp_json_api.errors import Error, ErrorList, HTTPInternalServerError
 from aiohttp_json_api.helpers import first, is_collection
 from aiohttp_json_api.pagination import PaginationABC
-from aiohttp_json_api.typings import RequestIncludes
 
 
 def jsonapi_response(
@@ -41,15 +40,16 @@ def jsonapi_response(
     return web.Response(body=body, status=status, reason=reason, headers=headers, content_type=JSONAPI_CONTENT_TYPE)
 
 
-async def get_compound_documents(resources, ctx):
+async def get_compound_documents(
+    resources: Collection[Any],
+    ctx: JSONAPIContext,
+) -> Tuple[Dict[ResourceID, Any], Dict[str, Set[Tuple[str, ...]]]]:
     """
-    Get compound documents of resources.
+    Get compound documents of resources. Fetches the relationship paths *paths*.
 
     .. seealso::
 
         http://jsonapi.org/format/#fetching-includes
-
-    Fetches the relationship paths *paths*.
 
     :param resources:
         A list with the primary data (resources) of the compound
@@ -62,10 +62,10 @@ async def get_compound_documents(resources, ctx):
         which maps each resource (primary and included) to a set with the
         names of the included relationships.
     """
-    relationships: Dict[str, Set[RequestIncludes]] = defaultdict(set)
-    compound_documents = OrderedDict()
+    relationships: Dict[str, Set[Tuple[str, ...]]] = defaultdict(set)
+    compound_documents: Dict[ResourceID, Any] = OrderedDict()
 
-    collection = (resources,) if type(resources) in ctx.registry else resources
+    collection: Collection[Any] = (resources,) if type(resources) in ctx.registry else resources
     for path in ctx.include:
         if path and collection:
             rest_path = path

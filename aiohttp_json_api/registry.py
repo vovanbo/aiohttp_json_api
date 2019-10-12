@@ -5,7 +5,6 @@ import inspect
 from typing import Any
 
 from aiohttp_json_api.common import ResourceID
-from aiohttp_json_api.typings import ResourceIdentifier
 
 
 class Registry(collections.UserDict):
@@ -15,7 +14,6 @@ class Registry(collections.UserDict):
     This is a dictionary created on JSON API application set up.
     It contains a mapping between types, resource classes and schemas.
     """
-
     __slots__ = ('data',)
 
     def __getitem__(self, key):
@@ -28,7 +26,7 @@ class Registry(collections.UserDict):
         item = key if isinstance(key, str) or inspect.isclass(key) else type(key)
         return super().__getitem__(item)
 
-    def ensure_identifier(self, obj: Any, asdict: bool = False) -> ResourceIdentifier:
+    def ensure_identifier(self, obj: Any) -> ResourceID:
         """
         Return the identifier object for the *resource*.
 
@@ -57,4 +55,4 @@ class Registry(collections.UserDict):
             except KeyError:
                 raise RuntimeError('Schema for %s is not found.' % obj.__class__.__name__)
 
-        return result._asdict() if asdict and result else result
+        return result

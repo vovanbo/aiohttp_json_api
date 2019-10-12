@@ -11,6 +11,7 @@ from multidict import MultiDict
 
 from aiohttp_json_api.common import Event, FilterRule, JSONAPI, logger, SortDirection
 from aiohttp_json_api.errors import HTTPBadRequest, HTTPNotFound
+from aiohttp_json_api.helpers import first
 from aiohttp_json_api.pagination import PaginationABC
 from aiohttp_json_api.registry import Registry
 from aiohttp_json_api.typings import RequestFields, RequestFilters, RequestIncludes, RequestSorting
@@ -37,8 +38,7 @@ class JSONAPIContext:
         if self.__resource_type is None:
             self.__resource_type = self.__request.match_info.get('type', None)
 
-        if (self.__resource_type is None or
-            self.__resource_type not in self.registry):
+        if (self.__resource_type is None or self.__resource_type not in self.registry):
             # If type is not found in URI, and type is not passed
             # via decorator to custom handler, then raise HTTP 404
             raise HTTPNotFound()
@@ -180,19 +180,18 @@ class JSONAPIContext:
         :raises HTTPBadRequest:
             If a filter name contains invalid characters.
         """
-        filters: MultiDict = MultiDict()
+        filters: RequestFilters = MultiDict()
 
         for key, value in request.query.items():
             key_match = re.fullmatch(cls.FILTER_KEY, key)
             value_match = re.fullmatch(cls.FILTER_VALUE, value)
 
-            # If the key indicates a filter, but the value is not correct
-            # formatted.
+            # If the key indicates a filter, but the value is not correct formatted.
             if key_match and not value_match:
                 field = key_match.group('field')
                 raise HTTPBadRequest(
                     detail=f"The filter '{field}' is not correct applied.",
-                    source_parameter=key
+                    source_parameter=key,
                 )
 
             # The key indicates a filter and the filter name exists.
@@ -206,11 +205,11 @@ class JSONAPIContext:
                     logger.debug(str(err), exc_info=False)
                     raise HTTPBadRequest(
                         detail=f"The value '{value}' is not JSON serializable",
-                        source_parameter=key
+                        source_parameter=key,
                     )
                 filters.add(
                     cls.convert_field_name(field),
-                    FilterRule(name=name, value=value)
+                    FilterRule(name=name, value=value),
                 )
 
         return filters
@@ -233,7 +232,7 @@ class JSONAPIContext:
 
         :seealso: http://jsonapi.org/format/#fetching-sparse-fieldsets
         """
-        fields: Dict[str, Tuple[str, ...]] = OrderedDict()
+        fields: RequestFields = OrderedDict()
 
         for key, value in request.query.items():
             match = re.fullmatch(cls.FIELDS_RE, key)
@@ -300,8 +299,7 @@ class JSONAPIContext:
                 direction = SortDirection(field[0])
                 field = field[1:]
 
-            field = tuple(cls.convert_field_name(e.strip())
-                          for e in field.split('.'))
+            field = tuple(cls.convert_field_name(e.strip()) for e in field.split('.'))
             sort[field] = direction
 
         return sort
@@ -318,23 +316,25 @@ class JSONAPIContext:
         :arg str name:
             Name of filter
         """
-        return (field, name) in self.filters
+        field_name = self.convert_field_name(field)
+        return (
+            field_name in self.filters
+            and first(self.filters.getall(field_name, ()), key=lambda fr: fr.name == name)
+        )
 
-    def get_filter(self, field: str, name: str, default: Any = None) -> Any:
+    def get_filter(self, field: str, name: str, default: Optional[FilterRule] = None) -> Optional[FilterRule]:
         """
         Get filter from request context by name and field.
 
         If the filter *name* has been applied on the *field*, the
         *filter* is returned and *default* otherwise.
 
-        :arg str field:
-            Name of field
-        :arg str name:
-            Name of filter
-        :arg Any default:
-            A fallback rule value for the filter.
+        :arg str field: Name of field
+        :arg str name: Name of filter
+        :arg FilterRule default: A fallback rule value for the filter.
         """
-        return self.filters.get((field, name), default)
+        field_name = self.convert_field_name(field)
+        return first(self.filters.getall(field_name, ()), default=default, key=lambda fr: fr.name == name)
 
     def get_order(
         self,

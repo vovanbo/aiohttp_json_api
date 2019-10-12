@@ -36,9 +36,10 @@ You should only work with the following fields directly:
 import abc
 import urllib.parse
 from collections import Mapping
-from typing import Optional, Sequence, Dict, Any
+from typing import Optional, Sequence, Dict, Any, Union
 
 import trafaret as t
+from aiohttp import web
 
 from aiohttp_json_api.context import JSONAPIContext
 from aiohttp_json_api.common import ALLOWED_MEMBER_NAME_REGEX, Event, JSONAPI, Relation
@@ -105,14 +106,10 @@ class FieldABC(abc.ABC):
         Validates the raw JSON API input for this field. This method is
         called before :meth:`deserialize`.
 
-        :arg ~aiohttp_json_api.schema.SchemaABC schema:
-            The schema this field has been defined on.
         :arg data:
             The raw input data
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.JSONAPIContext context:
-            A JSON API request context instance
         """
         pass
 
@@ -122,14 +119,10 @@ class FieldABC(abc.ABC):
         Validates the decoded input *data* for this field. This method is
         called after :meth:`deserialize`.
 
-        :arg ~aiohttp_json_api.schema.SchemaABC schema:
-            The schema this field has been defined on.
         :arg data:
             The decoded input data
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             A JSON pointer to the source of *data*.
-        :arg ~aiohttp_json_api.context.JSONAPIContext context:
-            A JSON API request context instance
         """
         pass
 
@@ -172,8 +165,8 @@ class BaseField(FieldABC):
     def __init__(
         self,
         *,
-        name: str = None,
-        mapped_key: str = None,
+        name: str = '',
+        mapped_key: str = '',
         allow_none: bool = False,
         writable: Event = Event.ALWAYS,
         required: Event = Event.NEVER,
@@ -182,15 +175,16 @@ class BaseField(FieldABC):
         # :class:`~aiohttp_json_api.schema.SchemaABC`
         #: it has been defined on. Please note, that not each field has a *key*
         #: (like some links or meta attributes).
-        self._key: Optional[str] = None
+        self._key: str = ''
 
         #: A :class:`aiohttp_json_api.jsonpointer.JSONPointer`
         #: to this field in a JSON API resource object. The source pointer is
         #: set from the SchemaABC class during initialisation.
-        self._sp: Optional[JSONPointer] = None
+        self._sp: JSONPointer = JSONPointer('')
 
         self._name = name
         self._mapped_key = mapped_key
+        self._trafaret: t.Trafaret = t.Trafaret()
         self.allow_none = allow_none
 
         assert isinstance(writable, Event)
@@ -200,29 +194,29 @@ class BaseField(FieldABC):
         self.required = required
 
     @property
-    def key(self) -> Optional[str]:
+    def key(self) -> str:
         return self._key
 
     @property
-    def sp(self) -> Optional[JSONPointer]:
+    def sp(self) -> JSONPointer:
         return self._sp
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str:
         return self._name
 
     @name.setter
-    def name(self, value: Optional[str]) -> None:
+    def name(self, value: str) -> None:
         if value and not ALLOWED_MEMBER_NAME_REGEX.fullmatch(value):
             raise ValueError(f"Field name '{value}' is not allowed.")
         self._name = value
 
     @property
-    def mapped_key(self) -> Optional[str]:
+    def mapped_key(self) -> str:
         return self._mapped_key
 
     @mapped_key.setter
-    def mapped_key(self, value: Optional[str]) -> None:
+    def mapped_key(self, value: str) -> None:
         self._mapped_key = value
 
     def serialize(self, data: Any, **kwargs: Any) -> Any:
@@ -288,7 +282,6 @@ class Attribute(BaseField):
         super().__init__(**kwargs)
         self.meta = bool(meta)
         self.load_only = load_only
-        self._trafaret: Optional[t.Trafaret] = None
 
 
 class Link(BaseField):
@@ -331,7 +324,7 @@ class Link(BaseField):
         route: str,
         link_of: str,
         *,
-        name: str = None,
+        name: str = '',
         normalize: bool = False,
         absolute: bool = True,
     ) -> None:
@@ -341,30 +334,25 @@ class Link(BaseField):
         self.route = route
         self.link_of = link_of
 
-    def serialize(self, data: Dict[str, Any], **kwargs) -> Dict[str, str]:
+    def serialize(self, data: Dict[str, Any], **kwargs) -> Union[str, Dict[str, str]]:
         """Normalizes the links object if wished."""
         context: JSONAPIContext = kwargs['context']  # Context is required for Link field
         registry = context.request.app[JSONAPI]['registry']
         rid = registry.ensure_identifier(data)
         route = context.request.app.router[self.route]
-        route_url = route._formatter.format_map({
+        route_url = route.canonical.format_map({
             'type': rid.type,
             'id': rid.id,
             'relation': self.link_of,
         })
-        if context is not None and self.absolute:
+        if self.absolute:
             result = urllib.parse.urlunsplit(
                 (context.request.scheme, context.request.host, route_url, None, None)
             )
         else:
             result = route_url
 
-        if not self.normalize:
-            return result
-        elif isinstance(result, str):
-            return {'href': result}
-
-        return result
+        return {'href': result} if self.normalize else result
 
 
 class Relationship(BaseField):
@@ -409,7 +397,7 @@ class Relationship(BaseField):
         id_field: Optional[Attribute] = None,
         **kwargs,
     ) -> None:
-        BaseField.__init__(self, **kwargs)
+        super().__init__(**kwargs)
         self.links: Dict[str, Link] = {link.name: link for link in links} if links else {}
 
         # NOTE: The related resources are loaded by the schema class for
@@ -451,7 +439,7 @@ class Relationship(BaseField):
             raise InvalidValue(detail=detail, source_pointer=sp / 'type')
 
         if self.id_field is not None:
-            self.id_field.pre_validate(self, data['id'], sp / 'id')
+            self.id_field.pre_validate(data['id'], sp / 'id')
 
     def validate_relationship_object(self, data: Dict[str, Any], sp: JSONPointer):
         """
@@ -472,7 +460,7 @@ class Relationship(BaseField):
             raise InvalidValue(detail=detail, source_pointer=sp)
 
         if not (data.keys() <= {'links', 'data', 'meta'}):
-            unexpected = (data.keys() - {'links', 'data', 'meta'}).pop()
+            unexpected = set(data.keys() - {'links', 'data', 'meta'}).pop()
             detail = f"Unexpected member: '{unexpected}'."
             raise InvalidValue(detail=detail, source_pointer=sp)
 

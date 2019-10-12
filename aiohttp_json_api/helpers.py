@@ -172,10 +172,10 @@ def quality_and_fitness_parsed(mime_type: str, parsed_ranges: List[MimeTypeCompo
 
     Cherry-picked from python-mimeparse and improved.
     """
-    best_fitness = -1
-    best_fit_q = 0
+    best_fitness: int = -1
+    best_fit_q: float = 0
     (target_type, target_subtype, target_params) = parse_media_range(mime_type)
-    best_matched = None
+    best_matched: Optional[MimeTypeComponents] = None
 
     for (type, subtype, params) in parsed_ranges:
 
@@ -200,14 +200,14 @@ def quality_and_fitness_parsed(mime_type: str, parsed_ranges: List[MimeTypeCompo
             fitness += param_matches
 
             # finally, add the target's "q" param (between 0 and 1)
-            fitness += float(target_params.get('q', 1))
+            fitness += int(target_params.get('q', 1))
 
             if fitness > best_fitness:
                 best_fitness = fitness
-                best_fit_q = params['q']
+                best_fit_q = float(params['q'])
                 best_matched = (type, subtype, params)
 
-    return (float(best_fit_q), best_fitness), best_matched
+    return (best_fit_q, best_fitness), best_matched
 
 
 def best_match(supported: IterableType[str], header: str) -> Tuple[str, Optional[MimeTypeComponents]]:
@@ -221,8 +221,7 @@ def best_match(supported: IterableType[str], header: str) -> Tuple[str, Optional
 
     Cherry-picked from python-mimeparse and improved.
 
-    >>> best_match(['application/xbel+xml', 'text/xml'],
-                   'text/*;q=0.5,*/*; q=0.1')
+    >>> best_match(['application/xbel+xml', 'text/xml'], 'text/*;q=0.5,*/*; q=0.1')
     ('text/xml', ('text', '*', {'q': '0.5'}))
     """
     split_header = _filter_blank(header.split(','))

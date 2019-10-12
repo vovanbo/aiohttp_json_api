@@ -1,5 +1,6 @@
 import abc
 import copy
+from typing import Any, List
 
 from aiohttp_json_api.processors import ProcessorsMeta
 from aiohttp_json_api.common import logger
@@ -91,7 +92,6 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
         :arg ~aiohttp_json_api.context.JSONAPIContext context:
             Request context instance
         """
-
         pass
 
     @abc.abstractmethod
@@ -189,9 +189,6 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
 
         Fetches a subset of the collection represented by this schema.
         **Must be overridden.**
-
-        :arg ~aiohttp_json_api.context.JSONAPIContext context:
-            Request context instance.
         """
         pass
 
@@ -206,8 +203,6 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
 
         :arg str resource_id:
             The id of the requested resource.
-        :arg JSONAPIContext context:
-            A request context instance
         :raises ~aiohttp_json_api.errors.ResourceNotFound:
             If there is no resource with the given *id_*.
         """
@@ -241,8 +236,6 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
             Relationship field.
         :arg resources:
             A list of resources.
-        :arg JSONAPIContext context:
-            Request context instance.
         :arg list rest_path:
             The name of the relationships of the returned relatives, which
             will also be included.
@@ -259,25 +252,26 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
 class BaseController(ControllerABC):
     @staticmethod
     async def default_include(field, resources, **kwargs):
-        if field.mapped_key:
-            ctx = kwargs['context']
-            compound_documents = []
-            for resource in resources:
-                compound_document = getattr(resource, field.mapped_key)
-                if compound_document:
-                    compound_documents.extend(
-                        (compound_document,)
-                        if type(compound_document) in ctx.registry
-                        else compound_document
-                    )
-            return compound_documents
-        raise RuntimeError('No includer and mapped_key have been defined.')
+        if not field.mapped_key:
+            raise RuntimeError('No includer and mapped_key have been defined.')
+
+        ctx = kwargs['context']
+        compound_documents: List[Any] = []
+        for resource in resources:
+            compound_document = getattr(resource, field.mapped_key)
+            if compound_document:
+                compound_documents.extend(
+                    (compound_document,)
+                    if type(compound_document) in ctx.registry
+                    else compound_document
+                )
+        return compound_documents
 
     @staticmethod
     async def default_query(field, resource, **kwargs):
-        if field.mapped_key:
-            return getattr(resource, field.mapped_key)
-        raise RuntimeError('No query method and mapped_key have been defined.')
+        if not field.mapped_key:
+            raise RuntimeError('No query method and mapped_key have been defined.')
+        return getattr(resource, field.mapped_key)
 
     @staticmethod
     async def default_add(field, resource, data, sp, **kwargs):

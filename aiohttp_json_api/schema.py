@@ -21,8 +21,7 @@ import inflection
 
 from aiohttp_json_api.processors import ProcessorsMeta
 from aiohttp_json_api.context import JSONAPIContext
-
-from aiohttp_json_api.fields.base import Attribute, Relationship, BaseField
+from aiohttp_json_api.fields.base import Attribute, BaseField, Link, Relationship
 from aiohttp_json_api.fields.decorators import Tag
 from aiohttp_json_api.common import Event, Relation, Step
 from aiohttp_json_api.errors import HTTPBadRequest, HTTPConflict, InvalidType, InvalidValue, ValidationError
@@ -109,8 +108,6 @@ class SchemaMeta(ProcessorsMeta):
         """Sets the :attr:`BaseField.sp` (source pointer) property recursively
         for all child fields.
         """
-        from aiohttp_json_api.fields.base import Relationship
-
         for field in fields:
             field._sp = sp / field.name
             if isinstance(field, Relationship):
@@ -131,7 +128,7 @@ class SchemaMeta(ProcessorsMeta):
             result[field.sp] = field
         return MappingProxyType(result)
 
-    def __new__(mcs, name: str, bases: Tuple[Type['SchemaABC'], ...], attrs: Dict[str, Any]) -> 'SchemaABC':
+    def __new__(mcs, name: str, bases: Tuple[Type['SchemaMeta'], ...], attrs: Dict[str, Any]) -> 'SchemaMeta':
         """
         Detects all fields and wires everything up. These class attributes are
         defined here:
@@ -181,8 +178,6 @@ class SchemaMeta(ProcessorsMeta):
             A dictionary with all properties defined on the schema class
             (attributes, methods, ...)
         """
-        from aiohttp_json_api.fields.base import Relationship, Attribute, Link
-
         cls_fields = _get_fields(attrs, BaseField, pop=True)
         klass = super(SchemaMeta, mcs).__new__(mcs, name, bases, attrs)
         inherited_fields = _get_fields_by_mro(klass, BaseField)
@@ -577,7 +572,7 @@ class BaseSchema(SchemaABC):
         if 'self' not in result['links']:
             rid = self.ctx.registry.ensure_identifier(resource)
             route = get_router_resource(self.ctx.request.app, 'resource')
-            route_url = route._formatter.format_map({'type': rid.type, 'id': rid.id})
+            route_url = route.canonical.format_map(rid._asdict())
             route_url = urllib.parse.urlunsplit(
                 (self.ctx.request.scheme, self.ctx.request.host, route_url, None, None)
             )

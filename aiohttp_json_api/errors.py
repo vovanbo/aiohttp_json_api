@@ -57,7 +57,7 @@ class Error(Exception):
     :seealso: http://jsonapi.org/format/#errors
     """
 
-    status = HTTPStatus.INTERNAL_SERVER_ERROR
+    status: HTTPStatus = HTTPStatus.INTERNAL_SERVER_ERROR
 
     def __init__(
         self,
@@ -169,21 +169,23 @@ class ErrorList(Exception):
         return json_dumps(self.json, indent=4, sort_keys=True)
 
     @property
-    def status(self) -> Optional[Union[HTTPStatus, int]]:
+    def status(self) -> HTTPStatus:
         """
         Return the most specific HTTP status code for all errors.
 
         For single error in list returns its status.
         For many errors returns maximal status code.
         """
+        default = HTTPStatus.INTERNAL_SERVER_ERROR
+
         if not self.errors:
-            return None
+            return default
         elif len(self.errors) == 1:
             return self.errors[0].status
         elif any(400 <= err.status < 500 for err in self.errors):
-            return max(e.status for e in self.errors)
+            return max(e.status for e in self.errors) or default
 
-        return HTTPStatus.INTERNAL_SERVER_ERROR
+        return default
 
     def append(self, error: Error) -> None:
         """

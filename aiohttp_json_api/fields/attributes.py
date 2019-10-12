@@ -100,7 +100,7 @@ class String(Attribute):
         if self.allow_none:
             self._trafaret |= t.Null()
 
-    def pre_validate(self, data: str, sp: JSONPointer) -> None:
+    def pre_validate(self, data: Any, sp: JSONPointer) -> None:
         try:
             self._trafaret.check(data)
         except t.DataError as error:
@@ -114,14 +114,14 @@ class String(Attribute):
                 detail += ' ({})'.format(', '.join(possible_values))
             raise InvalidValue(detail=detail, source_pointer=sp)
 
-    def deserialize(self, data: str, sp: JSONPointer, **kwargs) -> Optional[Union[str, Enum]]:
+    def deserialize(self, data: Any, sp: JSONPointer, **kwargs) -> Optional[Union[str, Enum]]:
         return (
             self.choices[data]
             if isinstance(self.choices, type(Enum)) and data in self.choices.__members__
             else data
         )
 
-    def serialize(self, data: Union[str, Type[Enum]], **kwargs) -> Optional[str]:
+    def serialize(self, data: Any, **kwargs) -> Optional[str]:
         if isinstance(data, type(Enum)):
             result = self._trafaret.check(data.name)
         else:
@@ -545,13 +545,13 @@ class Dict(Attribute):
 
     def deserialize(self, data: Any, sp: JSONPointer, **kwargs: Any) -> MutableMapping[str, Any]:
         return {
-            key: self.field.deserialize(schema, value, sp / key)
+            key: self.field.deserialize(value, sp / key)
             for key, value in data.items()
         }
 
     def serialize(self, data: Any, **kwargs: Any) -> MutableMapping[str, Any]:
         return {
-            key: self.field.serialize(schema, value)
+            key: self.field.serialize(value)
             for key, value in data.items()
         }
 
@@ -588,7 +588,7 @@ class List(Attribute):
             return None
 
         return [
-            self.field.deserialize(schema, item, sp / str(index))
+            self.field.deserialize(item, sp / str(index))
             for index, item in enumerate(data)
         ]
 
@@ -596,22 +596,16 @@ class List(Attribute):
         if self.allow_none and data is None:
             return None
 
-        return [self.field.serialize(schema, item) for item in data]
+        return [self.field.serialize(item) for item in data]
 
 
 class Tuple(List):
-    def deserialize(
-        self,
-        schema: BaseSchema,
-        data: Any,
-        sp: JSONPointer,
-        **kwargs: Any,
-    ) -> Optional[TypingTuple[Any, ...]]:
-        result = super().deserialize(schema, data, sp, **kwargs)
+    def deserialize(self, data: Any, sp: JSONPointer, **kwargs: Any) -> Optional[TypingTuple[Any, ...]]:
+        result = super().deserialize(data, sp, **kwargs)
         return tuple(result) if result is not None else result
 
     def serialize(self, data: Any, **kwargs: Any) -> Optional[TypingTuple[Any, ...]]:
-        result = super().serialize(schema, data, **kwargs)
+        result = super().serialize(data, **kwargs)
         return tuple(result) if result is not None else result
 
 

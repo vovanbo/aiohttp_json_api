@@ -54,7 +54,8 @@ class ToOne(Relationship):
                 document['data'] = data
         else:
             # the related resource instance
-            document['data'] = context.registry.ensure_identifier(data, asdict=True)
+            rid = context.registry.ensure_identifier(data)
+            document['data'] = rid._asdict()
 
         links = kwargs.get('links')
         if links is not None:
@@ -102,7 +103,7 @@ class ToMany(Relationship):
 
         if is_collection(data):
             document['data'] = [
-                context.registry.ensure_identifier(item, asdict=True)
+                context.registry.ensure_identifier(item)._asdict()
                 for item in data
             ]
 
