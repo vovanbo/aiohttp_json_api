@@ -20,7 +20,7 @@ async def jsonapi_middleware(request: web.Request, handler: Handler) -> web.Stre
 
             content_type_error = f"Content-Type '{JSONAPI_CONTENT_TYPE}' is required."
 
-            if request_ct is None and request.has_body:
+            if request_ct is None and request.can_read_body:
                 raise HTTPUnsupportedMediaType(detail=content_type_error)
 
             if request_ct is not None and request_ct != JSONAPI_CONTENT_TYPE:
