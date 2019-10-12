@@ -2,14 +2,15 @@
 
 import functools
 import json
+from typing import Any
 
-from .jsonpointer import JSONPointer
+from aiohttp_json_api.jsonpointer import JSONPointer
 
 
 class JSONEncoder(json.JSONEncoder):
     """Overloaded JSON encoder with JSONPointer support."""
 
-    def default(self, o):
+    def default(self, o: Any) -> Any:
         """Add JSONPointer serializing support to default json.dumps."""
         if isinstance(o, JSONPointer):
             return o.path

@@ -2,13 +2,13 @@ import logging
 import random
 
 from aiohttp_json_api.errors import ResourceNotFound
-from aiohttp_json_api.controller import DefaultController
+from aiohttp_json_api.controller import BaseController
 from examples.simple.models import People
 
 logger = logging.getLogger()
 
 
-class SimpleController(DefaultController):
+class SimpleController(BaseController):
     @property
     def storage(self):
         """Shortcut for application simple storage"""
@@ -44,9 +44,7 @@ class SimpleController(DefaultController):
         return new_resource
 
     async def update_resource(self, resource, data, sp, **kwargs):
-        resource, updated_resource = \
-            await super(SimpleController, self).update_resource(
-                resource, data, sp, **kwargs)
+        resource, updated_resource = await super().update_resource(resource, data, sp, **kwargs)
 
         rid = self.ctx.registry.ensure_identifier(updated_resource)
         self.storage[rid.type][rid.id] = updated_resource

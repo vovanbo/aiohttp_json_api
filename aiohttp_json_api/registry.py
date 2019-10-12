@@ -2,9 +2,10 @@
 
 import collections
 import inspect
+from typing import Any
 
-from .common import ResourceID
-from .typings import ResourceIdentifier
+from aiohttp_json_api.common import ResourceID
+from aiohttp_json_api.typings import ResourceIdentifier
 
 
 class Registry(collections.UserDict):
@@ -24,11 +25,10 @@ class Registry(collections.UserDict):
         :param key: Type string or resource class.
         :return: Schema instance
         """
-        return super(Registry, self).__getitem__(
-            key if isinstance(key, str) or inspect.isclass(key) else type(key)
-        )
+        item = key if isinstance(key, str) or inspect.isclass(key) else type(key)
+        return super().__getitem__(item)
 
-    def ensure_identifier(self, obj, asdict=False) -> ResourceIdentifier:
+    def ensure_identifier(self, obj: Any, asdict: bool = False) -> ResourceIdentifier:
         """
         Return the identifier object for the *resource*.
 
@@ -47,17 +47,14 @@ class Registry(collections.UserDict):
             Return ResourceID as dictionary if true
         """
         if isinstance(obj, collections.Sequence) and len(obj) == 2:
-            result = ResourceID(str(obj[0]), str(obj[1]))
+            result = ResourceID(type=str(obj[0]), id=str(obj[1]))
         elif isinstance(obj, collections.Mapping):
-            result = ResourceID(str(obj['type']), str(obj['id']))
+            result = ResourceID(type=str(obj['type']), id=str(obj['id']))
         else:
             try:
                 schema_cls, _ = self.data[type(obj)]
-                result = ResourceID(schema_cls.opts.resource_type,
-                                    schema_cls.get_object_id(obj))
+                result = ResourceID(type=schema_cls.opts.resource_type, id=schema_cls.get_object_id(obj))
             except KeyError:
-                raise RuntimeError(
-                    'Schema for %s is not found.' % obj.__class__.__name__
-                )
+                raise RuntimeError('Schema for %s is not found.' % obj.__class__.__name__)
 
         return result._asdict() if asdict and result else result

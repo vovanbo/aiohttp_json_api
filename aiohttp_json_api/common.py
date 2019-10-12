@@ -3,8 +3,8 @@
 import collections
 import logging
 import re
-from collections import namedtuple
 from enum import Enum, Flag, auto
+from typing import Tuple, Dict, Any, Pattern
 
 from mimeparse import parse_media_range
 
@@ -12,21 +12,20 @@ from mimeparse import parse_media_range
 logger = logging.getLogger('aiohttp-json-api')
 
 #: Key of JSON API stuff in aiohttp.web.Application
-JSONAPI = 'jsonapi'
+JSONAPI: str = 'jsonapi'
 
 #: JSON API Content-Type by specification
-JSONAPI_CONTENT_TYPE = 'application/vnd.api+json'
-JSONAPI_CONTENT_TYPE_PARSED = parse_media_range(JSONAPI_CONTENT_TYPE)
+JSONAPI_CONTENT_TYPE: str = 'application/vnd.api+json'
+JSONAPI_CONTENT_TYPE_PARSED: Tuple[str, str, Dict[str, Any]] = parse_media_range(JSONAPI_CONTENT_TYPE)
 
 #: Regular expression rule for check allowed fields and types names
-ALLOWED_MEMBER_NAME_RULE = \
-    r'[a-zA-Z0-9]([a-zA-Z0-9\-_]+[a-zA-Z0-9]|[a-zA-Z0-9]?)'
+ALLOWED_MEMBER_NAME_RULE: str = r'[a-zA-Z0-9]([a-zA-Z0-9\-_]+[a-zA-Z0-9]|[a-zA-Z0-9]?)'
 
 #: Compiled regexp of rule
-ALLOWED_MEMBER_NAME_REGEX = re.compile('^' + ALLOWED_MEMBER_NAME_RULE + '$')
+ALLOWED_MEMBER_NAME_REGEX: Pattern = re.compile('^' + ALLOWED_MEMBER_NAME_RULE + '$')
 
 #: Filter rule
-FilterRule = namedtuple('FilterRule', ('name', 'value'))
+FilterRule = collections.namedtuple('FilterRule', ('name', 'value'))
 
 #: JSON API resource identifier
 ResourceID = collections.namedtuple('ResourceID', ['type', 'id'])
@@ -34,14 +33,12 @@ ResourceID = collections.namedtuple('ResourceID', ['type', 'id'])
 
 class SortDirection(Enum):
     """Sorting direction enumeration."""
-
     ASC = '+'
     DESC = '-'
 
 
 class Step(Enum):
     """Marshalling step enumeration."""
-
     BEFORE_DESERIALIZATION = auto()
     AFTER_DESERIALIZATION = auto()
     BEFORE_SERIALIZATION = auto()
@@ -50,7 +47,6 @@ class Step(Enum):
 
 class Event(Flag):
     """Request event enumeration."""
-
     GET = auto()
     POST = auto()
     PATCH = auto()
@@ -63,6 +59,5 @@ class Event(Flag):
 
 class Relation(Enum):
     """Types of relations enumeration."""
-
     TO_ONE = auto()
     TO_MANY = auto()

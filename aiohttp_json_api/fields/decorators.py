@@ -37,8 +37,9 @@ class.
 """
 import functools
 from enum import Enum
+from typing import Callable, Any, Optional
 
-from ..common import Event, Step
+from aiohttp_json_api.common import Event, Step
 
 __all__ = (
     'Tag',
@@ -52,6 +53,8 @@ __all__ = (
     'queries'
 )
 
+TagProcessor = Callable[..., Any]
+
 
 class Tag(Enum):
     GET = 'get'
@@ -63,12 +66,12 @@ class Tag(Enum):
     QUERY = 'query'
 
 
-def tag_processor(tag, callee, **kwargs):
+def tag_processor(tag: Tag, callee: Optional[TagProcessor], **kwargs) -> TagProcessor:
     """
     Tags decorated processor function to be picked up later.
 
     .. note::
-        Currently ony works with functions and instance methods. Class and
+        Currently only works with functions and instance methods. Class and
         static methods are not supported.
 
     :return: Decorated function if supplied, else this decorator with its args
@@ -96,7 +99,7 @@ def tag_processor(tag, callee, **kwargs):
     return callee
 
 
-def gets(field_key):
+def gets(field_key: str) -> TagProcessor:
     """
     Decorator for marking the getter of a field::
 
@@ -116,7 +119,7 @@ def gets(field_key):
     return tag_processor(Tag.GET, None, field_key=field_key)
 
 
-def sets(field_key):
+def sets(field_key: str) -> TagProcessor:
     """
     Decorator for marking the setter of a field::
 
@@ -141,9 +144,11 @@ def sets(field_key):
 updates = sets
 
 
-def validates(field_key,
-              step: Step = Step.AFTER_DESERIALIZATION,
-              on: Event = Event.ALWAYS):
+def validates(
+    field_key: str,
+    step: Step = Step.AFTER_DESERIALIZATION,
+    on: Event = Event.ALWAYS,
+) -> TagProcessor:
     """
     Decorator for adding a validator::
 
@@ -167,11 +172,10 @@ def validates(field_key,
     :arg Event on:
         Validator's Event
     """
-    return tag_processor(Tag.VALIDATE, None,
-                         field_key=field_key, step=step, on=on)
+    return tag_processor(Tag.VALIDATE, None, field_key=field_key, step=step, on=on)
 
 
-def adds(field_key):
+def adds(field_key: str) -> TagProcessor:
     """
     Decorator for marking the adder of a relationship::
 
@@ -193,7 +197,7 @@ def adds(field_key):
     return tag_processor(Tag.ADD, None, field_key=field_key)
 
 
-def removes(field_key):
+def removes(field_key: str) -> TagProcessor:
     """
     Decorator for marking the remover of a relationship::
 
@@ -215,7 +219,7 @@ def removes(field_key):
     return tag_processor(Tag.REMOVE, None, field_key=field_key)
 
 
-def includes(field_key):
+def includes(field_key: str) -> TagProcessor:
     """
     Decorator for marking the includer of a relationship::
 
@@ -243,7 +247,7 @@ def includes(field_key):
     return tag_processor(Tag.INCLUDE, None, field_key=field_key)
 
 
-def queries(field_key):
+def queries(field_key: str) -> TagProcessor:
     """
     Decorator for marking the function used to query the resources in a
     relationship::

@@ -10,14 +10,14 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'aiohttp>=2.0.0',
+    'aiohttp>=3.6.0',
     'inflection>=0.3.1',
-    'multidict>=3.3.0',
+    'multidict>=4.5.0',
     'jsonpointer>=1.10',
-    'python-dateutil>=2.6.0',
+    'python-dateutil>=2.8.0',
     'python-mimeparse>=1.6.0',
-    'trafaret>=1.0.2',
-    'yarl>=0.13.0',
+    'trafaret>=1.2.0',
+    'yarl>=1.3.0',
 ]
 
 setup(
@@ -33,8 +33,7 @@ setup(
         'aiohttp_json_api.abc',
         'aiohttp_json_api.fields',
     ],
-    package_dir={'aiohttp_json_api':
-                 'aiohttp_json_api'},
+    package_dir={'aiohttp_json_api': 'aiohttp_json_api'},
     include_package_data=True,
     install_requires=requirements,
     license="MIT license",

@@ -33,15 +33,17 @@ You should only work with the following fields directly:
     Add support for nested fields (aka embedded documents).
 
 """
-
+import abc
 import urllib.parse
 from collections import Mapping
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Dict, Any
 
-from ..abc.field import FieldABC
-from ..common import ALLOWED_MEMBER_NAME_REGEX, Event, JSONAPI
-from ..errors import InvalidType, InvalidValue
-from ..jsonpointer import JSONPointer
+import trafaret as t
+
+from aiohttp_json_api.context import JSONAPIContext
+from aiohttp_json_api.common import ALLOWED_MEMBER_NAME_REGEX, Event, JSONAPI, Relation
+from aiohttp_json_api.errors import InvalidType, InvalidValue
+from aiohttp_json_api.jsonpointer import JSONPointer
 
 __all__ = (
     'BaseField',
@@ -49,6 +51,87 @@ __all__ = (
     'Link',
     'Relationship',
 )
+
+
+class FieldABC(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def key(self) -> Optional[str]:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def sp(self) -> Optional[JSONPointer]:
+        pass
+
+    @property  # type: ignore
+    @abc.abstractmethod
+    def name(self) -> Optional[str]:
+        pass
+
+    @name.setter  # type: ignore
+    @abc.abstractmethod
+    def name(self, value: Optional[str]) -> None:
+        pass
+
+    @property  # type: ignore
+    @abc.abstractmethod
+    def mapped_key(self) -> Optional[str]:
+        pass
+
+    @mapped_key.setter  # type: ignore
+    @abc.abstractmethod
+    def mapped_key(self, value: Optional[str]) -> None:
+        pass
+
+    @abc.abstractmethod
+    def serialize(self, data: Dict[str, Any], **kwargs) -> Any:
+        """
+        Serialize the passed *data*.
+        """
+        pass
+
+    @abc.abstractmethod
+    def deserialize(self, data: Dict[str, Any], sp: JSONPointer, **kwargs) -> Any:
+        """
+        Deserialize the raw *data* from the JSON API input document
+        and returns it.
+        """
+        pass
+
+    @abc.abstractmethod
+    def pre_validate(self, data: Dict[str, Any], sp: JSONPointer) -> None:
+        """
+        Validates the raw JSON API input for this field. This method is
+        called before :meth:`deserialize`.
+
+        :arg ~aiohttp_json_api.schema.SchemaABC schema:
+            The schema this field has been defined on.
+        :arg data:
+            The raw input data
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
+            A JSON pointer to the source of *data*.
+        :arg ~aiohttp_json_api.context.JSONAPIContext context:
+            A JSON API request context instance
+        """
+        pass
+
+    @abc.abstractmethod
+    def post_validate(self, data: Dict[str, Any], sp: JSONPointer) -> None:
+        """
+        Validates the decoded input *data* for this field. This method is
+        called after :meth:`deserialize`.
+
+        :arg ~aiohttp_json_api.schema.SchemaABC schema:
+            The schema this field has been defined on.
+        :arg data:
+            The decoded input data
+        :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
+            A JSON pointer to the source of *data*.
+        :arg ~aiohttp_json_api.context.JSONAPIContext context:
+            A JSON API request context instance
+        """
+        pass
 
 
 class BaseField(FieldABC):
@@ -86,20 +169,25 @@ class BaseField(FieldABC):
         is required as input.
     """
 
-    def __init__(self, *, name: str = None, mapped_key: str = None,
-                 allow_none: bool = False,
-                 writable: Event = Event.ALWAYS,
-                 required: Event = Event.NEVER):
+    def __init__(
+        self,
+        *,
+        name: str = None,
+        mapped_key: str = None,
+        allow_none: bool = False,
+        writable: Event = Event.ALWAYS,
+        required: Event = Event.NEVER,
+    ) -> None:
         #: The name of this field on the
-        # :class:`~aiohttp_json_api.schema.BaseSchema`
+        # :class:`~aiohttp_json_api.schema.SchemaABC`
         #: it has been defined on. Please note, that not each field has a *key*
         #: (like some links or meta attributes).
-        self._key = None
+        self._key: Optional[str] = None
 
         #: A :class:`aiohttp_json_api.jsonpointer.JSONPointer`
         #: to this field in a JSON API resource object. The source pointer is
-        #: set from the BaseSchema class during initialisation.
-        self._sp = None
+        #: set from the SchemaABC class during initialisation.
+        self._sp: Optional[JSONPointer] = None
 
         self._name = name
         self._mapped_key = mapped_key
@@ -112,11 +200,11 @@ class BaseField(FieldABC):
         self.required = required
 
     @property
-    def key(self) -> str:
+    def key(self) -> Optional[str]:
         return self._key
 
     @property
-    def sp(self) -> JSONPointer:
+    def sp(self) -> Optional[JSONPointer]:
         return self._sp
 
     @property
@@ -124,8 +212,8 @@ class BaseField(FieldABC):
         return self._name
 
     @name.setter
-    def name(self, value: Optional[str]):
-        if not ALLOWED_MEMBER_NAME_REGEX.fullmatch(value):
+    def name(self, value: Optional[str]) -> None:
+        if value and not ALLOWED_MEMBER_NAME_REGEX.fullmatch(value):
             raise ValueError(f"Field name '{value}' is not allowed.")
         self._name = value
 
@@ -134,19 +222,19 @@ class BaseField(FieldABC):
         return self._mapped_key
 
     @mapped_key.setter
-    def mapped_key(self, value: Optional[str]):
+    def mapped_key(self, value: Optional[str]) -> None:
         self._mapped_key = value
 
-    def serialize(self, schema, data, **kwargs):
+    def serialize(self, data: Any, **kwargs: Any) -> Any:
         return data
 
-    def deserialize(self, schema, data, sp, **kwargs):
+    def deserialize(self, data: Any, sp: JSONPointer, **kwargs: Any) -> Any:
         return data
 
-    def pre_validate(self, schema, data, sp):
+    def pre_validate(self, data: Any, sp: JSONPointer) -> None:
         pass
 
-    def post_validate(self, schema, data, sp):
+    def post_validate(self, data: Any, sp: JSONPointer) -> None:
         pass
 
 
@@ -166,7 +254,7 @@ class Attribute(BaseField):
 
     .. code-block:: python3
 
-        class Article(BaseSchema):
+        class Article(SchemaABC):
 
             title = Attribute()
 
@@ -174,7 +262,7 @@ class Attribute(BaseField):
 
     .. code-block:: python3
 
-        class Article(BaseSchema):
+        class Article(SchemaABC):
 
             title = Attribute()
 
@@ -196,11 +284,11 @@ class Attribute(BaseField):
         The init arguments for the :class:`BaseField`.
     """
 
-    def __init__(self, *, meta: bool = False, load_only=False, **kwargs):
-        super(Attribute, self).__init__(**kwargs)
+    def __init__(self, *, meta: bool = False, load_only: bool = False, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
         self.meta = bool(meta)
         self.load_only = load_only
-        self._trafaret = None
+        self._trafaret: Optional[t.Trafaret] = None
 
 
 class Link(BaseField):
@@ -211,7 +299,7 @@ class Link(BaseField):
 
     .. code-block:: python3
 
-        class Article(BaseSchema):
+        class Article(SchemaABC):
 
             self = Link(route="some_route_name")
 
@@ -238,27 +326,35 @@ class Link(BaseField):
         always an object.
     """
 
-    def __init__(self, route: str, link_of: str, *, name: str = None,
-                 normalize: bool = False, absolute: bool = True):
-        super(Link, self).__init__(name=name, writable=Event.NEVER)
-
+    def __init__(
+        self,
+        route: str,
+        link_of: str,
+        *,
+        name: str = None,
+        normalize: bool = False,
+        absolute: bool = True,
+    ) -> None:
+        super().__init__(name=name, writable=Event.NEVER)
         self.normalize = bool(normalize)
         self.absolute = absolute
         self.route = route
         self.link_of = link_of
 
-    def serialize(self, schema, data, **kwargs):
+    def serialize(self, data: Dict[str, Any], **kwargs) -> Dict[str, str]:
         """Normalizes the links object if wished."""
-        registry = schema.ctx.request.app[JSONAPI]['registry']
+        context: JSONAPIContext = kwargs['context']  # Context is required for Link field
+        registry = context.request.app[JSONAPI]['registry']
         rid = registry.ensure_identifier(data)
-        route = schema.ctx.request.app.router[self.route]
-        route_url = route._formatter.format_map({'type': rid.type,
-                                                 'id': rid.id,
-                                                 'relation': self.link_of})
-        if schema.ctx is not None and self.absolute:
+        route = context.request.app.router[self.route]
+        route_url = route._formatter.format_map({
+            'type': rid.type,
+            'id': rid.id,
+            'relation': self.link_of,
+        })
+        if context is not None and self.absolute:
             result = urllib.parse.urlunsplit(
-                (schema.ctx.request.scheme, schema.ctx.request.host, route_url,
-                 None, None)
+                (context.request.scheme, context.request.host, route_url, None, None)
             )
         else:
             result = route_url
@@ -301,16 +397,20 @@ class Relationship(BaseField):
         A set with all foreign types. If given, this list is used to validate
         the input data. Leave it empty to allow all types.
     """
-    relation = None
+    relation: Optional[Relation] = None
 
-    def __init__(self, *, dereference: bool = True,
-                 require_data: Event = Event.ALWAYS,
-                 foreign_types: Sequence[str] = None,
-                 links: Sequence[Link] = None,
-                 id_field: Attribute = None,
-                 **kwargs):
+    def __init__(
+        self,
+        *,
+        dereference: bool = True,
+        require_data: Event = Event.ALWAYS,
+        foreign_types: Optional[Sequence[str]] = None,
+        links: Optional[Sequence[Link]] = None,
+        id_field: Optional[Attribute] = None,
+        **kwargs,
+    ) -> None:
         BaseField.__init__(self, **kwargs)
-        self.links = {link.name: link for link in links} if links else {}
+        self.links: Dict[str, Link] = {link.name: link for link in links} if links else {}
 
         # NOTE: The related resources are loaded by the schema class for
         #       performance reasons (one big query vs many small ones).
@@ -322,14 +422,14 @@ class Relationship(BaseField):
         self.require_data = require_data
         self.id_field = id_field
 
-    def add_link(self, link: Link):
+    def add_link(self, link: Link) -> 'Relationship':
         """
         Adds a new link to the links object.
         """
         self.links[link.name] = link
         return self
 
-    def validate_resource_identifier(self, schema, data, sp):
+    def validate_resource_identifier(self, data: Dict[str, Any], sp: JSONPointer) -> None:
         """
         .. seealso::
 
@@ -353,7 +453,7 @@ class Relationship(BaseField):
         if self.id_field is not None:
             self.id_field.pre_validate(self, data['id'], sp / 'id')
 
-    def validate_relationship_object(self, schema, data, sp):
+    def validate_relationship_object(self, data: Dict[str, Any], sp: JSONPointer):
         """
         Asserts that *data* is a JSON API relationship object.
 
@@ -380,6 +480,6 @@ class Relationship(BaseField):
             detail = 'The "data" member is required.'
             raise InvalidValue(detail=detail, source_pointer=sp)
 
-    def pre_validate(self, schema, data, sp):
-        self.validate_relationship_object(schema, data, sp)
-        super(Relationship, self).pre_validate(schema, data, sp)
+    def pre_validate(self, data: Dict[str, Any], sp: JSONPointer) -> None:
+        self.validate_relationship_object(data, sp)
+        super().pre_validate(data, sp)

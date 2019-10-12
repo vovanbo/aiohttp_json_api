@@ -1,21 +1,29 @@
 """Utilities related to JSON API."""
 
-import asyncio
-import typing
 from collections import defaultdict, OrderedDict
+from typing import Optional, Dict, Any, Union, Callable, Set
 
+import trafaret
 from aiohttp import web
-from aiohttp.web_response import Response
-import trafaret as t
+from aiohttp.typedefs import LooseHeaders
 
-from .common import JSONAPI, JSONAPI_CONTENT_TYPE
-from .encoder import json_dumps
-from .errors import Error, ErrorList, ValidationError
-from .helpers import first, is_collection
+from aiohttp_json_api.common import JSONAPI, JSONAPI_CONTENT_TYPE
+from aiohttp_json_api.context import JSONAPIContext
+from aiohttp_json_api.encoder import json_dumps
+from aiohttp_json_api.errors import Error, ErrorList, HTTPInternalServerError
+from aiohttp_json_api.helpers import first, is_collection
+from aiohttp_json_api.pagination import PaginationABC
+from aiohttp_json_api.typings import RequestIncludes
 
 
-def jsonapi_response(data, *, status=web.HTTPOk.status_code,
-                     reason=None, headers=None, dumps=None):
+def jsonapi_response(
+    data: Dict[str, Any],
+    *,
+    status: int = web.HTTPOk.status_code,
+    reason: Optional[str] = None,
+    headers: Optional[LooseHeaders] = None,
+    dumps: Callable[[Any], str] = None,
+) -> web.Response:
     """
     Return JSON API response.
 
@@ -30,8 +38,7 @@ def jsonapi_response(data, *, status=web.HTTPOk.status_code,
         dumps = json_dumps
 
     body = dumps(data).encode('utf-8')
-    return Response(body=body, status=status, reason=reason,
-                    headers=headers, content_type=JSONAPI_CONTENT_TYPE)
+    return web.Response(body=body, status=status, reason=reason, headers=headers, content_type=JSONAPI_CONTENT_TYPE)
 
 
 async def get_compound_documents(resources, ctx):
@@ -55,7 +62,7 @@ async def get_compound_documents(resources, ctx):
         which maps each resource (primary and included) to a set with the
         names of the included relationships.
     """
-    relationships = defaultdict(set)
+    relationships: Dict[str, Set[RequestIncludes]] = defaultdict(set)
     compound_documents = OrderedDict()
 
     collection = (resources,) if type(resources) in ctx.registry else resources
@@ -64,8 +71,7 @@ async def get_compound_documents(resources, ctx):
             rest_path = path
             nested_collection = collection
             while rest_path and nested_collection:
-                schema_cls, controller_cls = \
-                    ctx.registry[first(nested_collection)]
+                schema_cls, controller_cls = ctx.registry[first(nested_collection)]
                 resource_type = schema_cls.opts.resource_type
 
                 if rest_path in relationships[resource_type]:
@@ -92,7 +98,7 @@ async def get_compound_documents(resources, ctx):
     return compound_documents, relationships
 
 
-def serialize_resource(resource, ctx):
+def serialize_resource(resource: Any, ctx: JSONAPIContext) -> Dict[str, Any]:
     """
     Serialize resource by schema.
 
@@ -100,13 +106,21 @@ def serialize_resource(resource, ctx):
     :param ctx: Request context
     :return: Serialized resource
     """
-    schema_cls, _ = ctx.registry[resource]
-    return schema_cls(ctx).serialize_resource(resource)
+    try:
+        schema_cls, _ = ctx.registry[resource]
+        return schema_cls(ctx).serialize_resource(resource)
+    except trafaret.DataError as exc:
+        raise HTTPInternalServerError(detail=json_dumps(exc.as_dict(value=True)))
 
 
-async def render_document(data, included, ctx, *,
-                          pagination=None,
-                          links=None) -> typing.MutableMapping:
+async def render_document(
+    data,
+    included,
+    ctx,
+    *,
+    pagination: Optional[PaginationABC] = None,
+    links=None,
+) -> Dict[str, Any]:
     """
     Render JSON API document.
 
@@ -117,7 +131,7 @@ async def render_document(data, included, ctx, *,
     :param links: Additional links
     :return: Rendered JSON API document
     """
-    document = OrderedDict()
+    document: Dict[str, Any] = OrderedDict()
 
     if is_collection(data, exclude=(ctx.schema.opts.resource_cls,)):
         document['data'] = [serialize_resource(r, ctx) for r in data]
@@ -125,8 +139,7 @@ async def render_document(data, included, ctx, *,
         document['data'] = serialize_resource(data, ctx) if data else None
 
     if ctx.include and included:
-        document['included'] = \
-            [serialize_resource(r, ctx) for r in included.values()]
+        document['included'] = [serialize_resource(r, ctx) for r in included.values()]
 
     document.setdefault('links', OrderedDict())
     document['links']['self'] = str(ctx.request.url)
@@ -153,8 +166,7 @@ async def render_document(data, included, ctx, *,
     return document
 
 
-def error_to_response(request: web.Request,
-                      error: typing.Union[Error, ErrorList]):
+def error_to_response(request: web.Request, error: Union[Error, ErrorList]) -> web.Response:
     """
     Convert an :class:`Error` or :class:`ErrorList` to JSON API response.
 
@@ -170,31 +182,8 @@ def error_to_response(request: web.Request,
 
     return jsonapi_response(
         {
-            'errors':
-                [error.as_dict] if isinstance(error, Error) else error.as_dict,
+            'errors': [error.as_dict] if isinstance(error, Error) else error.json,
             'jsonapi': request.app[JSONAPI]['jsonapi']
         },
         status=error.status
     )
-
-
-def validate_uri_resource_id(schema, resource_id):
-    """
-    Validate resource ID from URI.
-
-    :param schema: Resource schema
-    :param resource_id: Resource ID
-    """
-    field = getattr(schema, '_id', None)
-    if field is None:
-        try:
-            t.Int().check(resource_id)
-        except t.DataError as exc:
-            raise ValidationError(detail=str(exc).capitalize(),
-                                  source_parameter='id')
-    else:
-        try:
-            field.pre_validate(schema, resource_id, sp=None)
-        except ValidationError as exc:
-            exc.source_parameter = 'id'
-            raise exc

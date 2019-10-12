@@ -2,47 +2,50 @@
 
 import inspect
 from collections import Iterable, Mapping
-from typing import Optional, Tuple, List, Iterable as IterableType
+from typing import Optional, Tuple, List, Iterable as IterableType, Any, Type, Collection, Callable, Generator, Dict
 
 from aiohttp import web
 from mimeparse import parse_media_range, _filter_blank
 
-from .abc.field import FieldABC
-from .fields.decorators import Tag
-from .typings import Callee, MimeTypeComponents, QFParsed
-from .common import JSONAPI
+from aiohttp_json_api.abc.processors import ProcessorsMeta
+from aiohttp_json_api.fields.decorators import Tag
+from aiohttp_json_api.typings import Callee, MimeTypeComponents, QFParsed
+from aiohttp_json_api.common import JSONAPI
 
 
-def is_generator(obj):
+def is_generator(obj: Any) -> bool:
     """Return True if ``obj`` is a generator."""
     return inspect.isgeneratorfunction(obj) or inspect.isgenerator(obj)
 
 
-def is_iterable_but_not_string(obj):
+def is_iterable_but_not_string(obj: Any) -> bool:
     """Return True if ``obj`` is an iterable object that isn't a string."""
-    return (
-        (isinstance(obj, Iterable) and not hasattr(obj, "strip")) or
-        is_generator(obj)
-    )
+    return (isinstance(obj, Iterable) and not hasattr(obj, 'strip')) or is_generator(obj)
 
 
-def is_indexable_but_not_string(obj):
+def is_indexable_but_not_string(obj: Any) -> bool:
     """Return True if ``obj`` is indexable but isn't a string."""
-    return not hasattr(obj, "strip") and hasattr(obj, "__getitem__")
+    return not hasattr(obj, 'strip') and hasattr(obj, '__getitem__')
 
 
-def is_collection(obj, exclude=()):
+def is_collection(obj: Any, exclude: Optional[Tuple[Type[Any], ...]] = None) -> bool:
     """Return True if ``obj`` is a collection type."""
-    return (not isinstance(obj, (Mapping,) + exclude) and
-            is_iterable_but_not_string(obj))
+    base_cls: Tuple[Type[Any], ...] = (Mapping,)
+    if exclude is not None:
+        base_cls += exclude
+    return not isinstance(obj, base_cls) and is_iterable_but_not_string(obj)
 
 
-def ensure_collection(value, exclude=()):
+def ensure_collection(value: Any, exclude: Optional[Tuple[Type[Any], ...]] = None) -> Collection[Any]:
     """Ensure value is collection."""
     return value if is_collection(value, exclude=exclude) else (value,)
 
 
-def first(iterable, default=None, key=None):
+def first(
+    iterable: IterableType[Any],
+    default: Optional[Any] = None,
+    key: Optional[Callable[[Any], bool]] = None,
+) -> Any:
     """
     Return first element of *iterable*.
 
@@ -74,7 +77,7 @@ def first(iterable, default=None, key=None):
     return next(filter(key, iterable), default)
 
 
-def make_sentinel(name='_MISSING', var_name=None):
+def make_sentinel(name: str = '_MISSING', var_name: Optional[str] = None) -> Any:
     """
     Create sentinel instance.
 
@@ -107,12 +110,12 @@ def make_sentinel(name='_MISSING', var_name=None):
         Set this name to the name of the variable in its respective
         module enable pickleability.
     """
-    class Sentinel(object):
-        def __init__(self):
+    class Sentinel:
+        def __init__(self) -> None:
             self.name = name
             self.var_name = var_name
 
-        def __repr__(self):
+        def __repr__(self) -> str:
             if self.var_name:
                 return self.var_name
             return '%s(%r)' % (self.__class__.__name__, self.name)
@@ -121,7 +124,7 @@ def make_sentinel(name='_MISSING', var_name=None):
             def __reduce__(self):
                 return self.var_name
 
-        def __nonzero__(self):
+        def __nonzero__(self) -> bool:
             return False
 
         __bool__ = __nonzero__
@@ -129,13 +132,18 @@ def make_sentinel(name='_MISSING', var_name=None):
     return Sentinel()
 
 
-def get_router_resource(app: web.Application, resource: str):
+def get_router_resource(app: web.Application, resource: str) -> web.AbstractResource:
     """Return route of JSON API application for resource."""
-    return app.router[f"{app[JSONAPI]['routes_namespace']}.{resource}"]
+    namespace = app[JSONAPI]['routes_namespace']
+    return app.router[f'{namespace}.{resource}']
 
 
-def get_processors(obj, tag: Tag, field: FieldABC,
-                   default: Optional[Callee] = None):
+def get_processors(
+    obj: ProcessorsMeta,
+    tag: Tag,
+    field,
+    default: Optional[Callee] = None,
+) -> Generator[Tuple[Callable[..., Any], Dict[str, Any]], None, None]:
     has_processors = getattr(obj, '_has_processors', False)
     if has_processors:
         processor_tag = tag, field.key
@@ -143,8 +151,7 @@ def get_processors(obj, tag: Tag, field: FieldABC,
         if processors:
             for processor_name in processors:
                 processor = getattr(obj, processor_name)
-                processor_kwargs = \
-                    processor.__processing_kwargs__.get(processor_tag)
+                processor_kwargs = processor.__processing_kwargs__.get(processor_tag)
                 yield processor, processor_kwargs
             return
 
@@ -154,9 +161,7 @@ def get_processors(obj, tag: Tag, field: FieldABC,
     yield default, {}
 
 
-def quality_and_fitness_parsed(mime_type: str,
-                               parsed_ranges: List[MimeTypeComponents]
-                               ) -> QFParsed:
+def quality_and_fitness_parsed(mime_type: str, parsed_ranges: List[MimeTypeComponents]) -> QFParsed:
     """Find the best match for a mime-type amongst parsed media-ranges.
 
     Find the best match for a given mime-type against a list of media_ranges
@@ -175,14 +180,8 @@ def quality_and_fitness_parsed(mime_type: str,
     for (type, subtype, params) in parsed_ranges:
 
         # check if the type and the subtype match
-        type_match = (
-            type in (target_type, '*') or
-            target_type == '*'
-        )
-        subtype_match = (
-            subtype in (target_subtype, '*') or
-            target_subtype == '*'
-        )
+        type_match = (type in (target_type, '*') or target_type == '*')
+        subtype_match = (subtype in (target_subtype, '*') or target_subtype == '*')
 
         # if they do, assess the "fitness" of this mime_type
         if type_match and subtype_match:
@@ -211,8 +210,7 @@ def quality_and_fitness_parsed(mime_type: str,
     return (float(best_fit_q), best_fitness), best_matched
 
 
-def best_match(supported: IterableType[str],
-               header: str) -> Tuple[str, Optional[MimeTypeComponents]]:
+def best_match(supported: IterableType[str], header: str) -> Tuple[str, Optional[MimeTypeComponents]]:
     """Return mime-type with the highest quality ('q') from list of candidates.
     Takes a list of supported mime-types and finds the best match for all the
     media-ranges listed in header. The value of header must be a string that
@@ -237,7 +235,7 @@ def best_match(supported: IterableType[str],
     return best[0][0] and weighted_matches[best] or ('', None)
 
 
-def get_mime_type_params(mime_type: MimeTypeComponents):
+def get_mime_type_params(mime_type: MimeTypeComponents) -> Dict[str, str]:
     return {k: v for k, v in mime_type[2].items() if k != 'q'}
 
 

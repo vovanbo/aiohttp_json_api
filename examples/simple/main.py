@@ -19,8 +19,7 @@ def setup_fixtures(app):
 
     people = tuple(sorted(People.populate(), key=lambda p: p.id))
     comments = tuple(sorted(Comment.populate(people), key=lambda c: c.id))
-    articles = tuple(sorted(Article.populate(comments, people),
-                            key=lambda a: a.id))
+    articles = tuple(sorted(Article.populate(comments, people), key=lambda a: a.id))
 
     for resources in (people, comments, articles):
         for resource in resources:
@@ -40,7 +39,7 @@ async def init() -> web.Application:
         ArticleSchema, CommentSchema, PeopleSchema
     )
 
-    app = web.Application(debug=True)
+    app = web.Application()
     app['storage'] = defaultdict(OrderedDict)
 
     # Note that we pass schema classes, not instances of them.
@@ -77,8 +76,7 @@ def main():
 
     logging.basicConfig(
         level=logging.DEBUG,
-        format='%(levelname)-8s [%(asctime)s.%(msecs)03d] '
-               '(%(name)s): %(message)s',
+        format='%(levelname)-8s [%(asctime)s.%(msecs)03d] (%(name)s): %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     logging.Formatter.converter = time.gmtime
@@ -86,8 +84,7 @@ def main():
     app = loop.run_until_complete(init())
 
     # More useful log format than default
-    log_format = '%a (%{X-Real-IP}i) %t "%r" %s %b %Tf ' \
-                 '"%{Referrer}i" "%{User-Agent}i"'
+    log_format = '%a (%{X-Real-IP}i) %t "%r" %s %b %Tf "%{Referrer}i" "%{User-Agent}i"'
     web.run_app(app, access_log_format=log_format)
 
 

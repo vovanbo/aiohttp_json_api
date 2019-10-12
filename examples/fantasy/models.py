@@ -185,9 +185,7 @@ class Book(NamedTuple):
             if book is None:
                 book_author = Author.not_populated(row[tbl.authors.c.id])
                 book_series_id = row[tbl.series.c.id]
-                book_series = Series.not_populated(book_series_id) \
-                    if book_series_id \
-                    else None
+                book_series = Series.not_populated(book_series_id) if book_series_id else None
                 book = Book.from_row(row, author=book_author, chapters=[],
                                      series=book_series,
                                      photos=[], alias=cte)

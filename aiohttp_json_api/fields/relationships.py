@@ -3,13 +3,17 @@ Relationships
 =============
 """
 
-import typing
 from collections import Mapping, OrderedDict
+from typing import Any, Dict, Optional
 
-from .base import Relationship
-from ..common import Relation
-from ..errors import InvalidType
-from ..helpers import is_collection
+from aiohttp_json_api.context import JSONAPIContext
+from aiohttp_json_api.fields.base import Relationship
+from aiohttp_json_api.common import Relation
+from aiohttp_json_api.errors import InvalidType
+from aiohttp_json_api.helpers import is_collection
+from aiohttp_json_api.jsonpointer import JSONPointer
+from aiohttp_json_api.pagination import PaginationABC
+from aiohttp_json_api.schema import BaseSchema
 
 __all__ = (
     'ToOne',
@@ -28,19 +32,19 @@ class ToOne(Relationship):
     """
     relation = Relation.TO_ONE
 
-    def validate_relationship_object(self, schema, data, sp):
+    def validate_relationship_object(self, data: Any, sp: JSONPointer) -> None:
         """
         Checks additionaly to :meth:`Relationship.validate_relationship_object`
         that the *data* member is a valid resource linkage.
         """
-        super(ToOne, self).validate_relationship_object(schema, data, sp)
+        super(ToOne, self).validate_relationship_object(data, sp)
         if 'data' in data and data['data'] is not None:
-            self.validate_resource_identifier(schema, data['data'],
-                                              sp / 'data')
+            self.validate_resource_identifier(data['data'], sp / 'data')
 
-    def serialize(self, schema, data, **kwargs) -> typing.MutableMapping:
+    def serialize(self, data: Any, **kwargs: Any) -> Dict[str, Any]:
         """Composes the final relationships object."""
-        document = OrderedDict()
+        context: JSONAPIContext = kwargs['context']
+        document: Dict[str, Any] = OrderedDict()
 
         if data is None:
             document['data'] = data
@@ -50,8 +54,7 @@ class ToOne(Relationship):
                 document['data'] = data
         else:
             # the related resource instance
-            document['data'] = \
-                schema.ctx.registry.ensure_identifier(data, asdict=True)
+            document['data'] = context.registry.ensure_identifier(data, asdict=True)
 
         links = kwargs.get('links')
         if links is not None:
@@ -77,23 +80,29 @@ class ToMany(Relationship):
     """
     relation = Relation.TO_MANY
 
-    def __init__(self, *, pagination=None, **kwargs):
-        super(ToMany, self).__init__(**kwargs)
+    def __init__(self, *, pagination: Optional[PaginationABC] = None, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
         self.pagination = pagination
 
-    def serialize(self, schema, data, links=None, pagination=None,
-                  **kwargs) -> typing.MutableMapping:
+    def serialize(
+        self,
+        data: Any,
+        links: Optional[Dict[str, str]] = None,
+        pagination: Optional[PaginationABC] = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
         """Composes the final JSON API relationships object.
 
         :arg ~aiohttp_json_api.pagination.PaginationABC pagination:
             If not *None*, the links and meta members of the pagination
             helper are added to the final JSON API relationship object.
         """
-        document = OrderedDict()
+        context: JSONAPIContext = kwargs['context']
+        document: Dict[str, Any] = OrderedDict()
 
         if is_collection(data):
             document['data'] = [
-                schema.ctx.registry.ensure_identifier(item, asdict=True)
+                context.registry.ensure_identifier(item, asdict=True)
                 for item in data
             ]
 
@@ -107,16 +116,15 @@ class ToMany(Relationship):
 
         return document
 
-    def validate_relationship_object(self, schema, data, sp):
+    def validate_relationship_object(self, data: Any, sp: JSONPointer) -> None:
         """
         Checks additionaly to :meth:`Relationship.validate_relationship_object`
         that the *data* member is a list of resource identifier objects.
         """
-        super(ToMany, self).validate_relationship_object(schema, data, sp)
+        super().validate_relationship_object(data, sp)
         if 'data' in data and not is_collection(data['data']):
-            detail = 'The "data" must be an array ' \
-                     'of resource identifier objects.'
+            detail = 'The "data" must be an array of resource identifier objects.'
             raise InvalidType(detail=detail, source_pointer=sp / 'data')
 
-        for i, item in enumerate(data['data']):
-            self.validate_resource_identifier(schema, item, sp / 'data' / i)
+        for index, item in enumerate(data['data']):
+            self.validate_resource_identifier(item, sp / 'data' / str(index))

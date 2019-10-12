@@ -1,8 +1,10 @@
 """Errors."""
 
 from http import HTTPStatus
+from typing import Optional, Dict, Any, List, Union
 
-from .encoder import json_dumps
+from aiohttp_json_api.encoder import json_dumps
+from aiohttp_json_api.jsonpointer import JSONPointer
 
 __all__ = (
     'Error',
@@ -57,9 +59,18 @@ class Error(Exception):
 
     status = HTTPStatus.INTERNAL_SERVER_ERROR
 
-    def __init__(self, *, id_=None, about='',
-                 code=None, title=None, detail='', source_parameter=None,
-                 source_pointer=None, meta=None):
+    def __init__(
+        self,
+        *,
+        id_: Optional[str] = None,
+        about: str = '',
+        code: Optional[str] = None,
+        title: Optional[str] = None,
+        detail: str = '',
+        source_parameter: Optional[str] = None,
+        source_pointer: Optional[JSONPointer] = None,
+        meta: Optional[Dict[str, Any]] = None,
+    ):
         """
         Error instance initializer.
 
@@ -98,14 +109,14 @@ class Error(Exception):
         self.source_parameter = source_parameter
         self.meta = meta if meta is not None else dict()
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return the :attr:`detail` attribute per default."""
         return json_dumps(self.as_dict, indent=4, sort_keys=True)
 
     @property
-    def as_dict(self):
+    def as_dict(self) -> Dict[str, Any]:
         """Represent instance of Error as dictionary."""
-        result = {}
+        result: Dict[str, Any] = {}
         if self.id is not None:
             result['id'] = str(self.id)
         result['status'] = str(self.status.value)
@@ -139,26 +150,26 @@ class ErrorList(Exception):
     :seealso: http://jsonapi.org/examples/#error-objects-multiple-errors
     """
 
-    def __init__(self, errors=None):
+    def __init__(self, errors: Optional[List[Error]] = None):
         """Error list initializer."""
-        self.errors = list()
+        self.errors: List[Error] = []
         if errors:
             self.extend(errors)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         """Return True if errors are exists."""
         return bool(self.errors)
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Return count of errors."""
         return len(self.errors)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return string representation of errors list."""
         return json_dumps(self.json, indent=4, sort_keys=True)
 
     @property
-    def status(self):
+    def status(self) -> Optional[Union[HTTPStatus, int]]:
         """
         Return the most specific HTTP status code for all errors.
 
@@ -174,7 +185,7 @@ class ErrorList(Exception):
 
         return HTTPStatus.INTERNAL_SERVER_ERROR
 
-    def append(self, error):
+    def append(self, error: Error) -> None:
         """
         Append the :class:`Error` error to the error list.
 
@@ -184,7 +195,7 @@ class ErrorList(Exception):
             raise TypeError('*error* must be of type Error')
         self.errors.append(error)
 
-    def extend(self, errors):
+    def extend(self, errors: List[Error]) -> None:
         """
         Append errors to the list.
 
@@ -200,7 +211,7 @@ class ErrorList(Exception):
             )
 
     @property
-    def json(self):
+    def json(self) -> List[Dict[str, Any]]:
         """
         Create the JSON API error object.
 
@@ -222,7 +233,6 @@ class HTTPBadRequest(Error):
     The request could not be fulfilled due to the incorrect syntax
     of the request.
     """
-
     status = HTTPStatus.BAD_REQUEST
 
 
@@ -234,7 +244,6 @@ class HTTPUnauthorized(Error):
     This is similar to 403 but is used in cases where authentication
     is expected but has failed or has not been provided.
     """
-
     status = HTTPStatus.UNAUTHORIZED
 
 
@@ -246,7 +255,6 @@ class HTTPForbidden(Error):
     the requested resource. Unlike 401, authenticating will not make
     a difference in the server's response.
     """
-
     status = HTTPStatus.FORBIDDEN
 
 
@@ -257,7 +265,6 @@ class HTTPNotFound(Error):
     The resource could not be found. This is often used as a catch-all
     for all invalid URIs requested of the server.
     """
-
     status = HTTPStatus.NOT_FOUND
 
 
@@ -269,7 +276,6 @@ class HTTPMethodNotAllowed(Error):
     For example, requesting a resource via a POST method when the resource
     only supports the GET method.
     """
-
     status = HTTPStatus.METHOD_NOT_ALLOWED
 
 
@@ -280,7 +286,6 @@ class HTTPNotAcceptable(Error):
     The resource is valid, but cannot be provided in a format specified
     in the Accept headers in the request.
     """
-
     status = HTTPStatus.NOT_ACCEPTABLE
 
 
@@ -291,7 +296,6 @@ class HTTPConflict(Error):
     The request cannot be completed due to a conflict in the request
     parameters.
     """
-
     status = HTTPStatus.CONFLICT
 
 
@@ -302,7 +306,6 @@ class HTTPGone(Error):
     The resource is no longer available at the requested URI and
     no redirection will be given.
     """
-
     status = HTTPStatus.GONE
 
 
@@ -312,7 +315,6 @@ class HTTPPreConditionFailed(Error):
 
     The server does not meet one of the preconditions specified by the client.
     """
-
     status = HTTPStatus.PRECONDITION_FAILED
 
 
@@ -323,7 +325,6 @@ class HTTPUnsupportedMediaType(Error):
     The client provided data with a media type that the server
     does not support.
     """
-
     status = HTTPStatus.UNSUPPORTED_MEDIA_TYPE
 
 
@@ -336,7 +337,6 @@ class HTTPUnprocessableEntity(Error):
 
     WebDAV - `RFC 4918 <https://tools.ietf.org/html/rfc4918>`_
     """
-
     status = HTTPStatus.UNPROCESSABLE_ENTITY
 
 
@@ -349,7 +349,6 @@ class HTTPLocked(Error):
 
     WebDAV - `RFC 4918 <https://tools.ietf.org/html/rfc4918>`_
     """
-
     status = HTTPStatus.LOCKED
 
 
@@ -361,7 +360,6 @@ class HTTPFailedDependency(Error):
 
     WebDAV - `RFC 4918 <https://tools.ietf.org/html/rfc4918>`_
     """
-
     status = HTTPStatus.FAILED_DEPENDENCY
 
 
@@ -375,7 +373,6 @@ class HTTPTooManyRequests(Error):
     Additional HTTP Status Codes -
     `RFC 6585 <https://tools.ietf.org/html/rfc6585#section-4>`_
     """
-
     status = HTTPStatus.TOO_MANY_REQUESTS
 
 
@@ -388,7 +385,6 @@ class HTTPInternalServerError(Error):
 
     A generic status for an error in the server itself.
     """
-
     status = HTTPStatus.INTERNAL_SERVER_ERROR
 
 
@@ -400,7 +396,6 @@ class HTTPNotImplemented(Error):
     the server could possibly support the request in the future —
     otherwise a 4xx status may be more appropriate.
     """
-
     status = HTTPStatus.NOT_IMPLEMENTED
 
 
@@ -411,7 +406,6 @@ class HTTPBadGateway(Error):
     The server is acting as a proxy and did not receive an acceptable response
     from the upstream server.
     """
-
     status = HTTPStatus.BAD_GATEWAY
 
 
@@ -421,7 +415,6 @@ class HTTPServiceUnavailable(Error):
 
     The server is down and is not accepting requests.
     """
-
     status = HTTPStatus.SERVICE_UNAVAILABLE
 
 
@@ -432,7 +425,6 @@ class HTTPGatewayTimeout(Error):
     The server is acting as a proxy and did not receive a response from
     the upstream server.
     """
-
     status = HTTPStatus.GATEWAY_TIMEOUT
 
 
@@ -443,7 +435,6 @@ class HTTPVariantAlsoNegotiates(Error):
     Transparent content negotiation for the request results in a circular
     reference.
     """
-
     status = HTTPStatus.VARIANT_ALSO_NEGOTIATES
 
 
@@ -456,7 +447,6 @@ class HTTPInsufficientStorage(Error):
 
     WebDAV - `RFC 4918 <https://tools.ietf.org/html/rfc4918>`_
     """
-
     status = HTTPStatus.INSUFFICIENT_STORAGE
 
 
@@ -466,7 +456,6 @@ class HTTPNotExtended(Error):
 
     Further extensions to the request are necessary for it to be fulfilled.
     """
-
     status = HTTPStatus.NOT_EXTENDED
 
 
@@ -520,13 +509,12 @@ class MissingField(ValidationError):
 
     :seealso: http://jsonapi.org/format/#document-structure
     """
-
-    def __init__(self, type, field, **kwargs):
+    def __init__(self, type: str, field: str, **kwargs) -> None:
         kwargs.setdefault(
             'detail',
             f"The field '{type}.{field}' is required."
         )
-        super(MissingField, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class UnresolvableIncludePath(HTTPBadRequest):
@@ -540,7 +528,7 @@ class UnresolvableIncludePath(HTTPBadRequest):
     :seealso: http://jsonapi.org/format/#fetching-includes
     """
 
-    def __init__(self, path, **kwargs):
+    def __init__(self, path: str, **kwargs) -> None:
         """
         Error initializer.
 
@@ -548,7 +536,7 @@ class UnresolvableIncludePath(HTTPBadRequest):
         :param kwargs: Additional arguments to base error
         """
         if not isinstance(path, str):
-            path = ".".join(path)
+            path = '.'.join(path)
 
         kwargs.setdefault(
             'detail',
@@ -567,7 +555,7 @@ class UnsortableField(HTTPBadRequest):
     :seealso: http://jsonapi.org/format/#fetching-sorting
     """
 
-    def __init__(self, type, field, **kwargs):
+    def __init__(self, type: str, field: str, **kwargs) -> None:
         """
         Unsortable field error initializer.
 
@@ -580,7 +568,7 @@ class UnsortableField(HTTPBadRequest):
             f"The field '{type}.{field}' can not be used for sorting."
         )
         kwargs.setdefault('source_parameter', 'sort')
-        super(UnsortableField, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class UnfilterableField(HTTPBadRequest):
@@ -593,7 +581,7 @@ class UnfilterableField(HTTPBadRequest):
     :seealso: http://jsonapi.org/format/#fetching-filtering
     """
 
-    def __init__(self, type, field, filtername, **kwargs):
+    def __init__(self, type: str, field: str, filtername: str, **kwargs) -> None:
         """
         Unfilterable field error initializer.
 
@@ -608,7 +596,7 @@ class UnfilterableField(HTTPBadRequest):
             f"the '{filtername}' filter."
         )
         kwargs.setdefault('source_parameter', f'filter[{field}]')
-        super(UnfilterableField, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class ResourceNotFound(HTTPNotFound):
@@ -618,7 +606,7 @@ class ResourceNotFound(HTTPNotFound):
     Raised, if a resource does not exist.
     """
 
-    def __init__(self, type, id, **kwargs):
+    def __init__(self, type: str, id: str, **kwargs) -> None:
         """
         Resource not found error initializer.
 
@@ -630,4 +618,4 @@ class ResourceNotFound(HTTPNotFound):
             "detail",
             f"The resource (type='{type}', id='{id}') does not exist."
         )
-        super(ResourceNotFound, self).__init__(**kwargs)
+        super().__init__(**kwargs)

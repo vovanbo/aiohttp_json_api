@@ -4,14 +4,13 @@ Extended JSONPointer from python-json-pointer_
 
 .. _python-json-pointer: https://github.com/stefankoegl/python-json-pointer
 """
-import typing
+from typing import Union
 
 from jsonpointer import JsonPointer as BaseJsonPointer
 
 
 class JSONPointer(BaseJsonPointer):
-    def __truediv__(self,
-                    path: typing.Union['JSONPointer', str]) -> 'JSONPointer':
+    def __truediv__(self, path: Union['JSONPointer', str]) -> 'JSONPointer':
         parts = self.parts.copy()
 
         if isinstance(path, int):

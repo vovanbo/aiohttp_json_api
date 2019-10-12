@@ -1,8 +1,12 @@
+import abc
 import inspect
 from collections import defaultdict
+from typing import Dict, List, Tuple, Optional
+
+from aiohttp_json_api.fields.decorators import Tag
 
 
-class MetaProcessors:
+class ProcessorsMeta(abc.ABCMeta):
     def _resolve_processors(cls):
         """
         Add in the decorated processors
@@ -13,7 +17,7 @@ class MetaProcessors:
         """
         mro = inspect.getmro(cls)
         cls._has_processors = False
-        cls.__processors__ = defaultdict(list)
+        cls.__processors__: Dict[Tuple[Tag, Optional[str]], List[str]] = defaultdict(list)
         for attr_name in dir(cls):
             # Need to look up the actual descriptor, not whatever might be
             # bound to the class. This needs to come from the __dict__ of the

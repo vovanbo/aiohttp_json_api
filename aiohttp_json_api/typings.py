@@ -1,11 +1,11 @@
 """Useful typing."""
 
 # pylint: disable=C0103
-from typing import (
-    Callable, Coroutine, Dict, MutableMapping, Tuple, Union, Optional
-)
+from typing import Callable, Coroutine, Dict, MutableMapping, Tuple, Union, Optional, Awaitable
 
-from .common import FilterRule, ResourceID, SortDirection
+from aiohttp import web
+
+from aiohttp_json_api.common import FilterRule, ResourceID, SortDirection
 
 #: Type for Request filters
 RequestFilters = MutableMapping[str, FilterRule]
@@ -28,3 +28,6 @@ Callee = Union[Callable, Coroutine]
 MimeTypeComponents = Tuple[str, str, Dict[str, str]]
 QualityAndFitness = Tuple[float, int]
 QFParsed = Tuple[QualityAndFitness, Optional[MimeTypeComponents]]
+
+Handler = Callable[[web.Request], Awaitable[web.StreamResponse]]
+Middleware = Callable[[web.Request, Handler], Awaitable[web.StreamResponse]]

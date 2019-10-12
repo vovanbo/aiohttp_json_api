@@ -10,10 +10,7 @@ class TestDocumentStructure:
         'resource_type',
         ('authors', 'books', 'chapters', 'photos', 'stores')
     )
-    async def test_response_by_json_schema(self, fantasy_client,
-                                           jsonapi_validator, resource_type):
+    async def test_response_by_json_schema(self, fantasy_client, jsonapi_validator, resource_type):
         response = await fantasy_client.get(f'/api/{resource_type}')
         json = await response.json(content_type=JSONAPI_CONTENT_TYPE)
         assert jsonapi_validator.is_valid(json)
-
-

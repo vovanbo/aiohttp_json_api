@@ -30,16 +30,16 @@ All helpers have a similar interface. Here is an example for the
     >>> p.meta()
     {'total-resources': 106, 'last-page': 4, 'page-number': 0, 'page-size': 25}
 """
-from abc import ABC, abstractmethod
-from typing import MutableMapping
+import abc
+from typing import Dict, Optional, Any
 
 import trafaret as t
 from aiohttp import web
 from yarl import URL
 
-from .common import logger
-from .errors import HTTPBadRequest
-from .helpers import make_sentinel
+from aiohttp_json_api.common import logger
+from aiohttp_json_api.errors import HTTPBadRequest
+from aiohttp_json_api.helpers import make_sentinel
 
 __all__ = (
     'DEFAULT_LIMIT',
@@ -50,13 +50,13 @@ __all__ = (
 )
 
 #: The default number of resources on a page.
-DEFAULT_LIMIT = 25
+DEFAULT_LIMIT = '25'
 
 
-class PaginationABC(ABC):
+class PaginationABC(abc.ABC):
     """Pagination abstract base class."""
 
-    def __init__(self, request: web.Request):
+    def __init__(self, request: web.Request) -> None:
         """
         Initialize paginator.
 
@@ -68,8 +68,8 @@ class PaginationABC(ABC):
     def url(self) -> URL:
         return self.request.url
 
-    @abstractmethod
-    def meta(self) -> MutableMapping:
+    @abc.abstractmethod
+    def meta(self) -> Dict[str, int]:
         """
         Return meta object of pagination.
 
@@ -77,10 +77,10 @@ class PaginationABC(ABC):
 
         A dictionary, which must be included in the top-level *meta object*.
         """
-        raise NotImplementedError
+        pass
 
-    @abstractmethod
-    def links(self) -> MutableMapping:
+    @abc.abstractmethod
+    def links(self) -> Dict[str, str]:
         """
         Return pagination links.
 
@@ -104,7 +104,7 @@ class PaginationABC(ABC):
         *   *next*
             The link to the next page (only set, if a next page exists)
         """
-        raise NotImplementedError
+        pass
 
     def page_link(self, **kwargs) -> str:
         """
@@ -149,14 +149,14 @@ class LimitOffset(PaginationABC):
         The total number of resources in the collection.
     """
 
-    def __init__(self, request: web.Request, total_resources: int = 0):
+    def __init__(self, request: web.Request, total_resources: int = 0) -> None:
         """
         Initialize limit-offset paginator.
 
         :param request: Request instance
         :param total_resources: Total count of resources
         """
-        super(LimitOffset, self).__init__(request)
+        super().__init__(request)
         self.total_resources = total_resources
 
         self.limit = request.query.get('page[limit]', DEFAULT_LIMIT)
@@ -165,29 +165,28 @@ class LimitOffset(PaginationABC):
         except t.DataError:
             raise HTTPBadRequest(
                 detail='The limit must be an integer > 0.',
-                source_parameter='page[limit]'
+                source_parameter='page[limit]',
             )
 
-        self.offset = request.query.get('page[offset]', 0)
+        self.offset = request.query.get('page[offset]', '0')
         try:
             self.offset = t.Int(gte=0).check(self.offset)
         except t.DataError:
             raise HTTPBadRequest(
                 detail='The offset must be an integer >= 0.',
-                source_parameter='page[offset]'
+                source_parameter='page[offset]',
             )
 
         if self.offset % self.limit != 0:
             logger.warning('The offset is not dividable by the limit.')
 
-    def links(self) -> MutableMapping:
+    def links(self) -> Dict[str, str]:
         result = {
             'self': self.page_link(limit=self.limit, offset=self.offset),
             'first': self.page_link(limit=self.limit, offset=0),
             'last': self.page_link(
                 limit=self.limit,
-                offset=int(
-                    (self.total_resources - 1) / self.limit) * self.limit
+                offset=int((self.total_resources - 1) / self.limit) * self.limit
             )
         }
         if self.offset > 0:
@@ -202,7 +201,7 @@ class LimitOffset(PaginationABC):
             )
         return result
 
-    def meta(self) -> MutableMapping:
+    def meta(self) -> Dict[str, int]:
         """
         Return meta object of paginator.
 
@@ -237,23 +236,23 @@ class NumberSize(PaginationABC):
         The total number of resources in the collection.
     """
 
-    def __init__(self, request: web.Request, total_resources):
+    def __init__(self, request: web.Request, total_resources: int) -> None:
         """
         Initialize a number size based paginator.
 
         :param request: Request instance
         :param total_resources: Total count of resources
         """
-        super(NumberSize, self).__init__(request)
+        super().__init__(request)
         self.total_resources = total_resources
 
-        self.number = request.query.get('page[number]', 0)
+        self.number = request.query.get('page[number]', '0')
         try:
             self.number = t.Int(gte=0).check(self.number)
         except t.DataError:
             raise HTTPBadRequest(
                 detail='The number must an integer >= 0.',
-                source_parameter='page[number]'
+                source_parameter='page[number]',
             )
 
         self.size = request.query.get('page[size]', DEFAULT_LIMIT)
@@ -284,21 +283,19 @@ class NumberSize(PaginationABC):
         """Return the number of the last page."""
         return int((self.total_resources - 1) / self.size)
 
-    def links(self) -> MutableMapping:
+    def links(self) -> Dict[str, str]:
         result = {
             'self': self.page_link(number=self.number, size=self.size),
             'first': self.page_link(number=0, size=self.size),
             'last': self.page_link(number=self.last_page, size=self.size)
         }
         if self.number > 0:
-            result['prev'] = \
-                self.page_link(number=self.number - 1, size=self.size)
+            result['prev'] = self.page_link(number=self.number - 1, size=self.size)
         if self.number < self.last_page:
-            result['next'] = \
-                self.page_link(number=self.number + 1, size=self.size)
+            result['next'] = self.page_link(number=self.number + 1, size=self.size)
         return result
 
-    def meta(self) -> MutableMapping:
+    def meta(self) -> Dict[str, int]:
         """
         Return meta object of pagination.
 
@@ -342,8 +339,13 @@ class Cursor(PaginationABC):
     #: The cursor to the last page
     LAST = make_sentinel(var_name='jsonapi:last')
 
-    def __init__(self, request: web.Request, prev_cursor=None,
-                 next_cursor=None, cursor_regex: str = None):
+    def __init__(
+        self,
+        request: web.Request,
+        prev_cursor: Any = None,
+        next_cursor: Any = None,
+        cursor_regex: Optional[str] = None,
+    ) -> None:
         """
         Initialize cursor based paginator.
 
@@ -352,7 +354,7 @@ class Cursor(PaginationABC):
         :param next_cursor: Next cursor identifier
         :param cursor_regex: Regexp to validate a cursor string
         """
-        super(Cursor, self).__init__(request)
+        super().__init__(request)
 
         self.cursor = request.query.get('page[cursor]', self.FIRST)
         if isinstance(self.cursor, str):
@@ -366,10 +368,8 @@ class Cursor(PaginationABC):
                     )
             self.cursor = make_sentinel(var_name=str(self.cursor))
 
-        self.prev_cursor = \
-            make_sentinel(var_name=str(prev_cursor)) if prev_cursor else None
-        self.next_cursor = \
-            make_sentinel(var_name=str(next_cursor)) if next_cursor else None
+        self.prev_cursor = make_sentinel(var_name=str(prev_cursor)) if prev_cursor else None
+        self.next_cursor = make_sentinel(var_name=str(next_cursor)) if next_cursor else None
 
         self.limit = request.query.get('page[limit]', DEFAULT_LIMIT)
         try:
@@ -380,8 +380,7 @@ class Cursor(PaginationABC):
                 source_parameter='page[limit]'
             )
 
-    def links(self, prev_cursor=None,
-              next_cursor=None) -> MutableMapping:
+    def links(self, prev_cursor: Any = None, next_cursor: Any = None) -> Dict[str, str]:
         """
         Return links object of paginator.
 
@@ -401,14 +400,12 @@ class Cursor(PaginationABC):
             'last': self.page_link(cursor=str(self.LAST), limit=self.limit)
         }
         if next_cursor is not None:
-            result['next'] = self.page_link(cursor=str(next_cursor),
-                                            limit=self.limit)
+            result['next'] = self.page_link(cursor=str(next_cursor), limit=self.limit)
         if prev_cursor is not None:
-            result['prev'] = self.page_link(cursor=str(prev_cursor),
-                                            limit=self.limit)
+            result['prev'] = self.page_link(cursor=str(prev_cursor), limit=self.limit)
         return result
 
-    def meta(self) -> MutableMapping:
+    def meta(self) -> Dict[str, int]:
         """
         Return meta object of paginator.
 

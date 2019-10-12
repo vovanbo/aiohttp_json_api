@@ -3,31 +3,28 @@
 import json
 import re
 from collections import OrderedDict
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union, Pattern, Callable, Dict
 
 import inflection
 from aiohttp import web
 from multidict import MultiDict
 
-from .common import Event, FilterRule, JSONAPI, logger, SortDirection
-from .errors import HTTPBadRequest, HTTPNotFound
-from .abc.schema import SchemaABC
-from .typings import (
-    RequestFields, RequestFilters, RequestIncludes, RequestSorting
-)
+from aiohttp_json_api.common import Event, FilterRule, JSONAPI, logger, SortDirection
+from aiohttp_json_api.errors import HTTPBadRequest, HTTPNotFound
+from aiohttp_json_api.pagination import PaginationABC
+from aiohttp_json_api.registry import Registry
+from aiohttp_json_api.typings import RequestFields, RequestFilters, RequestIncludes, RequestSorting
 
 
 class JSONAPIContext:
     """JSON API request context."""
+    FILTER_KEY: Pattern = re.compile(r"filter\[(?P<field>\w[-\w_]*)\]")
+    FILTER_VALUE: Pattern = re.compile(r"(?P<name>[a-z]+):(?P<value>.*)")
+    FIELDS_RE: Pattern = re.compile(r"fields\[(?P<name>\w[-\w_]*)\]")
 
-    FILTER_KEY = re.compile(r"filter\[(?P<field>\w[-\w_]*)\]")
-    FILTER_VALUE = re.compile(r"(?P<name>[a-z]+):(?P<value>.*)")
-    FIELDS_RE = re.compile(r"fields\[(?P<name>\w[-\w_]*)\]")
+    inflect: Callable[[str], str] = inflection.underscore
 
-    inflect = inflection.underscore
-
-    def __init__(self, request: web.Request,
-                 resource_type: str = None) -> None:
+    def __init__(self, request: web.Request, resource_type: Optional[str] = None) -> None:
         """
         Initialize request context.
 
@@ -46,49 +43,51 @@ class JSONAPIContext:
             # via decorator to custom handler, then raise HTTP 404
             raise HTTPNotFound()
 
-        self.__pagination = None
+        self.__pagination: Optional[PaginationABC] = None
         self.__filters = self.parse_request_filters(request)
         self.__fields = self.parse_request_fields(request)
         self.__include = self.parse_request_includes(request)
         self.__sorting = self.parse_request_sorting(request)
 
-        self.__event = None
+        self.__event: Optional[Event] = None
         if self.__request.method in Event.__members__:
             self.__event = Event[self.__request.method]
 
-        schema_cls, controller_cls = self.registry.get(self.resource_type)
+        schema_cls, controller_cls = self.registry[self.resource_type]
         self.__controller = controller_cls(self)
         self.__schema = schema_cls(self)
 
-        logger.debug('Request context info:\n'
-                     'Filters: %s\n'
-                     'Fields: %s\n'
-                     'Includes: %s\n'
-                     'Sorting: %s\n'
-                     'Event: %s\n'
-                     'Schema: %s\n'
-                     'Controller: %s\n',
-                     self.filters, self.fields, self.include, self.sorting,
-                     self.event, schema_cls.__name__, controller_cls.__name__)
+        logger.debug(
+            'Request context info:\n'
+            'Filters: %s\n'
+            'Fields: %s\n'
+            'Includes: %s\n'
+            'Sorting: %s\n'
+            'Event: %s\n'
+            'Schema: %s\n'
+            'Controller: %s\n',
+            self.filters, self.fields, self.include, self.sorting, self.event,
+            schema_cls.__name__, controller_cls.__name__,
+        )
 
     @property
-    def request(self):
+    def request(self) -> web.Request:
         return self.__request
 
     @property
-    def app(self):
+    def app(self) -> web.Application:
         return self.__request.app
 
     @property
-    def resource_type(self):
+    def resource_type(self) -> Optional[str]:
         return self.__resource_type
 
     @property
-    def registry(self):
+    def registry(self) -> Registry:
         return self.app[JSONAPI]['registry']
 
     @property
-    def schema(self) -> Optional[SchemaABC]:
+    def schema(self):
         return self.__schema
 
     @property
@@ -96,27 +95,27 @@ class JSONAPIContext:
         return self.__controller
 
     @property
-    def filters(self):
+    def filters(self) -> RequestFilters:
         return self.__filters
 
     @property
-    def fields(self):
+    def fields(self) -> RequestFields:
         return self.__fields
 
     @property
-    def include(self):
+    def include(self) -> RequestIncludes:
         return self.__include
 
     @property
-    def sorting(self):
+    def sorting(self) -> RequestSorting:
         return self.__sorting
 
     @property
-    def event(self):
+    def event(self) -> Optional[Event]:
         return self.__event
 
     @property
-    def pagination(self):
+    def pagination(self) -> Optional[PaginationABC]:
         if self.__pagination is not None:
             return self.__pagination
 
@@ -129,10 +128,8 @@ class JSONAPIContext:
         return None
 
     @classmethod
-    def convert_field_name(cls, field_name):
-        return cls.inflect(field_name) \
-            if cls.inflect is not None \
-            else field_name
+    def convert_field_name(cls, field_name: str) -> str:
+        return cls.inflect(field_name) if cls.inflect is not None else field_name
 
     @classmethod
     def parse_request_filters(cls, request: web.Request) -> RequestFilters:
@@ -183,7 +180,7 @@ class JSONAPIContext:
         :raises HTTPBadRequest:
             If a filter name contains invalid characters.
         """
-        filters = MultiDict()  # type: MultiDict
+        filters: MultiDict = MultiDict()
 
         for key, value in request.query.items():
             key_match = re.fullmatch(cls.FILTER_KEY, key)
@@ -211,8 +208,10 @@ class JSONAPIContext:
                         detail=f"The value '{value}' is not JSON serializable",
                         source_parameter=key
                     )
-                filters.add(cls.convert_field_name(field),
-                            FilterRule(name=name, value=value))
+                filters.add(
+                    cls.convert_field_name(field),
+                    FilterRule(name=name, value=value)
+                )
 
         return filters
 
@@ -234,7 +233,7 @@ class JSONAPIContext:
 
         :seealso: http://jsonapi.org/format/#fetching-sparse-fieldsets
         """
-        fields = OrderedDict()  # type: OrderedDict
+        fields: Dict[str, Tuple[str, ...]] = OrderedDict()
 
         for key, value in request.query.items():
             match = re.fullmatch(cls.FIELDS_RE, key)
@@ -289,7 +288,7 @@ class JSONAPIContext:
 
         :seealso: http://jsonapi.org/format/#fetching-sorting
         """
-        sort = OrderedDict()  # type: RequestSorting
+        sort: RequestSorting = OrderedDict()
 
         if 'sort' not in request.query:
             return sort
@@ -337,8 +336,11 @@ class JSONAPIContext:
         """
         return self.filters.get((field, name), default)
 
-    def get_order(self, field: Union[str, Tuple[str, ...]],
-                  default: SortDirection = SortDirection.ASC) -> SortDirection:
+    def get_order(
+        self,
+        field: Union[str, Tuple[str, ...]],
+        default: SortDirection = SortDirection.ASC,
+    ) -> SortDirection:
         """
         Get sorting order of field from request context.
 

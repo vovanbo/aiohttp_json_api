@@ -1,4 +1,4 @@
-from aiohttp_json_api.controller import DefaultController
+from aiohttp_json_api.controller import BaseController
 from aiohttp_json_api.errors import ResourceNotFound
 from aiohttp_json_api.fields.decorators import includes
 
@@ -6,7 +6,7 @@ import examples.fantasy.tables as tbl
 from examples.fantasy.models import Author
 
 
-class CommonController(DefaultController):
+class CommonController(BaseController):
     async def create_resource(self, data, **kwargs):
         pass
 
