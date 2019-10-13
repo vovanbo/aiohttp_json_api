@@ -1,7 +1,8 @@
 """Utilities related to JSON API."""
 
 from collections import defaultdict, OrderedDict
-from typing import Optional, Dict, Any, Union, Callable, Set, Collection, Tuple, Mapping
+from http import HTTPStatus
+from typing import Optional, Dict, Any, Union, Callable, Collection, Tuple
 
 import trafaret
 from aiohttp import web
@@ -13,12 +14,13 @@ from aiohttp_json_api.encoder import json_dumps
 from aiohttp_json_api.errors import Error, ErrorList, HTTPInternalServerError
 from aiohttp_json_api.helpers import first, is_collection
 from aiohttp_json_api.pagination import PaginationABC
+from aiohttp_json_api.typings import CompoundDocumentsMapping, RelationshipsMapping
 
 
 def jsonapi_response(
     data: Dict[str, Any],
     *,
-    status: int = web.HTTPOk.status_code,
+    status: int = HTTPStatus.OK,
     reason: Optional[str] = None,
     headers: Optional[LooseHeaders] = None,
     dumps: Callable[[Any], str] = None,
@@ -37,13 +39,19 @@ def jsonapi_response(
         dumps = json_dumps
 
     body = dumps(data).encode('utf-8')
-    return web.Response(body=body, status=status, reason=reason, headers=headers, content_type=JSONAPI_CONTENT_TYPE)
+    return web.Response(
+        body=body,
+        status=status,
+        reason=reason,
+        headers=headers,
+        content_type=JSONAPI_CONTENT_TYPE,
+    )
 
 
 async def get_compound_documents(
     resources: Collection[Any],
     ctx: JSONAPIContext,
-) -> Tuple[Dict[ResourceID, Any], Dict[str, Set[Tuple[str, ...]]]]:
+) -> Tuple[CompoundDocumentsMapping, RelationshipsMapping]:
     """
     Get compound documents of resources. Fetches the relationship paths *paths*.
 
@@ -62,8 +70,8 @@ async def get_compound_documents(
         which maps each resource (primary and included) to a set with the
         names of the included relationships.
     """
-    relationships: Dict[str, Set[Tuple[str, ...]]] = defaultdict(set)
-    compound_documents: Dict[ResourceID, Any] = OrderedDict()
+    relationships: RelationshipsMapping = defaultdict(set)
+    compound_documents: CompoundDocumentsMapping = OrderedDict()
 
     collection: Collection[Any] = (resources,) if type(resources) in ctx.registry else resources
     for path in ctx.include:

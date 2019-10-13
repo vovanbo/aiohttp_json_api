@@ -9,7 +9,7 @@ from aiohttp_json_api.common import ALLOWED_MEMBER_NAME_REGEX, ALLOWED_MEMBER_NA
 from aiohttp_json_api.context import JSONAPIContext
 from aiohttp_json_api.middleware import jsonapi_middleware
 from aiohttp_json_api.registry import Registry
-from aiohttp_json_api.typings import Handler
+from aiohttp_json_api.typings import CallableHandler
 
 
 def setup_app_registry(
@@ -52,17 +52,16 @@ def setup_app_registry(
         app_registry[resource_cls] = schema_cls, controller_cls
 
         logger.debug(
-            'Registered %r (schema: %r, resource class: %r, type %r)',
-            controller_cls.__name__, schema_cls.__name__,
-            resource_cls.__name__, resource_type
+            'Registered %r (schema: %r, resource class: %r, type: %r)',
+            controller_cls, schema_cls, resource_cls, resource_type,
         )
 
     return app_registry
 
 
-def setup_jsonapi_handlers(
-    custom_handlers: Optional[Union[Dict[str, Handler], Sequence[Handler]]] = None,
-) -> Dict[str, Handler]:
+def prepare_jsonapi_handlers(
+    custom_handlers: Optional[Union[Dict[str, CallableHandler], Sequence[CallableHandler]]] = None,
+) -> Dict[str, CallableHandler]:
     """Set up default and custom handlers for JSON API application."""
     handlers = {
         name: handler
@@ -71,7 +70,7 @@ def setup_jsonapi_handlers(
     }
     if custom_handlers is not None:
         if isinstance(custom_handlers, MutableMapping):
-            custom_handlers_iter: Iterable[Tuple[str, Handler]] = custom_handlers.items()
+            custom_handlers_iter: Iterable[Tuple[str, CallableHandler]] = custom_handlers.items()
         elif isinstance(custom_handlers, Sequence):
             custom_handlers_iter = ((c.__name__, c) for c in custom_handlers)
         else:
@@ -97,7 +96,7 @@ def setup_jsonapi_handlers(
 def setup_resources(
     app: web.Application,
     base_path: str,
-    handlers: Dict[str, Handler],
+    handlers: Dict[str, CallableHandler],
     routes_namespace: str,
 ) -> None:
     """Set up JSON API application resources."""
@@ -140,7 +139,7 @@ def setup_jsonapi(
     meta: Optional[Dict[str, Any]] = None,
     context_cls: Optional[Type[JSONAPIContext]] = None,
     registry_class: Optional[Type[Registry]] = None,
-    custom_handlers: Optional[Union[Dict[str, Handler], Sequence[Handler]]] = None,
+    custom_handlers: Optional[Union[Dict[str, CallableHandler], Sequence[CallableHandler]]] = None,
     log_errors: bool = True,
     routes_namespace: str = JSONAPI,
 ) -> web.Application:
@@ -151,8 +150,6 @@ def setup_jsonapi(
 
     :param ~aiohttp.web.Application app:
         Application instance
-    :param ~typing.Sequence[BaseController] controllers:
-        List of controllers to register in JSON API
     :param str base_path:
         Prefix of JSON API routes paths
     :param str version:
@@ -212,17 +209,15 @@ def setup_jsonapi(
             'version': version,
         },
         'log_errors': log_errors,
-        'routes_namespace': routes_namespace
+        'routes_namespace': routes_namespace,
     }
 
-    handlers = setup_jsonapi_handlers(custom_handlers)
-
+    handlers = prepare_jsonapi_handlers(custom_handlers)
     setup_resources(app, base_path, handlers, routes_namespace)
 
     logger.debug('Registered JSON API resources list:')
-    for resource in filter(lambda r: r.name.startswith(routes_namespace), app.router.resources()):
+    for resource in filter(lambda r: r.name and r.name.startswith(routes_namespace), app.router.resources()):
         logger.debug('%s -> %s', [r.method for r in resource], resource.get_info())
 
     app.middlewares.append(jsonapi_middleware)
-
     return app

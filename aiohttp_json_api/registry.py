@@ -2,9 +2,13 @@
 
 import collections
 import inspect
-from typing import Any, Type, Tuple
+from typing import Any, Type, Tuple, TYPE_CHECKING
 
 from aiohttp_json_api.common import ResourceID
+
+if TYPE_CHECKING:
+    from aiohttp_json_api.schema import BaseSchema
+    from aiohttp_json_api.controller import BaseController
 
 
 class Registry(collections.UserDict):
@@ -12,11 +16,11 @@ class Registry(collections.UserDict):
     JSON API application registry.
 
     This is a dictionary created on JSON API application set up.
-    It contains a mapping between types, resource classes and schemas.
+    It contains a mapping between types, resource classes, schemas and controllers.
     """
     __slots__ = ('data',)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> Tuple[Type['BaseSchema'], Type['BaseController']]:
         """
         Get schema for type or resource class type.
 

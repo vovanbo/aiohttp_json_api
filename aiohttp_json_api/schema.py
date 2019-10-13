@@ -119,8 +119,6 @@ class SchemaMeta(ProcessorsMeta):
         Returns an ordered dictionary, which maps the source pointer of a
         field to the field. Nested fields are listed before the parent.
         """
-        from aiohttp_json_api.fields.base import Relationship
-
         result: Dict[JSONPointer, BaseField] = OrderedDict()
         for field in fields:
             if isinstance(field, Relationship):
@@ -308,34 +306,34 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
 
     @staticmethod
     @abc.abstractmethod
-    def default_getter(field, resource, **kwargs):
+    def default_getter(field: BaseField, resource: Any, **kwargs) -> Any:
         pass
 
     @staticmethod
     @abc.abstractmethod
-    async def default_setter(field, resource, data, sp, **kwargs):
+    async def default_setter(field: BaseField, resource: Any, data: Any, sp: JSONPointer, **kwargs) -> None:
         pass
 
     @classmethod
     @abc.abstractmethod
-    def get_field(cls, key) -> BaseField:
+    def get_field(cls, key: str) -> BaseField:
         pass
 
     @classmethod
     @abc.abstractmethod
-    def get_relationship_field(cls, relation_name, source_parameter=None):
+    def get_relationship_field(cls, relation_name: str, source_parameter: Optional[str] = None) -> Relationship:
         pass
 
     @abc.abstractmethod
-    def get_value(self, field, resource, **kwargs):
+    def get_value(self, field: BaseField, resource: Any, **kwargs) -> Any:
         pass
 
     @abc.abstractmethod
-    async def set_value(self, field, resource, data, sp, **kwargs):
+    async def set_value(self, field: BaseField, resource: Any, data: Any, sp: JSONPointer, **kwargs) -> Any:
         pass
 
     @abc.abstractmethod
-    def serialize_resource(self, resource, **kwargs):
+    def serialize_resource(self, resource: Any, **kwargs) -> Dict[str, Any]:
         pass
 
     @abc.abstractmethod
@@ -372,7 +370,7 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
     # -----------------------
 
     @abc.abstractmethod
-    async def pre_validate_field(self, field, data, sp):
+    async def pre_validate_field(self, field: BaseField, data: Any, sp: JSONPointer) -> None:
         """
         Validates the input data for a field, **before** it is deserialized.
         If the field has nested fields, the nested fields are validated first.
@@ -387,7 +385,13 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
         pass
 
     @abc.abstractmethod
-    async def pre_validate_resource(self, data, sp, *, expected_id=None):
+    async def pre_validate_resource(
+        self,
+        data: Dict[str, Any],
+        sp: JSONPointer,
+        *,
+        expected_id: Optional[str] = None,
+    ) -> None:
         """
         Validates a JSON API resource object received from an API client::
 
@@ -411,20 +415,25 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
     # -----------------------------
 
     @abc.abstractmethod
-    async def post_validate_resource(self, data):
+    async def post_validate_resource(self, data: Dict[str, Any]) -> None:
         """
         Validates the decoded *data* of JSON API resource object.
 
-        :arg ~collections.OrderedDict data:
+        :arg data:
             The *memo* object returned from :meth:`deserialize_resource`.
-        :arg JSONAPIContext context:
-            Request context instance
         """
         pass
 
     @abc.abstractmethod
-    async def deserialize_resource(self, data, sp, *, expected_id=None,
-                                   validate=True, validation_steps=None):
+    async def deserialize_resource(
+        self,
+        data: Dict[str, Any],
+        sp: JSONPointer,
+        *,
+        expected_id: Optional[Any] = None,
+        validate: bool = True,
+        validation_steps: Optional[Collection[Step]] = None,
+    ) -> Dict[str, Tuple[Any, JSONPointer]]:
         """
         Decodes the JSON API resource object *data* and returns a dictionary
         which maps the key of a field to its decoded input data.
@@ -433,8 +442,6 @@ class SchemaABC(abc.ABC, metaclass=SchemaMeta):
             The received JSON API resource object
         :arg ~aiohttp_json_api.jsonpointer.JSONPointer sp:
             The JSON pointer to the source of *data*.
-        :arg JSONAPIContext context:
-            Request context instance
         :arg str expected_id:
             If passed, then ID of resource will be compared with this value.
             This is required in update methods
@@ -461,7 +468,6 @@ class BaseSchema(SchemaABC):
     If you want, you can implement your own request handlers and only use
     the schema for validation and serialization.
     """
-
     @staticmethod
     def get_object_id(resource: Any) -> str:
         """
@@ -635,7 +641,13 @@ class BaseSchema(SchemaABC):
     # Validation (post deserialize)
     # -----------------------------
 
-    async def pre_validate_resource(self, data: Any, sp: JSONPointer, *, expected_id: Optional[int] = None) -> None:
+    async def pre_validate_resource(
+        self,
+        data: Dict[str, Any],
+        sp: JSONPointer,
+        *,
+        expected_id: Optional[str] = None,
+    ) -> None:
         if not isinstance(data, MutableMapping):
             detail = 'Must be an object.'
             raise InvalidType(detail=detail, source_pointer=sp)
@@ -677,10 +689,10 @@ class BaseSchema(SchemaABC):
         data: Any,
         sp: JSONPointer,
         *,
-        expected_id: Optional[int] = None,
+        expected_id: Optional[str] = None,
         validate: bool = True,
         validation_steps: Optional[Collection[Step]] = None,
-    ) -> Dict[str, Any]:
+    ) -> Dict[str, Tuple[Any, JSONPointer]]:
         if validation_steps is None:
             validation_steps = (Step.BEFORE_DESERIALIZATION, Step.AFTER_DESERIALIZATION)
 

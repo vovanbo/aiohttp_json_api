@@ -32,7 +32,7 @@ async def get_collection(request: web.Request) -> web.Response:
     """
     Fetch resources collection, render JSON API document and return response.
 
-    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.query_collection`
+    Uses the :meth:`~aiohttp_json_api.controller.BaseController.query_collection`
     method of the schema to query the resources in the collection.
 
     :seealso: http://jsonapi.org/format/#fetching
@@ -49,11 +49,11 @@ async def get_collection(request: web.Request) -> web.Response:
     return jsonapi_response(result)
 
 
-async def post_resource(request: web.Request):
+async def post_resource(request: web.Request) -> web.Response:
     """
     Create resource, render JSON API document and return response.
 
-    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.create_resource`
+    Uses the :meth:`~aiohttp_json_api.controller.BaseController.create_resource`
     method of the schema to create a new resource.
 
     :seealso: http://jsonapi.org/format/#crud-creating
@@ -77,15 +77,14 @@ async def post_resource(request: web.Request):
     location = request.url.join(
         get_router_resource(request.app, 'resource').url_for(**rid._asdict())
     )
-
     return jsonapi_response(result, status=HTTPStatus.CREATED, headers={hdrs.LOCATION: str(location)})
 
 
-async def get_resource(request: web.Request):
+async def get_resource(request: web.Request) -> web.Response:
     """
     Get single resource, render JSON API document and return response.
 
-    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.query_resource`
+    Uses the :meth:`~aiohttp_json_api.controller.BaseController.query_resource`
     method of the schema to query the requested resource.
 
     :seealso: http://jsonapi.org/format/#fetching-resources
@@ -105,11 +104,11 @@ async def get_resource(request: web.Request):
     return jsonapi_response(result)
 
 
-async def patch_resource(request: web.Request):
+async def patch_resource(request: web.Request) -> web.Response:
     """
     Update resource (via PATCH), render JSON API document and return response.
 
-    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.update_resource`
+    Uses the :meth:`~aiohttp_json_api.controller.BaseController.update_resource`
     method of the schema to update a resource.
 
     :seealso: http://jsonapi.org/format/#crud-updating
@@ -136,11 +135,11 @@ async def patch_resource(request: web.Request):
     return jsonapi_response(result)
 
 
-async def delete_resource(request: web.Request):
+async def delete_resource(request: web.Request) -> web.Response:
     """
     Remove resource.
 
-    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.delete_resource`
+    Uses the :meth:`~aiohttp_json_api.controller.BaseController.delete_resource`
     method of the schema to delete a resource.
 
     :seealso: http://jsonapi.org/format/#crud-deleting
@@ -153,7 +152,7 @@ async def delete_resource(request: web.Request):
     return web.HTTPNoContent()
 
 
-async def get_relationship(request: web.Request):
+async def get_relationship(request: web.Request) -> web.Response:
     """
     Get relationships of resource.
 
@@ -178,11 +177,11 @@ async def get_relationship(request: web.Request):
     return jsonapi_response(result)
 
 
-async def post_relationship(request: web.Request):
+async def post_relationship(request: web.Request) -> web.Response:
     """
     Create relationships of resource.
 
-    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.add_relationship`
+    Uses the :meth:`~aiohttp_json_api.controller.BaseController.add_relationship`
     method of the schemato add new relationships.
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
@@ -221,11 +220,11 @@ async def post_relationship(request: web.Request):
     return jsonapi_response(result)
 
 
-async def patch_relationship(request: web.Request):
+async def patch_relationship(request: web.Request) -> web.Response:
     """
     Update relationships of resource.
 
-    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.update_relationship`
+    Uses the :meth:`~aiohttp_json_api.controller.BaseController.update_relationship`
     method of the schema to update the relationship.
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
@@ -254,7 +253,6 @@ async def patch_relationship(request: web.Request):
     resource = await ctx.controller.fetch_resource(resource_id)
 
     old_resource, new_resource = await ctx.controller.update_relationship(field, resource, deserialized_data, sp)
-
     if old_resource == new_resource:
         return web.HTTPNoContent()
 
@@ -262,11 +260,11 @@ async def patch_relationship(request: web.Request):
     return jsonapi_response(result)
 
 
-async def delete_relationship(request: web.Request):
+async def delete_relationship(request: web.Request) -> web.Response:
     """
     Remove relationships of resource.
 
-    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.delete_relationship`
+    Uses the :meth:`~aiohttp_json_api.controller.BaseController.delete_relationship`
     method of the schema to update the relationship.
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
@@ -305,11 +303,11 @@ async def delete_relationship(request: web.Request):
     return jsonapi_response(result)
 
 
-async def get_related(request: web.Request):
+async def get_related(request: web.Request) -> web.Response:
     """
     Get related resources.
 
-    Uses the :meth:`~aiohttp_json_api.schema.BaseSchema.query_relative`
+    Uses the :meth:`~aiohttp_json_api.controller.BaseController.query_relative`
     method of the schema to query the related resource.
 
     :seealso: http://jsonapi.org/format/#fetching
@@ -355,8 +353,7 @@ def validate_uri_resource_id(schema: BaseSchema, resource_id: int) -> None:
         try:
             t.Int().check(resource_id)
         except t.DataError as exc:
-            raise ValidationError(detail=str(exc).capitalize(),
-                                  source_parameter='id')
+            raise ValidationError(detail=str(exc).capitalize(), source_parameter='id')
     else:
         try:
             field.pre_validate(schema, resource_id, sp=None)

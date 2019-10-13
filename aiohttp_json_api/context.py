@@ -3,7 +3,7 @@
 import json
 import re
 from collections import OrderedDict
-from typing import Any, Optional, Tuple, Union, Pattern, Callable, Dict
+from typing import Optional, Tuple, Union, Pattern, Callable, TYPE_CHECKING
 
 import inflection
 from aiohttp import web
@@ -16,12 +16,16 @@ from aiohttp_json_api.pagination import PaginationABC
 from aiohttp_json_api.registry import Registry
 from aiohttp_json_api.typings import RequestFields, RequestFilters, RequestIncludes, RequestSorting
 
+if TYPE_CHECKING:
+    from aiohttp_json_api.schema import BaseSchema
+    from aiohttp_json_api.controller import BaseController
+
 
 class JSONAPIContext:
     """JSON API request context."""
-    FILTER_KEY: Pattern = re.compile(r"filter\[(?P<field>\w[-\w_]*)\]")
-    FILTER_VALUE: Pattern = re.compile(r"(?P<name>[a-z]+):(?P<value>.*)")
-    FIELDS_RE: Pattern = re.compile(r"fields\[(?P<name>\w[-\w_]*)\]")
+    FILTER_KEY: Pattern = re.compile(r'filter\[(?P<field>\w[-\w_]*)\]')
+    FILTER_VALUE: Pattern = re.compile(r'(?P<name>[a-z]+):(?P<value>.*)')
+    FIELDS_RE: Pattern = re.compile(r'fields\[(?P<name>\w[-\w_]*)\]')
 
     inflect: Callable[[str], str] = inflection.underscore
 
@@ -38,7 +42,7 @@ class JSONAPIContext:
         if self.__resource_type is None:
             self.__resource_type = self.__request.match_info.get('type', None)
 
-        if (self.__resource_type is None or self.__resource_type not in self.registry):
+        if self.__resource_type is None or self.__resource_type not in self.registry:
             # If type is not found in URI, and type is not passed
             # via decorator to custom handler, then raise HTTP 404
             raise HTTPNotFound()
@@ -66,8 +70,7 @@ class JSONAPIContext:
             'Event: %s\n'
             'Schema: %s\n'
             'Controller: %s\n',
-            self.filters, self.fields, self.include, self.sorting, self.event,
-            schema_cls.__name__, controller_cls.__name__,
+            self.filters, self.fields, self.include, self.sorting, self.event, schema_cls, controller_cls,
         )
 
     @property
@@ -87,11 +90,11 @@ class JSONAPIContext:
         return self.app[JSONAPI]['registry']
 
     @property
-    def schema(self):
+    def schema(self) -> 'BaseSchema':
         return self.__schema
 
     @property
-    def controller(self):
+    def controller(self) -> 'BaseController':
         return self.__controller
 
     @property

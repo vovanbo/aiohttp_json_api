@@ -1,7 +1,7 @@
 """Useful typing."""
 
 # pylint: disable=C0103
-from typing import Callable, Coroutine, Dict, MutableMapping, Tuple, Union, Optional, Awaitable
+from typing import Callable, Coroutine, Dict, MutableMapping, Tuple, Union, Optional, Awaitable, Any, Set
 
 from aiohttp import web
 from multidict import MutableMultiMapping
@@ -27,5 +27,9 @@ MimeTypeComponents = Tuple[str, str, Dict[str, str]]
 QualityAndFitness = Tuple[float, int]
 QFParsed = Tuple[QualityAndFitness, Optional[MimeTypeComponents]]
 
-Handler = Callable[[web.Request], Awaitable[web.StreamResponse]]
-Middleware = Callable[[web.Request, Handler], Awaitable[web.StreamResponse]]
+CallableHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
+Middleware = Callable[[web.Request, CallableHandler], Awaitable[web.StreamResponse]]
+
+CompoundDocumentsMapping = Dict[ResourceID, Any]
+
+RelationshipsMapping = Dict[str, Set[Tuple[str, ...]]]
