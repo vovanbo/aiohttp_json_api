@@ -292,9 +292,8 @@ class JSONAPIContext:
         if 'sort' not in request.query:
             return sort
 
-        direction = SortDirection.ASC
-
         for field in request.query.get('sort').split(','):
+            direction = SortDirection.ASC
             if field.startswith(('+', '-')):
                 direction = SortDirection(field[0])
                 field = field[1:]
