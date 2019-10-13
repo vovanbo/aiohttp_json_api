@@ -1,7 +1,7 @@
 """Utilities related to JSON API."""
 
 from collections import defaultdict, OrderedDict
-from typing import Optional, Dict, Any, Union, Callable, Set, Collection, Tuple
+from typing import Optional, Dict, Any, Union, Callable, Set, Collection, Tuple, Mapping
 
 import trafaret
 from aiohttp import web
@@ -114,12 +114,12 @@ def serialize_resource(resource: Any, ctx: JSONAPIContext) -> Dict[str, Any]:
 
 
 async def render_document(
-    data,
-    included,
-    ctx,
+    data: Any,
+    included: Mapping[Any, Any],
+    ctx: JSONAPIContext,
     *,
     pagination: Optional[PaginationABC] = None,
-    links=None,
+    links: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Render JSON API document.
@@ -133,7 +133,7 @@ async def render_document(
     """
     document: Dict[str, Any] = OrderedDict()
 
-    if is_collection(data, exclude=(ctx.schema.opts.resource_cls,)):
+    if is_collection(data, exclude=ctx.registry.classes):
         document['data'] = [serialize_resource(r, ctx) for r in data]
     else:
         document['data'] = serialize_resource(data, ctx) if data else None

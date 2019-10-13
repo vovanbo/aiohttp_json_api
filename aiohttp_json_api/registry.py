@@ -2,7 +2,7 @@
 
 import collections
 import inspect
-from typing import Any
+from typing import Any, Type, Tuple
 
 from aiohttp_json_api.common import ResourceID
 
@@ -56,3 +56,7 @@ class Registry(collections.UserDict):
                 raise RuntimeError('Schema for %s is not found.' % obj.__class__.__name__)
 
         return result
+
+    @property
+    def classes(self) -> Tuple[Type[Any], ...]:
+        return tuple(filter(inspect.isclass, self.keys()))
