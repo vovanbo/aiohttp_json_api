@@ -3,10 +3,10 @@ from typing import Dict, Optional, Mapping, Any
 
 import sqlalchemy as sa
 from aiopg.sa import SAConnection
-from more_itertools import first
 from sqlalchemy.sql.selectable import CTE
 
 import examples.fantasy.tables as tbl
+from aiohttp_json_api.helpers import first
 from examples.fantasy.entities import Author, Book, Photo
 from examples.fantasy.repositories import Repository
 
@@ -18,7 +18,7 @@ class AuthorsRepository(Repository):
     async def get_one(cls, conn: SAConnection, pk: int, **kwargs) -> Optional[Author]:
         cte = cls.cte(where=(cls.table.c.id == pk), limit=1)
         results = await cls.get_many(conn, cte=cte)
-        return first(results.values(), default=None)
+        return first(results.values())
 
     @classmethod
     async def get_many(cls, conn: SAConnection, **kwargs) -> Mapping[int, Author]:
@@ -42,8 +42,8 @@ class AuthorsRepository(Repository):
             .select(use_labels=True)
         )
 
-        books = {}
-        photos = {}
+        books: Dict[int, Book] = {}
+        photos: Dict[int, Photo] = {}
 
         async for row in conn.execute(query):
             author_id = row[table.c.id]

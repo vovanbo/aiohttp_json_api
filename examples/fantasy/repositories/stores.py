@@ -2,9 +2,9 @@ from collections import OrderedDict
 from typing import Mapping, Optional, Dict
 
 from aiopg.sa import SAConnection
-from more_itertools import first
 
 import examples.fantasy.tables as tbl
+from aiohttp_json_api.helpers import first
 from examples.fantasy.entities import Store, Book, Author
 from examples.fantasy.repositories import Repository
 
@@ -16,7 +16,7 @@ class StoresRepository(Repository):
     async def get_one(cls, conn: SAConnection, pk: int, **kwargs) -> Optional[Store]:
         cte = cls.cte(where=(cls.table.c.id == pk), limit=1)
         results = await cls.get_many(conn, cte=cte)
-        return first(results.values(), default=None)
+        return first(results.values())
 
     @classmethod
     async def get_many(cls, conn: SAConnection, **kwargs) -> Mapping[int, Store]:
@@ -38,7 +38,7 @@ class StoresRepository(Repository):
             .select(use_labels=True)
         )
 
-        books = {}
+        books: Dict[int, Book] = {}
 
         async for row in conn.execute(query):
             store_id = row[table.c.id]
