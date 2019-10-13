@@ -44,8 +44,7 @@ async def get_collection(request: web.Request) -> web.Response:
     if ctx.include and resources:
         compound_documents, relationships = await get_compound_documents(resources, ctx)
 
-    result = await render_document(resources, compound_documents, ctx)
-
+    result = await render_document(resources, ctx, included=compound_documents)
     return jsonapi_response(result)
 
 
@@ -71,7 +70,7 @@ async def post_resource(request: web.Request) -> web.Response:
     data = ctx.schema.map_data_to_schema(deserialized_data)
 
     resource = await ctx.controller.create_resource(data)
-    result = await render_document(resource, None, ctx)
+    result = await render_document(resource, ctx)
 
     rid = ctx.registry.ensure_identifier(resource)
     location = request.url.join(
@@ -99,8 +98,7 @@ async def get_resource(request: web.Request) -> web.Response:
     if ctx.include and resource:
         compound_documents, relationships = await get_compound_documents(resource, ctx)
 
-    result = await render_document(resource, compound_documents, ctx)
-
+    result = await render_document(resource, ctx, included=compound_documents)
     return jsonapi_response(result)
 
 
@@ -131,7 +129,7 @@ async def patch_resource(request: web.Request) -> web.Response:
     if old_resource == new_resource:
         return web.HTTPNoContent()
 
-    result = await render_document(new_resource, None, ctx)
+    result = await render_document(new_resource, ctx)
     return jsonapi_response(result)
 
 
@@ -314,14 +312,12 @@ async def get_related(request: web.Request) -> web.Response:
     """
     relation_name = request.match_info['relation']
     ctx = JSONAPIContext(request)
-    relation_field = ctx.schema.get_relationship_field(relation_name,
-                                                       source_parameter='URI')
-    compound_documents = None
-    pagination = None
 
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(ctx.schema, resource_id)
 
+    relation_field = ctx.schema.get_relationship_field(relation_name, source_parameter='URI')
+    pagination = None
     if relation_field.relation is Relation.TO_MANY:
         pagination_type = relation_field.pagination
         if pagination_type:
@@ -332,12 +328,11 @@ async def get_related(request: web.Request) -> web.Response:
 
     relatives = await ctx.controller.query_relatives(field, resource)
 
+    compound_documents = None
     if ctx.include and relatives:
         compound_documents, relationships = await get_compound_documents(relatives, ctx)
 
-    result = await render_document(relatives, compound_documents, ctx,
-                                   pagination=pagination)
-
+    result = await render_document(relatives, ctx, included=compound_documents, pagination=pagination)
     return jsonapi_response(result)
 
 

@@ -123,9 +123,9 @@ def serialize_resource(resource: Any, ctx: JSONAPIContext) -> Dict[str, Any]:
 
 async def render_document(
     data: Any,
-    included: Mapping[Any, Any],
     ctx: JSONAPIContext,
     *,
+    included: Optional[Dict[ResourceID, Any]] = None,
     pagination: Optional[PaginationABC] = None,
     links: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
@@ -133,8 +133,8 @@ async def render_document(
     Render JSON API document.
 
     :param data: One or many resources
-    :param included: Compound documents
     :param ctx: Request context
+    :param included: Compound documents
     :param pagination: Pagination instance
     :param links: Additional links
     :return: Rendered JSON API document
