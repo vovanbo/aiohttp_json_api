@@ -17,9 +17,15 @@ async def close_db_connections(app):
     await app['db'].wait_closed()
 
 
-async def init(db_dsn: str, debug=False, loop=None) -> web.Application:
+async def init(db_dsn: str, debug: bool = False, loop=None) -> web.Application:
     from examples.fantasy.schemas import AuthorSchema, BookSchema, ChapterSchema, PhotoSchema, StoreSchema, SeriesSchema
-    from examples.fantasy.controllers import AuthorsController, CommonController, BooksController
+    from examples.fantasy.controllers import (
+        AuthorsController,
+        BooksController,
+        CommonController,
+        ChaptersController,
+        StoresController,
+    )
 
     app = web.Application(loop=loop)
     engine = await create_engine(dsn=db_dsn, echo=debug)
@@ -37,9 +43,9 @@ async def init(db_dsn: str, debug=False, loop=None) -> web.Application:
         {
             AuthorSchema: AuthorsController,
             BookSchema: BooksController,
-            ChapterSchema: CommonController,
+            ChapterSchema: ChaptersController,
             PhotoSchema: CommonController,
-            StoreSchema: CommonController,
+            StoreSchema: StoresController,
             SeriesSchema: CommonController
         },
         log_errors=debug, meta={'fantasy': {'version': '0.0.1'}}

@@ -1,19 +1,46 @@
-from typing import Optional
+from collections import OrderedDict
+from typing import Optional, Mapping, Any, Dict
 
-import trafaret as t
-from trafaret.contrib.rfc_3339 import DateTime
+from aiopg.sa import SAConnection
+from more_itertools import first
 
 import examples.fantasy.tables as tbl
-from examples.fantasy.entities import ImageableType, Author, Book, Series, Photo
+from examples.fantasy.entities import ImageableType, Photo, Author, Book, Series
+from examples.fantasy.repositories import Repository
 
 
-def _get_photo_from_row(row, imageable: ImageableType, alias: Optional[str] = None) -> Photo:
-    table = tbl.photos if alias is None else alias
-    return Photo(
-        id=t.Int().check(row[table.c.id]),
-        title=t.String().check(row[table.c.title]),
-        uri=str(t.URL.check(row[table.c.uri])),
-        imageable=t.Or(t.Type(Author), t.Type(Book), t.Type(Series)).check(imageable),
-        created_at=DateTime().check(row[table.c.created_at]),
-        updated_at=t.Or(DateTime, t.Null).check(row[table.c.updated_at]),
-    )
+class PhotoRepository(Repository):
+    table = tbl.photos
+
+    @classmethod
+    async def get_one(cls, conn: SAConnection, pk: int, **kwargs) -> Optional[Photo]:
+        cte = cls.cte(where=(cls.table.c.id == pk), limit=1)
+        results = await cls.fetch_many(conn, cte=cte)
+        return first(results.values(), default=None)
+
+    @classmethod
+    async def get_many(cls, conn: SAConnection, **kwargs) -> Mapping[Any, Any]:
+        results: Dict[int, Photo] = OrderedDict()
+        cte = kwargs.get('cte')
+        table = cls.table if cte is None else cte
+
+        imageable_map = {
+            'authors': Author,
+            'books': Book,
+            'series': Series
+        }
+
+        query = table.select()
+
+        async for row in conn.execute(query):
+            photo_id = row[table.c.id]
+            photo = results.get(photo_id)
+            if photo is None:
+                imageable_id = row[table.c.imageable_id]
+                imageable_type = row[table.c.imageable_type]
+                imageable_model = imageable_map[imageable_type]
+                imageable = imageable_model.not_populated(imageable_id)
+                photo = Photo.from_row(row, imageable=imageable, alias=table)
+                results[photo_id] = photo
+
+        return results

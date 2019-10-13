@@ -1,8 +1,7 @@
 from aiohttp_json_api.schema import BaseSchema
 from aiohttp_json_api.fields import attributes, relationships
 
-from examples.fantasy.models import Store, Series, Chapter
-from examples.fantasy.entities import Book, Author, Photo
+from examples.fantasy.entities import Author, Book, Chapter, Photo, Series, Store
 
 
 class AuthorSchema(BaseSchema):
