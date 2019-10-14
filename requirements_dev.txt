@@ -23,7 +23,7 @@ flake8-import-order==0.17.1
 flake8-polyfill==1.0.2
 flake8==3.5.0
 idna-ssl==1.0.1
-idna==2.7
+idna==2.8
 imagesize==1.0.0
 invoke==0.23.0
 isort==4.3.4
