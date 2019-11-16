@@ -18,14 +18,14 @@ deploy:
       VFRJV2JXSXhrTGF4eFNWNENIMDI4ZmZGWTFZc3FGaXJ2cW10VG1tOWdSQ3I5bHZGb05oTzUxeEJL
       ZUZYL2ZYdkUwdTFtZUJwckRCTk9kMllGNDB4a2pLTTFCTUVQOW1VVGFVaUgwTGxqTnlOclpMNmc9
   true:
-    condition: $TOXENV == py36
+    condition: $TOXENV == py37
     repo: vovanbo/aiohttp_json_api
     tags: true
 env:
-- TOXENV=py36
+- TOXENV=py37
 install: pip install -U tox
 language: python
-python: 3.6
+python: 3.7
 script: tox -e ${TOXENV}
 
 services:
