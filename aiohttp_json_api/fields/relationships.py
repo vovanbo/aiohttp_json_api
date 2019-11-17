@@ -92,7 +92,8 @@ class ToMany(Relationship):
         pagination: Optional[PaginationABC] = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        """Composes the final JSON API relationships object.
+        """
+        Composes the final JSON API relationships object.
 
         :arg ~aiohttp_json_api.pagination.PaginationABC pagination:
             If not *None*, the links and meta members of the pagination
@@ -102,10 +103,7 @@ class ToMany(Relationship):
         document: Dict[str, Any] = OrderedDict()
 
         if is_collection(data):
-            document['data'] = [
-                context.registry.ensure_identifier(item)._asdict()
-                for item in data
-            ]
+            document['data'] = [context.registry.ensure_identifier(item)._asdict() for item in data]
 
         if links is not None:
             document['links'] = links

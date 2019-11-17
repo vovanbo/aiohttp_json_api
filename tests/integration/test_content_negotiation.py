@@ -36,8 +36,7 @@ class TestContentNegotiation:
         """
         response = await fantasy_client.get('/api/books/1')
         assert response.status == 200
-        assert response.headers[hdrs.CONTENT_TYPE] == \
-               'application/vnd.api+json'
+        assert response.headers[hdrs.CONTENT_TYPE] == 'application/vnd.api+json'
 
     async def test_response_unsupported_media_type(self, fantasy_client):
         """

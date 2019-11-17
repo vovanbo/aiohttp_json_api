@@ -24,7 +24,7 @@ class DecimalTrafaret(t.Float):
         self.allow_nan = allow_nan
         self.places = decimal.Decimal((0, (1,), -places)) if places is not None else None
         self.rounding = rounding
-        super(DecimalTrafaret, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def _converter(self, value: Any) -> decimal.Decimal:
         if not isinstance(value, self.convertable):

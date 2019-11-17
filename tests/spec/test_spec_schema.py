@@ -85,15 +85,11 @@ async def test_fetch_single_resource_with_includes_and_fields(fantasy_client):
     data = await response.json(content_type=JSONAPI_CONTENT_TYPE)
     assert resolve_pointer(data, '/data/type') == 'books'
     assert resolve_pointer(data, '/data/id') == '1'
-    assert resolve_pointer(data, '/data/attributes/title') == \
-           'The Fellowship of the Ring'
-    assert resolve_pointer(data, '/data/attributes/date_published', MISSING) \
-           is MISSING
+    assert resolve_pointer(data, '/data/attributes/title') == 'The Fellowship of the Ring'
+    assert resolve_pointer(data, '/data/attributes/date_published', MISSING) is MISSING
 
     for relationships in ('author', 'series'):
-        assert resolve_pointer(
-            data, f'/data/relationships/{relationships}', MISSING
-        ) is MISSING
+        assert resolve_pointer(data, f'/data/relationships/{relationships}', MISSING) is MISSING
 
     author = resolve_pointer(data, '/included/0')
     assert author['id'] == '1'
