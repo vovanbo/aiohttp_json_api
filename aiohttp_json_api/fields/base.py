@@ -39,7 +39,6 @@ from collections import Mapping
 from typing import Optional, Sequence, Dict, Any, Union
 
 import trafaret as t
-from aiohttp import web
 
 from aiohttp_json_api.context import JSONAPIContext
 from aiohttp_json_api.common import ALLOWED_MEMBER_NAME_REGEX, Event, JSONAPI, Relation
@@ -274,7 +273,7 @@ class Attribute(BaseField):
     :arg bool load_only:
         If `True` skip this field during serialization, otherwise
         its value will be present in the serialized data.
-    :arg \*\*kwargs:
+    :arg kwargs:
         The init arguments for the :class:`BaseField`.
     """
 

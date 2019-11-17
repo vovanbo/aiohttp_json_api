@@ -30,8 +30,9 @@ All helpers have a similar interface. Here is an example for the
     >>> p.meta()
     {'total-resources': 106, 'last-page': 4, 'page-number': 0, 'page-size': 25}
 """
+
 import abc
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 
 import trafaret as t
 from aiohttp import web

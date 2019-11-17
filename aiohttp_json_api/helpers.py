@@ -1,11 +1,11 @@
 """Helpers."""
 
 import inspect
-from collections import Iterable, Mapping
-from typing import Optional, Tuple, List, Iterable as IterableType, Any, Type, Collection, Callable, Generator, Dict
+from collections.abc import Mapping
+from typing import Any, Callable, Collection, Dict, Generator, Iterable, List, Optional, Tuple, Type
 
 from aiohttp import web
-from mimeparse import parse_media_range, _filter_blank
+from mimeparse import _filter_blank, parse_media_range
 
 from aiohttp_json_api.processors import ProcessorsMeta
 from aiohttp_json_api.fields.decorators import Tag
@@ -42,7 +42,7 @@ def ensure_collection(value: Any, exclude: Optional[Tuple[Type[Any], ...]] = Non
 
 
 def first(
-    iterable: IterableType[Any],
+    iterable: Iterable[Any],
     default: Optional[Any] = None,
     key: Optional[Callable[[Any], bool]] = None,
 ) -> Any:
@@ -210,7 +210,7 @@ def quality_and_fitness_parsed(mime_type: str, parsed_ranges: List[MimeTypeCompo
     return (best_fit_q, best_fitness), best_matched
 
 
-def best_match(supported: IterableType[str], header: str) -> Tuple[str, Optional[MimeTypeComponents]]:
+def best_match(supported: Iterable[str], header: str) -> Tuple[str, Optional[MimeTypeComponents]]:
     """Return mime-type with the highest quality ('q') from list of candidates.
     Takes a list of supported mime-types and finds the best match for all the
     media-ranges listed in header. The value of header must be a string that

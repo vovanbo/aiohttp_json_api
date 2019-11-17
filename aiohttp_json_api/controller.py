@@ -2,23 +2,23 @@ import abc
 import copy
 from typing import Any, List
 
-from aiohttp_json_api.processors import ProcessorsMeta
 from aiohttp_json_api.common import logger
 from aiohttp_json_api.fields.decorators import Tag
 from aiohttp_json_api.helpers import first, get_processors
+from aiohttp_json_api.processors import ProcessorsMeta
 
 
 class ControllerMeta(ProcessorsMeta):
-    def __init__(cls, name, bases, attrs):
+    def __init__(cls, name, bases, attrs) -> None:
         """
         Initialise a new controller class.
         """
-        super(ControllerMeta, cls).__init__(name, bases, attrs)
+        super().__init__(name, bases, attrs)
         cls._resolve_processors()
 
 
 class ControllerABC(abc.ABC, metaclass=ControllerMeta):
-    def __init__(self, context):
+    def __init__(self, context) -> None:
         self.ctx = context
 
     @staticmethod
@@ -51,11 +51,12 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
     @abc.abstractmethod
     async def create_resource(self, data, **kwargs):
         """
+        Creates a new resource instance and returns it.
+
         .. seealso::
 
             http://jsonapi.org/format/#crud-creating
 
-        Creates a new resource instance and returns it.
         **You should override this method.**
 
         The default implementation passes the attributes, (dereferenced)
@@ -72,12 +73,12 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
     @abc.abstractmethod
     async def update_resource(self, resource_id, data, sp, **kwargs):
         """
+        Updates an existing *resource*. **You should overridde this method** in
+        order to save the changes in the database.
+
         .. seealso::
 
             http://jsonapi.org/format/#crud-updating
-
-        Updates an existing *resource*. **You should overridde this method** in
-        order to save the changes in the database.
 
         The default implementation uses the
         :class:`~aiohttp_json_api.schema.base_fields.BaseField`
@@ -97,11 +98,13 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
     @abc.abstractmethod
     async def delete_resource(self, resource_id, **kwargs):
         """
+        Deletes the *resource*.
+
         .. seealso::
 
             http://jsonapi.org/format/#crud-deleting
 
-        Deletes the *resource*. **You must overridde this method.**
+        **You must overridde this method.**
 
         :arg resource_id:
             The id of the resource or the resource instance
@@ -116,11 +119,11 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
     @abc.abstractmethod
     async def update_relationship(self, field, resource, data, sp, **kwargs):
         """
+        Updates the relationship with the JSON API name *relation_name*.
+
         .. seealso::
 
             http://jsonapi.org/format/#crud-updating-relationships
-
-        Updates the relationship with the JSON API name *relation_name*.
 
         :arg FieldABC field:
             Relationship field.
@@ -136,12 +139,12 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
     @abc.abstractmethod
     async def add_relationship(self, field, resource, data, sp, **kwargs):
         """
+        Adds the members specified in the JSON API relationship object *data*
+        to the relationship, unless the relationships already exist.
+
         .. seealso::
 
             http://jsonapi.org/format/#crud-updating-to-many-relationships
-
-        Adds the members specified in the JSON API relationship object *data*
-        to the relationship, unless the relationships already exist.
 
         :arg FieldABC field:
             Relationship field.
@@ -157,12 +160,12 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
     @abc.abstractmethod
     async def remove_relationship(self, field, resource, data, sp, **kwargs):
         """
+        Deletes the members specified in the JSON API relationship object
+        *data* from the relationship.
+
         .. seealso::
 
             http://jsonapi.org/format/#crud-updating-to-many-relationships
-
-        Deletes the members specified in the JSON API relationship object
-        *data* from the relationship.
 
         :arg FieldABC field:
             Relationship field.
@@ -183,23 +186,24 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
     @abc.abstractmethod
     async def query_collection(self, **kwargs):
         """
+        Fetches a subset of the collection represented by this schema.
+        **Must be overridden.**
+
         .. seealso::
 
             http://jsonapi.org/format/#fetching
-
-        Fetches a subset of the collection represented by this schema.
-        **Must be overridden.**
         """
         pass
 
     @abc.abstractmethod
     async def query_resource(self, resource_id, **kwargs):
         """
+        Fetches the resource with the id *id_*. **Must be overridden.**
+
         .. seealso::
 
             http://jsonapi.org/format/#fetching
 
-        Fetches the resource with the id *id_*. **Must be overridden.**
 
         :arg str resource_id:
             The id of the requested resource.
@@ -211,8 +215,7 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
     @abc.abstractmethod
     async def query_relatives(self, field, resource, **kwargs):
         """
-        Controller for the *related* endpoint of the relationship with
-        then name *relation_name*.
+        Controller for the *related* endpoint of the relationship with name *relation_name*.
 
         :arg FieldABC field:
             Relationship field.
@@ -224,12 +227,12 @@ class ControllerABC(abc.ABC, metaclass=ControllerMeta):
     @abc.abstractmethod
     async def fetch_compound_documents(self, field, resources, *, rest_path=None, **kwargs):
         """
+        Fetches the related resources. The default method uses the controller's :meth:`~default_include`.
+
         .. seealso::
 
             http://jsonapi.org/format/#fetching-includes
 
-        Fetches the related resources. The default method uses the
-        controller's :meth:`~default_include`.
         **Can be overridden.**
 
         :arg FieldABC field:

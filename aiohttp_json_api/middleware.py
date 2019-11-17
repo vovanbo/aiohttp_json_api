@@ -3,7 +3,7 @@ from aiohttp import hdrs, web, http
 
 from aiohttp_json_api import VERSION
 from aiohttp_json_api.common import JSONAPI, JSONAPI_CONTENT_TYPE, JSONAPI_CONTENT_TYPE_PARSED, logger
-from aiohttp_json_api.errors import Error, ErrorList, HTTPUnsupportedMediaType, HTTPNotAcceptable
+from aiohttp_json_api.errors import Error, ErrorList, HTTPNotAcceptable, HTTPUnsupportedMediaType
 from aiohttp_json_api.helpers import best_match, get_mime_type_params
 from aiohttp_json_api.typings import CallableHandler
 from aiohttp_json_api.utils import error_to_response

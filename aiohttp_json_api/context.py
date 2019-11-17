@@ -3,7 +3,7 @@
 import json
 import re
 from collections import OrderedDict
-from typing import Optional, Tuple, Union, Pattern, Callable, TYPE_CHECKING
+from typing import Callable, Optional, Pattern, Tuple, TYPE_CHECKING, Union
 
 import inflection
 from aiohttp import web
@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
 class JSONAPIContext:
     """JSON API request context."""
+
     FILTER_KEY: Pattern = re.compile(r'filter\[(?P<field>\w[-\w_]*)\]')
     FILTER_VALUE: Pattern = re.compile(r'(?P<name>[a-z]+):(?P<value>.*)')
     FIELDS_RE: Pattern = re.compile(r'fields\[(?P<name>\w[-\w_]*)\]')

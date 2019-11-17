@@ -1,7 +1,7 @@
 """Errors."""
 
 from http import HTTPStatus
-from typing import Optional, Dict, Any, List, Union
+from typing import Any, Dict, List, Optional
 
 from aiohttp_json_api.encoder import json_dumps
 from aiohttp_json_api.jsonpointer import JSONPointer
@@ -99,7 +99,7 @@ class Error(Exception):
             A meta object containing non-standard meta-information
             about the error.
         """
-        super(Error, self).__init__()
+        super().__init__()
         self.id = id_
         self.about = about
         self.code = code
@@ -111,10 +111,10 @@ class Error(Exception):
 
     def __str__(self) -> str:
         """Return the :attr:`detail` attribute per default."""
-        return json_dumps(self.as_dict, indent=4, sort_keys=True)
+        return json_dumps(self.serialized, indent=4, sort_keys=True)
 
     @property
-    def as_dict(self) -> Dict[str, Any]:
+    def serialized(self) -> Dict[str, Any]:
         """Represent instance of Error as dictionary."""
         result: Dict[str, Any] = {}
         if self.id is not None:
@@ -166,7 +166,7 @@ class ErrorList(Exception):
 
     def __str__(self) -> str:
         """Return string representation of errors list."""
-        return json_dumps(self.json, indent=4, sort_keys=True)
+        return json_dumps(self.serialized, indent=4, sort_keys=True)
 
     @property
     def status(self) -> HTTPStatus:
@@ -208,18 +208,16 @@ class ErrorList(Exception):
         elif all(isinstance(err, Error) for err in errors):
             self.errors.extend(errors)
         else:
-            raise TypeError(
-                '*errors* must be of type ErrorList or a sequence of Error.'
-            )
+            raise TypeError('*errors* must be of type ErrorList or a sequence of Error.')
 
     @property
-    def json(self) -> List[Dict[str, Any]]:
+    def serialized(self) -> List[Dict[str, Any]]:
         """
         Create the JSON API error object.
 
         :seealso: http://jsonapi.org/format/#error-objects
         """
-        return [error.as_dict for error in self.errors]
+        return [error.serialized for error in self.errors]
 
 
 # Common HTTP errors
@@ -235,6 +233,7 @@ class HTTPBadRequest(Error):
     The request could not be fulfilled due to the incorrect syntax
     of the request.
     """
+
     status = HTTPStatus.BAD_REQUEST
 
 
@@ -246,6 +245,7 @@ class HTTPUnauthorized(Error):
     This is similar to 403 but is used in cases where authentication
     is expected but has failed or has not been provided.
     """
+
     status = HTTPStatus.UNAUTHORIZED
 
 
@@ -257,6 +257,7 @@ class HTTPForbidden(Error):
     the requested resource. Unlike 401, authenticating will not make
     a difference in the server's response.
     """
+
     status = HTTPStatus.FORBIDDEN
 
 
@@ -267,6 +268,7 @@ class HTTPNotFound(Error):
     The resource could not be found. This is often used as a catch-all
     for all invalid URIs requested of the server.
     """
+
     status = HTTPStatus.NOT_FOUND
 
 
@@ -278,6 +280,7 @@ class HTTPMethodNotAllowed(Error):
     For example, requesting a resource via a POST method when the resource
     only supports the GET method.
     """
+
     status = HTTPStatus.METHOD_NOT_ALLOWED
 
 
@@ -288,6 +291,7 @@ class HTTPNotAcceptable(Error):
     The resource is valid, but cannot be provided in a format specified
     in the Accept headers in the request.
     """
+
     status = HTTPStatus.NOT_ACCEPTABLE
 
 
@@ -298,6 +302,7 @@ class HTTPConflict(Error):
     The request cannot be completed due to a conflict in the request
     parameters.
     """
+
     status = HTTPStatus.CONFLICT
 
 
@@ -308,6 +313,7 @@ class HTTPGone(Error):
     The resource is no longer available at the requested URI and
     no redirection will be given.
     """
+
     status = HTTPStatus.GONE
 
 
@@ -317,6 +323,7 @@ class HTTPPreConditionFailed(Error):
 
     The server does not meet one of the preconditions specified by the client.
     """
+
     status = HTTPStatus.PRECONDITION_FAILED
 
 
@@ -327,6 +334,7 @@ class HTTPUnsupportedMediaType(Error):
     The client provided data with a media type that the server
     does not support.
     """
+
     status = HTTPStatus.UNSUPPORTED_MEDIA_TYPE
 
 
@@ -339,6 +347,7 @@ class HTTPUnprocessableEntity(Error):
 
     WebDAV - `RFC 4918 <https://tools.ietf.org/html/rfc4918>`_
     """
+
     status = HTTPStatus.UNPROCESSABLE_ENTITY
 
 
@@ -351,6 +360,7 @@ class HTTPLocked(Error):
 
     WebDAV - `RFC 4918 <https://tools.ietf.org/html/rfc4918>`_
     """
+
     status = HTTPStatus.LOCKED
 
 
@@ -362,6 +372,7 @@ class HTTPFailedDependency(Error):
 
     WebDAV - `RFC 4918 <https://tools.ietf.org/html/rfc4918>`_
     """
+
     status = HTTPStatus.FAILED_DEPENDENCY
 
 
@@ -375,6 +386,7 @@ class HTTPTooManyRequests(Error):
     Additional HTTP Status Codes -
     `RFC 6585 <https://tools.ietf.org/html/rfc6585#section-4>`_
     """
+
     status = HTTPStatus.TOO_MANY_REQUESTS
 
 
@@ -387,6 +399,7 @@ class HTTPInternalServerError(Error):
 
     A generic status for an error in the server itself.
     """
+
     status = HTTPStatus.INTERNAL_SERVER_ERROR
 
 
@@ -398,6 +411,7 @@ class HTTPNotImplemented(Error):
     the server could possibly support the request in the future —
     otherwise a 4xx status may be more appropriate.
     """
+
     status = HTTPStatus.NOT_IMPLEMENTED
 
 
@@ -408,6 +422,7 @@ class HTTPBadGateway(Error):
     The server is acting as a proxy and did not receive an acceptable response
     from the upstream server.
     """
+
     status = HTTPStatus.BAD_GATEWAY
 
 
@@ -417,6 +432,7 @@ class HTTPServiceUnavailable(Error):
 
     The server is down and is not accepting requests.
     """
+
     status = HTTPStatus.SERVICE_UNAVAILABLE
 
 
@@ -427,6 +443,7 @@ class HTTPGatewayTimeout(Error):
     The server is acting as a proxy and did not receive a response from
     the upstream server.
     """
+
     status = HTTPStatus.GATEWAY_TIMEOUT
 
 
@@ -437,6 +454,7 @@ class HTTPVariantAlsoNegotiates(Error):
     Transparent content negotiation for the request results in a circular
     reference.
     """
+
     status = HTTPStatus.VARIANT_ALSO_NEGOTIATES
 
 
@@ -449,6 +467,7 @@ class HTTPInsufficientStorage(Error):
 
     WebDAV - `RFC 4918 <https://tools.ietf.org/html/rfc4918>`_
     """
+
     status = HTTPStatus.INSUFFICIENT_STORAGE
 
 
@@ -458,6 +477,7 @@ class HTTPNotExtended(Error):
 
     Further extensions to the request are necessary for it to be fulfilled.
     """
+
     status = HTTPStatus.NOT_EXTENDED
 
 
@@ -511,6 +531,7 @@ class MissingField(ValidationError):
 
     :seealso: http://jsonapi.org/format/#document-structure
     """
+
     def __init__(self, type: str, field: str, **kwargs) -> None:
         kwargs.setdefault(
             'detail',
@@ -593,7 +614,7 @@ class UnfilterableField(HTTPBadRequest):
         :param kwargs: Additional arguments to base error
         """
         kwargs.setdefault(
-            "detail",
+            'detail',
             f"The field '{type}.{field}' does not support "
             f"the '{filtername}' filter."
         )
@@ -617,7 +638,7 @@ class ResourceNotFound(HTTPNotFound):
         :param kwargs: Additional arguments to base error
         """
         kwargs.setdefault(
-            "detail",
+            'detail',
             f"The resource (type='{type}', id='{id}') does not exist."
         )
         super().__init__(**kwargs)

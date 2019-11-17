@@ -2,7 +2,7 @@
 
 import collections
 import inspect
-from typing import Any, Type, Tuple, TYPE_CHECKING
+from typing import Any, Tuple, Type, TYPE_CHECKING
 
 from aiohttp_json_api.common import ResourceID
 
@@ -18,6 +18,7 @@ class Registry(collections.UserDict):
     This is a dictionary created on JSON API application set up.
     It contains a mapping between types, resource classes, schemas and controllers.
     """
+
     __slots__ = ('data',)
 
     def __getitem__(self, key) -> Tuple[Type['BaseSchema'], Type['BaseController']]:

@@ -1,12 +1,11 @@
 """Useful typing."""
 
 # pylint: disable=C0103
-from typing import Callable, Coroutine, Dict, MutableMapping, Tuple, Union, Optional, Awaitable, Any, Set
+from typing import Any, Awaitable, Callable, Coroutine, Dict, MutableMapping, Optional, Set, Tuple, Union
 
 from aiohttp import web
-from multidict import MutableMultiMapping
-
 from aiohttp_json_api.common import FilterRule, ResourceID, SortDirection
+from multidict import MutableMultiMapping
 
 #: Type for Request filters
 RequestFilters = MutableMultiMapping[FilterRule]

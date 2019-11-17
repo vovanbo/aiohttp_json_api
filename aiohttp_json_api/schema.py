@@ -10,10 +10,10 @@ validation and update operations based on
 """
 import abc
 import asyncio
+import collections.abc
 import inspect
 import itertools
 import urllib.parse
-from collections import MutableMapping, OrderedDict
 from types import MappingProxyType
 from typing import Dict, Any, Optional, Collection, Iterable, Mapping, Tuple, Type, Union, List
 
@@ -119,7 +119,7 @@ class SchemaMeta(ProcessorsMeta):
         Returns an ordered dictionary, which maps the source pointer of a
         field to the field. Nested fields are listed before the parent.
         """
-        result: Dict[JSONPointer, BaseField] = OrderedDict()
+        result: Dict[JSONPointer, BaseField] = collections.OrderedDict()
         for field in fields:
             if isinstance(field, Relationship):
                 result.update(mcs._sp_to_field(field.links.values()))
@@ -179,7 +179,7 @@ class SchemaMeta(ProcessorsMeta):
         cls_fields = _get_fields(attrs, BaseField, pop=True)
         klass = super(SchemaMeta, mcs).__new__(mcs, name, bases, attrs)
         inherited_fields = _get_fields_by_mro(klass, BaseField)
-        declared_fields: Dict[str, Union[BaseField, Link]] = OrderedDict()
+        declared_fields: Dict[str, Union[BaseField, Link]] = collections.OrderedDict()
 
         options = getattr(klass, 'Options')
         klass.opts = klass.OPTIONS_CLASS(options)
@@ -207,7 +207,7 @@ class SchemaMeta(ProcessorsMeta):
 
         # Find the *top-level* attributes, relationships,
         # links and meta fields.
-        attributes = OrderedDict(
+        attributes = collections.OrderedDict(
             (key, field)
             for key, field in declared_fields.items()
             if isinstance(field, Attribute) and not field.meta
@@ -215,7 +215,7 @@ class SchemaMeta(ProcessorsMeta):
         mcs._assign_sp(attributes.values(), JSONPointer('/attributes'))
         klass._attributes = MappingProxyType(attributes)
 
-        relationships: Dict[str, Relationship] = OrderedDict(
+        relationships: Dict[str, Relationship] = collections.OrderedDict(
             (key, field)
             for key, field in declared_fields.items()
             if isinstance(field, Relationship)
@@ -232,7 +232,7 @@ class SchemaMeta(ProcessorsMeta):
         mcs._assign_sp(relationships.values(), JSONPointer('/relationships'))
         klass._relationships = MappingProxyType(relationships)
 
-        links = OrderedDict(
+        links = collections.OrderedDict(
             (key, field)
             for key, field in declared_fields.items()
             if isinstance(field, Link) and not field.link_of
@@ -240,7 +240,7 @@ class SchemaMeta(ProcessorsMeta):
         mcs._assign_sp(links.values(), JSONPointer('/links'))
         klass._links = MappingProxyType(links)
 
-        meta = OrderedDict(
+        meta = collections.OrderedDict(
             (key, field)
             for key, field in declared_fields.items()
             if isinstance(field, Attribute) and field.meta
@@ -546,7 +546,7 @@ class BaseSchema(SchemaABC):
             ('links', self._links)
         )
 
-        result = OrderedDict((
+        result = collections.OrderedDict((
             ('type', self.opts.resource_type),
             ('id', self.get_object_id(resource)),
         ))
@@ -566,7 +566,7 @@ class BaseSchema(SchemaABC):
                             for link in field.links.values()
                         }
                     # TODO: Validation steps for pre/post serialization
-                    result.setdefault(key, OrderedDict())
+                    result.setdefault(key, collections.OrderedDict())
                     result[key][field.name] = field.serialize(
                         data=field_data,
                         links=links,
@@ -574,7 +574,7 @@ class BaseSchema(SchemaABC):
                         **kwargs,
                     )
 
-        result.setdefault('links', OrderedDict())
+        result.setdefault('links', collections.OrderedDict())
         if 'self' not in result['links']:
             rid = self.ctx.registry.ensure_identifier(resource)
             route = get_router_resource(self.ctx.request.app, 'resource')
@@ -648,7 +648,7 @@ class BaseSchema(SchemaABC):
         *,
         expected_id: Optional[str] = None,
     ) -> None:
-        if not isinstance(data, MutableMapping):
+        if not isinstance(data, collections.abc.MutableMapping):
             detail = 'Must be an object.'
             raise InvalidType(detail=detail, source_pointer=sp)
 
@@ -699,7 +699,7 @@ class BaseSchema(SchemaABC):
         if validate and Step.BEFORE_DESERIALIZATION in validation_steps:
             await self.pre_validate_resource(data, sp, expected_id=expected_id)
 
-        result: Dict[str, Any] = OrderedDict()
+        result: Dict[str, Any] = collections.OrderedDict()
         fields_map = (
             ('attributes', self._attributes),
             ('relationships', self._relationships),
@@ -709,7 +709,7 @@ class BaseSchema(SchemaABC):
         for key, fields in fields_map:
             data_for_fields = data.get(key, {})
 
-            if validate and not isinstance(data_for_fields, MutableMapping):
+            if validate and not isinstance(data_for_fields, collections.abc.MutableMapping):
                 detail = 'Must be an object.'
                 raise InvalidType(detail=detail, source_pointer=sp / key)
 

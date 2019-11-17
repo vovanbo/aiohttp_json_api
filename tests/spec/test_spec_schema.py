@@ -1,4 +1,4 @@
-from collections import MutableMapping
+from collections.abc import MutableMapping
 
 from aiohttp import hdrs
 from jsonpointer import resolve_pointer

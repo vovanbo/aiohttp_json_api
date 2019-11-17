@@ -1,13 +1,13 @@
 """Handlers."""
 
-import collections
+import collections.abc
 from http import HTTPStatus
 
 import trafaret as t
 from aiohttp import hdrs, web
 
-from aiohttp_json_api.context import JSONAPIContext
 from aiohttp_json_api.common import Relation
+from aiohttp_json_api.context import JSONAPIContext
 from aiohttp_json_api.errors import InvalidType, ValidationError
 from aiohttp_json_api.helpers import get_router_resource
 from aiohttp_json_api.jsonpointer import JSONPointer
@@ -58,7 +58,7 @@ async def post_resource(request: web.Request) -> web.Response:
     :seealso: http://jsonapi.org/format/#crud-creating
     """
     raw_data = await request.json()
-    if not isinstance(raw_data, collections.Mapping):
+    if not isinstance(raw_data, collections.abc.Mapping):
         detail = 'Must be an object.'
         raise InvalidType(detail=detail)
 
@@ -116,7 +116,7 @@ async def patch_resource(request: web.Request) -> web.Response:
     validate_uri_resource_id(ctx.schema, resource_id)
 
     raw_data = await request.json()
-    if not isinstance(raw_data, collections.Mapping):
+    if not isinstance(raw_data, collections.abc.Mapping):
         detail = 'Must be an object.'
         raise InvalidType(detail=detail)
 
@@ -184,6 +184,7 @@ async def post_relationship(request: web.Request) -> web.Response:
 
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
     """
+
     relation_name = request.match_info['relation']
     ctx = JSONAPIContext(request)
     relation_field = ctx.schema.get_relationship_field(relation_name, source_parameter='URI')

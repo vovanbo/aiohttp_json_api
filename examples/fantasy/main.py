@@ -6,7 +6,6 @@ import os
 import logging
 
 import time
-from typing import Optional
 
 from aiohttp import web
 from aiopg.sa import create_engine
@@ -19,7 +18,7 @@ async def close_db_connections(app: web.Application):
     await app['db'].wait_closed()
 
 
-async def init(db_dsn: str, debug: bool = False, loop: Optional[asyncio.AbstractEventLoop] = None) -> web.Application:
+async def init(db_dsn: str, debug: bool = False) -> web.Application:
     from examples.fantasy.schemas import (
         AuthorSchema,
         BookSchema,
@@ -37,7 +36,7 @@ async def init(db_dsn: str, debug: bool = False, loop: Optional[asyncio.Abstract
         StoresController,
     )
 
-    app = web.Application(loop=loop)
+    app = web.Application()
     engine = await create_engine(dsn=db_dsn, echo=debug)
     app['db'] = engine
     app.on_cleanup.append(close_db_connections)
@@ -56,7 +55,7 @@ async def init(db_dsn: str, debug: bool = False, loop: Optional[asyncio.Abstract
             ChapterSchema: ChaptersController,
             PhotoSchema: PhotosController,
             StoreSchema: StoresController,
-            SeriesSchema: CommonController
+            SeriesSchema: CommonController,
         },
         log_errors=debug,
         meta={'fantasy': {'version': '0.0.1'}},

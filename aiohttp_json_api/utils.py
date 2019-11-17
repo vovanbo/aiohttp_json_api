@@ -2,7 +2,7 @@
 
 from collections import defaultdict, OrderedDict
 from http import HTTPStatus
-from typing import Optional, Dict, Any, Union, Callable, Collection, Tuple
+from typing import Any, Callable, Collection, Dict, Optional, Tuple, Union
 
 import trafaret
 from aiohttp import web
@@ -190,7 +190,7 @@ def error_to_response(request: web.Request, error: Union[Error, ErrorList]) -> w
 
     return jsonapi_response(
         {
-            'errors': [error.as_dict] if isinstance(error, Error) else error.json,
+            'errors': [error.serialized] if isinstance(error, Error) else error.serialized,
             'jsonapi': request.app[JSONAPI]['jsonapi']
         },
         status=error.status

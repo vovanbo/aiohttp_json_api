@@ -1,14 +1,13 @@
 import json
+import pathlib
 import socket
+import time
 import uuid
 
 import docker as libdocker
-import pathlib
-
 import invoke
 import psycopg2
 import pytest
-import time
 from jsonschema import Draft4Validator
 
 DSN_FORMAT = 'postgresql://{user}:{password}@{host}:{port}/{dbname}'
@@ -70,12 +69,14 @@ def pg_server(unused_port, session_id, docker):
 
     host = '0.0.0.0'
 
-    pg_params = dict(dbname=database,
-                     user=user,
-                     password=password,
-                     host=host,
-                     port=port,
-                     connect_timeout=2)
+    pg_params = dict(
+        dbname=database,
+        user=user,
+        password=password,
+        host=host,
+        port=port,
+        connect_timeout=2,
+    )
 
     delay = 0.001
     for i in range(20):
@@ -129,9 +130,9 @@ def jsonapi_validator(here):
 @pytest.fixture
 async def fantasy_app(loop, pg_params, populated_db):
     from examples.fantasy.main import init
-    return await init(DSN_FORMAT.format(**pg_params), debug=False, loop=loop)
+    return await init(DSN_FORMAT.format(**pg_params), debug=False)
 
 
 @pytest.fixture
-async def fantasy_client(fantasy_app, test_client):
-    return await test_client(fantasy_app)
+async def fantasy_client(fantasy_app, aiohttp_client):
+    return await aiohttp_client(fantasy_app)

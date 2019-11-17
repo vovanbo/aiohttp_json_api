@@ -36,7 +36,7 @@ import decimal
 import fractions
 import uuid
 from enum import Enum
-from typing import Optional, Collection, Any, Union, Type, MutableMapping, Tuple as TypingTuple
+from typing import Any, Collection, MutableMapping, Optional, Tuple as TypingTuple, Type, Union
 
 import trafaret as t
 from trafaret.contrib import rfc_3339
@@ -47,7 +47,6 @@ from aiohttp_json_api.fields.base import Attribute
 from aiohttp_json_api.fields.trafarets import DecimalTrafaret
 from aiohttp_json_api.helpers import is_collection
 from aiohttp_json_api.jsonpointer import JSONPointer
-from aiohttp_json_api.schema import BaseSchema
 
 __all__ = (
     'String',
@@ -255,8 +254,8 @@ class Decimal(Attribute):
 
 
 class Fraction(Attribute):
-    """Stores a :class:`fractions.Fraction` in an object with a *numerator*
-    and *denominator* member::
+    """
+    Stores a :class:`fractions.Fraction` in an object with a *numerator* and *denominator* member::
 
         # 1.5
         {"numerator": 2, "denominator": 3}
@@ -482,6 +481,7 @@ class Boolean(Attribute):
 
 class URI(Attribute):
     """Parses the URI with :func:`rfc3986.urlparse` and returns the result."""
+
     def pre_validate(self, data: Any, sp: JSONPointer) -> None:
         if not isinstance(data, str):
             detail = 'Must be a string.'
@@ -501,6 +501,7 @@ class URI(Attribute):
 
 class Email(Attribute):
     """Checks if a string is syntactically correct Email address."""
+
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._trafaret = t.Email
@@ -570,6 +571,7 @@ class List(Attribute):
     :arg Attribute field:
         All values of the list are encoded and decoded using this field.
     """
+
     def __init__(self, field: Attribute, min_length: int = 0, max_length: Optional[int] = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.field = field

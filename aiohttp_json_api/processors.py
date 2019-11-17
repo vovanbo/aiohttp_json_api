@@ -1,13 +1,13 @@
 import abc
 import inspect
 from collections import defaultdict
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
 
 from aiohttp_json_api.fields.decorators import Tag
 
 
 class ProcessorsMeta(abc.ABCMeta):
-    def _resolve_processors(cls):
+    def _resolve_processors(cls) -> None:
         """
         Add in the decorated processors
         By doing this after constructing the class, we let standard inheritance
@@ -15,6 +15,7 @@ class ProcessorsMeta(abc.ABCMeta):
 
         Almost the same as https://github.com/marshmallow-code/marshmallow/blob/dev/marshmallow/schema.py#L139-L174
         """
+
         mro = inspect.getmro(cls)
         cls._has_processors = False
         cls.__processors__: Dict[Tuple[Tag, Optional[str]], List[str]] = defaultdict(list)

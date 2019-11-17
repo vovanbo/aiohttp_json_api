@@ -10,6 +10,8 @@ from jsonpointer import JsonPointer as BaseJsonPointer
 
 
 class JSONPointer(BaseJsonPointer):
+    """A JSON Pointer that can reference parts of an JSON document."""
+
     def __truediv__(self, path: Union['JSONPointer', str]) -> 'JSONPointer':
         parts = self.parts.copy()
 

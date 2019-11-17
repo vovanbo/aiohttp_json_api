@@ -3,8 +3,8 @@
 import collections
 import logging
 import re
-from enum import Enum, Flag, auto
-from typing import Tuple, Dict, Any, Pattern
+from enum import auto, Enum, Flag
+from typing import Any, Dict, Pattern, Tuple
 
 from mimeparse import parse_media_range
 
@@ -33,12 +33,14 @@ ResourceID = collections.namedtuple('ResourceID', ['type', 'id'])
 
 class SortDirection(Enum):
     """Sorting direction."""
+
     ASC = '+'
     DESC = '-'
 
 
 class Step(Enum):
     """Marshalling step."""
+
     BEFORE_DESERIALIZATION = auto()
     AFTER_DESERIALIZATION = auto()
     BEFORE_SERIALIZATION = auto()
@@ -47,6 +49,7 @@ class Step(Enum):
 
 class Event(Flag):
     """Request event."""
+
     GET = auto()
     POST = auto()
     PATCH = auto()
@@ -59,5 +62,6 @@ class Event(Flag):
 
 class Relation(Enum):
     """Types of relations."""
+
     TO_ONE = auto()
     TO_MANY = auto()
