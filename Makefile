@@ -84,16 +84,5 @@ dist: clean ## builds source and wheel package
 install: clean ## install the package to the active Python's site-packages
 	python setup.py install
 
-pipenv-update:
-	pipenv update -d
-	pipenv lock
-
-generate-requirements:
-	pipenv lock -r 1> requirements.txt 2> /dev/null
-	pipenv lock -r -d 1> requirements_dev.txt 2> /dev/null
-	awk 'NR==1{printf "-r requirements.txt\n"}RS{print $$0}' requirements_dev.txt > tmp && mv tmp requirements_dev.txt
-
-update-requirements: pipenv-update generate-requirements
-
 simple-example:
 	PYTHONPATH=./examples/simple ./examples/simple/main.py
