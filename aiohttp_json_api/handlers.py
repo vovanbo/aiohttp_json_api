@@ -7,7 +7,7 @@ import trafaret as t
 from aiohttp import hdrs, web
 
 from aiohttp_json_api.common import Relation
-from aiohttp_json_api.context import JSONAPIContext
+from aiohttp_json_api.context import JSONAPI_CONTEXT
 from aiohttp_json_api.errors import InvalidType, ValidationError
 from aiohttp_json_api.helpers import get_router_resource
 from aiohttp_json_api.jsonpointer import JSONPointer
@@ -37,14 +37,14 @@ async def get_collection(request: web.Request) -> web.Response:
 
     :seealso: http://jsonapi.org/format/#fetching
     """
-    ctx = JSONAPIContext(request)
+    ctx = JSONAPI_CONTEXT.get()
     resources = await ctx.controller.query_collection()
 
     compound_documents = None
     if ctx.include and resources:
-        compound_documents, relationships = await get_compound_documents(resources, ctx)
+        compound_documents, relationships = await get_compound_documents(resources)
 
-    result = await render_document(resources, ctx, included=compound_documents)
+    result = await render_document(resources, included=compound_documents)
     return jsonapi_response(result)
 
 
@@ -62,7 +62,7 @@ async def post_resource(request: web.Request) -> web.Response:
         detail = 'Must be an object.'
         raise InvalidType(detail=detail)
 
-    ctx = JSONAPIContext(request)
+    ctx = JSONAPI_CONTEXT.get()
 
     deserialized_data = await ctx.schema.deserialize_resource(
         raw_data.get('data', {}), JSONPointer('/data')
@@ -70,7 +70,7 @@ async def post_resource(request: web.Request) -> web.Response:
     data = ctx.schema.map_data_to_schema(deserialized_data)
 
     resource = await ctx.controller.create_resource(data)
-    result = await render_document(resource, ctx)
+    result = await render_document(resource)
 
     rid = ctx.registry.ensure_identifier(resource)
     location = request.url.join(
@@ -88,7 +88,7 @@ async def get_resource(request: web.Request) -> web.Response:
 
     :seealso: http://jsonapi.org/format/#fetching-resources
     """
-    ctx = JSONAPIContext(request)
+    ctx = JSONAPI_CONTEXT.get()
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(ctx.schema, resource_id)
 
@@ -96,9 +96,9 @@ async def get_resource(request: web.Request) -> web.Response:
 
     compound_documents = None
     if ctx.include and resource:
-        compound_documents, relationships = await get_compound_documents(resource, ctx)
+        compound_documents, relationships = await get_compound_documents(resource)
 
-    result = await render_document(resource, ctx, included=compound_documents)
+    result = await render_document(resource, included=compound_documents)
     return jsonapi_response(result)
 
 
@@ -111,7 +111,7 @@ async def patch_resource(request: web.Request) -> web.Response:
 
     :seealso: http://jsonapi.org/format/#crud-updating
     """
-    ctx = JSONAPIContext(request)
+    ctx = JSONAPI_CONTEXT.get()
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(ctx.schema, resource_id)
 
@@ -129,7 +129,7 @@ async def patch_resource(request: web.Request) -> web.Response:
     if old_resource == new_resource:
         return web.HTTPNoContent()
 
-    result = await render_document(new_resource, ctx)
+    result = await render_document(new_resource)
     return jsonapi_response(result)
 
 
@@ -142,7 +142,7 @@ async def delete_resource(request: web.Request) -> web.Response:
 
     :seealso: http://jsonapi.org/format/#crud-deleting
     """
-    ctx = JSONAPIContext(request)
+    ctx = JSONAPI_CONTEXT.get()
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(ctx.schema, resource_id)
 
@@ -158,7 +158,7 @@ async def get_relationship(request: web.Request) -> web.Response:
     :return: Response
     """
     relation_name = request.match_info['relation']
-    ctx = JSONAPIContext(request)
+    ctx = JSONAPI_CONTEXT.get()
 
     relation_field = ctx.schema.get_relationship_field(relation_name, source_parameter='URI')
     resource_id = request.match_info.get('id')
@@ -186,7 +186,7 @@ async def post_relationship(request: web.Request) -> web.Response:
     """
 
     relation_name = request.match_info['relation']
-    ctx = JSONAPIContext(request)
+    ctx = JSONAPI_CONTEXT.get()
     relation_field = ctx.schema.get_relationship_field(relation_name, source_parameter='URI')
 
     resource_id = request.match_info.get('id')
@@ -229,7 +229,7 @@ async def patch_relationship(request: web.Request) -> web.Response:
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
     """
     relation_name = request.match_info['relation']
-    ctx = JSONAPIContext(request)
+    ctx = JSONAPI_CONTEXT.get()
     relation_field = ctx.schema.get_relationship_field(relation_name, source_parameter='URI')
 
     resource_id = request.match_info.get('id')
@@ -269,7 +269,7 @@ async def delete_relationship(request: web.Request) -> web.Response:
     :seealso: http://jsonapi.org/format/#crud-updating-relationships
     """
     relation_name = request.match_info['relation']
-    ctx = JSONAPIContext(request)
+    ctx = JSONAPI_CONTEXT.get()
     relation_field = ctx.schema.get_relationship_field(relation_name, source_parameter='URI')
 
     resource_id = request.match_info.get('id')
@@ -312,7 +312,7 @@ async def get_related(request: web.Request) -> web.Response:
     :seealso: http://jsonapi.org/format/#fetching
     """
     relation_name = request.match_info['relation']
-    ctx = JSONAPIContext(request)
+    ctx = JSONAPI_CONTEXT.get()
 
     resource_id = request.match_info.get('id')
     validate_uri_resource_id(ctx.schema, resource_id)
@@ -331,9 +331,9 @@ async def get_related(request: web.Request) -> web.Response:
 
     compound_documents = None
     if ctx.include and relatives:
-        compound_documents, relationships = await get_compound_documents(relatives, ctx)
+        compound_documents, relationships = await get_compound_documents(relatives)
 
-    result = await render_document(relatives, ctx, included=compound_documents, pagination=pagination)
+    result = await render_document(relatives, included=compound_documents, pagination=pagination)
     return jsonapi_response(result)
 
 

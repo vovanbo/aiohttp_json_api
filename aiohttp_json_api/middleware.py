@@ -3,6 +3,7 @@ from aiohttp import hdrs, web, http
 
 from aiohttp_json_api import VERSION
 from aiohttp_json_api.common import JSONAPI, JSONAPI_CONTENT_TYPE, JSONAPI_CONTENT_TYPE_PARSED, logger
+from aiohttp_json_api.context import JSONAPI_CONTEXT
 from aiohttp_json_api.errors import Error, ErrorList, HTTPNotAcceptable, HTTPUnsupportedMediaType
 from aiohttp_json_api.helpers import best_match, get_mime_type_params
 from aiohttp_json_api.typings import CallableHandler
@@ -48,6 +49,13 @@ async def jsonapi_middleware(request: web.Request, handler: CallableHandler) -> 
 
             logger.debug('[aiohttp-json-api middleware] Request is valid JSON API request.')
             valid_json_api_request = True
+
+            context_cls = request.app[JSONAPI]['context_cls']
+            JSONAPI_CONTEXT.set(context_cls(request))
+            logger.debug(
+                '[aiohttp-json-api middleware] Setup JSON API context variable (instance of %s).',
+                context_cls,
+            )
 
         response = await handler(request)
 

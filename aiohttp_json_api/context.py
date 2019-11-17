@@ -3,6 +3,7 @@
 import json
 import re
 from collections import OrderedDict
+from contextvars import ContextVar
 from typing import Callable, Optional, Pattern, Tuple, TYPE_CHECKING, Union
 
 import inflection
@@ -356,3 +357,6 @@ class JSONAPIContext:
         """
         field = tuple(field.split('.')) if isinstance(field, str) else field
         return self.sorting.get(field, default)
+
+
+JSONAPI_CONTEXT: ContextVar = ContextVar('JSONAPI_CONTEXT')

@@ -9,7 +9,7 @@ from aiohttp import web
 from aiohttp.typedefs import LooseHeaders
 
 from aiohttp_json_api.common import JSONAPI, JSONAPI_CONTENT_TYPE, ResourceID
-from aiohttp_json_api.context import JSONAPIContext
+from aiohttp_json_api.context import JSONAPI_CONTEXT, JSONAPIContext
 from aiohttp_json_api.encoder import json_dumps
 from aiohttp_json_api.errors import Error, ErrorList, HTTPInternalServerError
 from aiohttp_json_api.helpers import first, is_collection
@@ -48,10 +48,7 @@ def jsonapi_response(
     )
 
 
-async def get_compound_documents(
-    resources: Collection[Any],
-    ctx: JSONAPIContext,
-) -> Tuple[CompoundDocumentsMapping, RelationshipsMapping]:
+async def get_compound_documents(resources: Collection[Any]) -> Tuple[CompoundDocumentsMapping, RelationshipsMapping]:
     """
     Get compound documents of resources. Fetches the relationship paths *paths*.
 
@@ -72,6 +69,7 @@ async def get_compound_documents(
     """
     relationships: RelationshipsMapping = defaultdict(set)
     compound_documents: CompoundDocumentsMapping = OrderedDict()
+    ctx = JSONAPI_CONTEXT.get()
 
     collection: Collection[Any] = (resources,) if type(resources) in ctx.registry else resources
     for path in ctx.include:
@@ -106,7 +104,7 @@ async def get_compound_documents(
     return compound_documents, relationships
 
 
-def serialize_resource(resource: Any, ctx: JSONAPIContext) -> Dict[str, Any]:
+def serialize_resource(resource: Any) -> Dict[str, Any]:
     """
     Serialize resource by schema.
 
@@ -114,6 +112,7 @@ def serialize_resource(resource: Any, ctx: JSONAPIContext) -> Dict[str, Any]:
     :param ctx: Request context
     :return: Serialized resource
     """
+    ctx = JSONAPI_CONTEXT.get()
     try:
         schema_cls, _ = ctx.registry[resource]
         return schema_cls(ctx).serialize_resource(resource)
@@ -123,11 +122,11 @@ def serialize_resource(resource: Any, ctx: JSONAPIContext) -> Dict[str, Any]:
 
 async def render_document(
     data: Any,
-    ctx: JSONAPIContext,
     *,
     included: Optional[Dict[ResourceID, Any]] = None,
     pagination: Optional[PaginationABC] = None,
     links: Optional[Dict[str, Any]] = None,
+    ctx: Optional[JSONAPIContext] = None,
 ) -> Dict[str, Any]:
     """
     Render JSON API document.
@@ -140,14 +139,16 @@ async def render_document(
     :return: Rendered JSON API document
     """
     document: Dict[str, Any] = OrderedDict()
+    if ctx is None:
+        ctx = JSONAPI_CONTEXT.get()
 
     if is_collection(data, exclude=ctx.registry.classes):
-        document['data'] = [serialize_resource(r, ctx) for r in data]
+        document['data'] = [serialize_resource(r) for r in data]
     else:
-        document['data'] = serialize_resource(data, ctx) if data else None
+        document['data'] = serialize_resource(data) if data else None
 
     if ctx.include and included:
-        document['included'] = [serialize_resource(r, ctx) for r in included.values()]
+        document['included'] = [serialize_resource(r) for r in included.values()]
 
     document.setdefault('links', OrderedDict())
     document['links']['self'] = str(ctx.request.url)
