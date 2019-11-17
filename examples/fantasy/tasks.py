@@ -2,14 +2,13 @@ import json
 from pathlib import Path
 
 import sys
-from typing import Optional
 
 import sqlalchemy as sa
-from invoke import task, Context
+from invoke import task
 
 
 @task
-def populate_db(ctx: Context, data_folder: Optional[Path] = None, dsn: Optional[str] = None):
+def populate_db(ctx, data_folder=None, dsn=None):
     from examples.fantasy import tables
 
     if data_folder is None:
