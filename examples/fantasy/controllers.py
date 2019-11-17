@@ -10,6 +10,7 @@ from examples.fantasy.repositories import Repository
 from examples.fantasy.repositories.authors import AuthorsRepository
 from examples.fantasy.repositories.books import BooksRepository
 from examples.fantasy.repositories.chapters import ChaptersRepository
+from examples.fantasy.repositories.photos import PhotoRepository
 from examples.fantasy.repositories.stores import StoresRepository
 
 
@@ -67,3 +68,7 @@ class ChaptersController(CommonController):
 
 class StoresController(CommonController):
     repository = StoresRepository
+
+
+class PhotosController(CommonController):
+    repository = PhotoRepository

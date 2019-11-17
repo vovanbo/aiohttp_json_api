@@ -111,7 +111,7 @@ def populated_db(here, pg_params):
 
     populate_db(
         invoke.context.Context(),
-        data_folder=here.parent / 'examples' / 'fantasy' / 'fantasy-database',
+        data_folder=here.parent / 'examples' / 'fantasy' / 'db',
         dsn=DSN_FORMAT.format(**pg_params)
     )
 
