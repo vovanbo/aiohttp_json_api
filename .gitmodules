@@ -1,3 +1,0 @@
-[submodule "examples/fantasy/fantasy-database"]
-	path = examples/fantasy/fantasy-database
-	url = https://github.com/endpoints/fantasy-database.git

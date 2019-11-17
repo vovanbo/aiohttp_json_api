@@ -2,15 +2,18 @@ import json
 from pathlib import Path
 
 import sys
-import sqlalchemy as sa
-from invoke import task
+from typing import Optional
 
-FANTASY_DATA_FOLDER = Path(__file__).parent / 'fantasy-database'
+import sqlalchemy as sa
+from invoke import task, Context
 
 
 @task
-def populate_db(ctx, data_folder=FANTASY_DATA_FOLDER, dsn=None):
+def populate_db(ctx: Context, data_folder: Optional[Path] = None, dsn: Optional[str] = None):
     from examples.fantasy import tables
+
+    if data_folder is None:
+        data_folder = Path(__file__).parent / 'db'
 
     data_file = data_folder / 'data.json'
     if not Path(data_file).exists():
@@ -30,8 +33,7 @@ def populate_db(ctx, data_folder=FANTASY_DATA_FOLDER, dsn=None):
 
     conn.execute(sa.text(create_sql))
 
-    tables_in_order = ('photos', 'stores', 'authors', 'series', 'books',
-                       'chapters', 'books_stores')
+    tables_in_order = ('photos', 'stores', 'authors', 'series', 'books', 'chapters', 'books_stores')
 
     try:
         for table_name in tables_in_order:
@@ -41,7 +43,7 @@ def populate_db(ctx, data_folder=FANTASY_DATA_FOLDER, dsn=None):
                 query = table.insert().values(value)
                 conn.execute(query)
         trans.commit()
-    except Exception as exc:
+    except Exception:
         trans.rollback()
         raise
 
