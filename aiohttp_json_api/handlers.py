@@ -24,7 +24,7 @@ __all__ = (
     'post_relationship',
     'patch_relationship',
     'delete_relationship',
-    'get_related'
+    'get_related',
 )
 
 
