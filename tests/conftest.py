@@ -5,9 +5,9 @@ import time
 import uuid
 
 import docker as libdocker
-import invoke
 import psycopg2
 import pytest
+from aiohttp.test_utils import TestClient
 from jsonschema import Draft4Validator
 
 DSN_FORMAT = 'postgresql://{user}:{password}@{host}:{port}/{dbname}'
@@ -88,7 +88,7 @@ def pg_server(unused_port, session_id, docker):
             time.sleep(delay)
             delay *= 2
     else:
-        pytest.fail("Cannot start postgres server")
+        pytest.fail('Cannot start postgres server')
 
     inspection = docker.inspect_container(container['Id'])
     container['host'] = inspection['NetworkSettings']['IPAddress']
@@ -108,13 +108,9 @@ def pg_params(pg_server):
 
 @pytest.fixture(scope='session')
 def populated_db(here, pg_params):
-    from examples.fantasy.tasks import populate_db
+    from examples.fantasy import db
 
-    populate_db(
-        invoke.context.Context(),
-        data_folder=here.parent / 'examples' / 'fantasy' / 'db',
-        dsn=DSN_FORMAT.format(**pg_params)
-    )
+    db.populate_db(dsn=DSN_FORMAT.format(**pg_params))
 
 
 @pytest.fixture(scope='session')
@@ -134,5 +130,5 @@ async def fantasy_app(loop, pg_params, populated_db):
 
 
 @pytest.fixture
-async def fantasy_client(fantasy_app, aiohttp_client):
+async def fantasy_client(fantasy_app, aiohttp_client) -> TestClient:
     return await aiohttp_client(fantasy_app)
