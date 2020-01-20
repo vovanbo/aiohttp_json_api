@@ -67,7 +67,7 @@ tox-pyenv==1.1.0
 tox==3.0.0
 tqdm==4.23.1
 twine==1.11.0
-typed-ast==1.1.0
+typed-ast==1.4.1
 urllib3==1.22
 virtualenv==15.2.0
 watchdog==0.8.3
