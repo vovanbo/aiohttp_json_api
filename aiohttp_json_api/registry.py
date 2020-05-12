@@ -46,8 +46,6 @@ class Registry(collections.UserDict):
             A two tuple ``(typename, id)``, a resource object or a resource
             document, which contains the *id* and *type* key
             ``{"type": ..., "id": ...}``.
-        :arg bool asdict:
-            Return ResourceID as dictionary if true
         """
         if isinstance(obj, collections.Sequence) and len(obj) == 2:
             result = ResourceID(type=str(obj[0]), id=str(obj[1]))

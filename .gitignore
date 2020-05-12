@@ -68,3 +68,4 @@ Pipfile.lock
 
 .idea/
 .vscode/
+.venv/

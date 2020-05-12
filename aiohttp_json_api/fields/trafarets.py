@@ -8,10 +8,11 @@ import numbers
 from typing import Optional, Any
 
 import trafaret as t
+from trafaret.lib import STR_TYPES
 
 
 class DecimalTrafaret(t.Float):
-    convertable = t.str_types + (numbers.Real, int)
+    convertable = STR_TYPES + (numbers.Real, int)
     value_type = decimal.Decimal
 
     def __init__(

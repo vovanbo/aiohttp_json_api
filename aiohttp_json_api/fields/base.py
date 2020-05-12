@@ -35,7 +35,7 @@ You should only work with the following fields directly:
 """
 import abc
 import urllib.parse
-from collections import Mapping
+from collections.abc import Mapping
 from typing import Optional, Sequence, Dict, Any, Union
 
 import trafaret as t
