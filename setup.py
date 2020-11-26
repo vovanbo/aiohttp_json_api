@@ -22,7 +22,7 @@ requirements = [
 
 setup(
     name='aiohttp_json_api',
-    version='0.37.0',
+    version='1.0.0',
     description='JSON API driven by aiohttp',
     long_description=readme + '\n\n' + history,
     author='Vladimir Bolshakov',
@@ -47,6 +47,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Internet :: WWW/HTTP',
     ],
     test_suite='tests',
