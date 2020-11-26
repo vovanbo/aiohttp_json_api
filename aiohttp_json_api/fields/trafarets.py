@@ -12,7 +12,7 @@ from trafaret.lib import STR_TYPES
 
 
 class DecimalTrafaret(t.Float):
-    convertable = STR_TYPES + (numbers.Real, int)
+    convertable = STR_TYPES + (numbers.Real, int, float)
     value_type = decimal.Decimal
 
     def __init__(
@@ -41,26 +41,29 @@ class DecimalTrafaret(t.Float):
                 value=value
             )
 
-    def check_and_return(self, data: Any) -> decimal.Decimal:
-        data = super().check_and_return(data)
+    def _check(self, data: Any) -> decimal.Decimal:
+        value = super()._check(data)
 
         if self.allow_nan:
-            if data.is_nan():
+            if value.is_nan():
                 return decimal.Decimal('NaN')  # avoid sNaN, -sNaN and -NaN
         else:
-            if data.is_nan() or data.is_infinite():
+            if value.is_nan() or value.is_infinite():
                 self._failure(
                     error='Special numeric values are not permitted.',
-                    value=data,
+                    value=value,
                 )
 
-        if self.places is not None and data.is_finite():
+        if self.places is not None and value.is_finite():
             try:
-                data = data.quantize(self.places, rounding=self.rounding)
+                value = value.quantize(self.places, rounding=self.rounding)
             except decimal.InvalidOperation:
                 self._failure(
                     error='Decimal can not be properly quantized.',
-                    value=data,
+                    value=value,
                 )
 
-        return data
+        return value
+
+    def check_and_return(self, data: Any) -> decimal.Decimal:
+        return self._check(data)
