@@ -11,7 +11,7 @@ attrs==17.4.0
 autopep8==1.3.5
 babel==2.5.3
 certifi==2018.4.16
-cffi==1.11.5; platform_python_implementation != 'PyPy'
+cffi==1.14.4; platform_python_implementation != 'PyPy'
 chardet==3.0.4
 coverage==4.5.1
 cryptography==2.3.1
